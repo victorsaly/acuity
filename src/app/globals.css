@@ -97,7 +97,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(12px, 2vw, 22px);
+  gap: 5px;
   margin-bottom: 10px;
 }
 .brandLockup .wordmark { margin: 0; }
@@ -629,7 +629,7 @@ input[type="range"]::-moz-range-thumb {
   .brandLockup {
     margin-top: 52px;
     margin-bottom: 8px;
-    gap: 10px;
+    gap: 6px;
   }
   .brandLockup .wordmark { margin: 0; }
   .brandMark { width: 46px; }
