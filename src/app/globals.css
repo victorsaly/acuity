@@ -585,6 +585,16 @@ input[type="range"]::-moz-range-thumb {
 .menuStage { overflow-y: auto; justify-content: safe center; overscroll-behavior: contain; }
 .stage:not(.menuStage) { overflow: hidden; }
 
+/* The hub grows as tiles are added; keep its footer after the grid, not pinned over it. */
+.menuStage > .deskHint,
+.menuStage > .touchNote {
+  position: static;
+  flex: none;
+  width: 100%;
+  margin-top: 28px;
+  padding-bottom: 4px;
+}
+
 .touchNote { display: none; }
 @media (hover: none) and (pointer: coarse), (max-width: 640px) {
   .kbd, .deskHint { display: none; }   /* keyboard hints mean nothing to thumbs */
