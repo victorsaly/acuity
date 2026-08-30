@@ -1,45 +1,56 @@
-# Acuity
+# Delulu Beats
 
-Five full-screen perception games. Your memory for color, pitch, melody, time, and space
-are worse than you think — prove otherwise.
+Delulu Beats is a collection of five full-screen perception games for color, pitch,
+rhythm, spatial memory, and melody. See it, hear it, remember it, then try to dial it
+back in.
 
-**Play it: https://victorsaly.github.io/acuity/**
+**Play now: https://delulubeats.com/**
 
-| Game | Tests | How |
+| Game | Challenge | How it works |
 | --- | --- | --- |
-| **Afterimage** | Color memory | Five colors flood the screen, then you rebuild each one from HSL sliders |
-| **Sine Language** | Pitch memory | Five tones play once, then you dial each back in on a log-scale frequency slider |
-| **Downbeat** | Rhythm | Notes with little faces ride a living lane toward a hit ring — tap dead on time |
-| **Echo** | Spatial memory | Numbered tiles appear on a 4×4–6×6 grid, then vanish — tap them back in order before the clock runs out, one more tile per level |
-| **Refrain** | Melody | A piano phrase grows one note per level — play the same notes back in order, watching the keys or purely by ear |
+| **Afterimage** | Color memory | Rebuild five colors from memory with HSL controls |
+| **Sine Language** | Pitch memory | Hear five tones, then recover each pitch on a frequency slider |
+| **Downbeat** | Rhythm and timing | Follow the track and hit each incoming note on the beat |
+| **Echo** | Spatial memory | Recall numbered tiles on increasingly difficult grids before time runs out |
+| **Refrain** | Melody memory | Replay a piano phrase that grows by one note each level |
 
-## Features
+## What's included
 
-- Free play and a seeded **Daily** puzzle (same for everyone, per difficulty)
-- **One at a time** (guess each color/tone right after it appears) or **All five first** flows for the memory games
-- Selectable **tone voices** (Warm / Pure / Organ / Chip) and **drum kits** (Punch / Boom / Club / Wood) — sampled one-shots with a live Web Audio synth fallback
-- Three Downbeat **lane formats**: Curve, Orbit, Rain — notes are little faces that grin when you hit them
-- Refrain's on-screen piano is playable by mouse, touch, or the `A–'` / `W–[` keyboard rows — **Watch** (keys light up) or **By ear** (sound only) formats
-- Live decimal points while you play, a racing hundredths countdown with accelerating ticks, and a confetti fanfare on a new best
-- **Share score** cards (Wordle-style emoji), per-game play counts and daily streaks on the hub, remembered preferences
-- Four ambient backgrounds — a different one on every refresh (or press `B`)
-- Full keyboard control (`1–4` difficulty, `S` sound, `L` format, `D` daily, `↵` start, `Esc` menu, `F` fullscreen); works on touch too
-- Rollover sound feedback on every control, perceptual Lab ΔE / cents / latency-compensated timing scoring, per-mode best scores
+- Free Play and a seeded **Daily** challenge shared by everyone at each difficulty
+- Easy, Hard, and Brutal difficulty levels, plus a fourth Medium level in Downbeat
+- **One at a time** and **All five first** recall formats for Afterimage and Sine Language
+- Warm, Pure, Organ, and Chip tone voices in Sine Language
+- Punch, Boom, Club, and Wood sampled drum kits in Downbeat, with a synthesized fallback
+- Curve, Orbit, and Rain note lanes plus selectable tracks in Downbeat
+- Flash and Trail reveal formats in Echo
+- Watch and By ear formats plus selectable phrase styles in Refrain
+- Mouse, keyboard, and touch input, including a playable on-screen piano
+- Per-mode best scores, play counts, daily streaks, saved preferences, and new-best celebrations
+- Shareable emoji score cards with native sharing, clipboard fallback, and WhatsApp sharing
+- Built-in How to play guides, audio feedback, fullscreen mode, and four animated backgrounds
+
+Keyboard shortcuts appear in each game. Common controls include number keys for difficulty,
+`D` for Daily, `Enter` to start, `Esc` to return to the menu, and `F` for fullscreen.
+Contextual shortcuts are shown for sound, format, beat, and background options.
 
 ## Stack
 
-Next.js (App Router, static export) · React · TypeScript · [Motion](https://motion.dev) for 3D UI transitions ·
-Web Audio API (compressor + generated-impulse reverb bus, synthesized drums and voices) ·
-Canvas for the waveform, note lane, and backgrounds.
+- Next.js App Router with static export
+- React and TypeScript
+- [Motion](https://motion.dev) for interface transitions
+- Web Audio API for synthesized voices, drum playback, effects, and timing
+- Canvas for waveforms, rhythm lanes, and animated backgrounds
 
 ## Develop
 
 ```bash
 npm install
-npm run dev     # http://localhost:3000
-npm run build   # static export to out/
+npm run dev      # http://localhost:3000
+npm run lint
+npm run build    # static export to out/
 ```
 
-Pushes to `main` deploy to GitHub Pages automatically.
+Pushes to `main` deploy automatically to GitHub Pages at
+[delulubeats.com](https://delulubeats.com/).
 
 Inspired by the perception-game genre popularized by [dialed.gg](https://dialed.gg).

@@ -21,7 +21,7 @@ export default function Hub() {
   return (
     <main className="stage menuStage">
       <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-        <Item><h1 className="wordmark">Acuity</h1></Item>
+        <Item><h1 className="wordmark">Delulu Beats</h1></Item>
         <Item>
           <p className="tagline">
             Five full-screen perception games. Your memory for color, pitch, melody,

@@ -2,7 +2,7 @@
 
 /* Wordle-style shareable score cards. */
 
-export const SITE_URL = "https://victorsaly.github.io/acuity/";
+export const SITE_URL = "https://delulubeats.com/";
 
 export const slotEmoji = (score10: number) =>
   score10 >= 9 ? "🟩" : score10 >= 7 ? "🟨" : score10 >= 4 ? "🟧" : "🟥";
@@ -13,7 +13,7 @@ export const barEmoji = (pct: number) => {
 };
 
 export function scoreCard(game: string, detail: string, scoreLine: string): string {
-  return `ACUITY · ${game} · ${detail}\n${scoreLine}\n${SITE_URL}`;
+  return `DELULU BEATS · ${game} · ${detail}\n${scoreLine}\n${SITE_URL}`;
 }
 
 /** Open the native share sheet (mobile, includes WhatsApp); fall back to clipboard. */

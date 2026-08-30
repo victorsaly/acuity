@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-// On GitHub Pages the site lives under /<repo>, injected by the
-// deploy workflow via PAGES_BASE_PATH. Local dev/build serve from /.
+// Keep optional subpath support for preview deployments. The production
+// custom domain builds at the root.
 const basePath = process.env.PAGES_BASE_PATH ?? "";
 
 const nextConfig: NextConfig = {
