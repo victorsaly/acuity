@@ -508,6 +508,7 @@ input[type="range"]::-moz-range-thumb {
 .memLogo span {
   width: 14px; height: 14px; border-radius: 4px;
   background: rgba(239, 240, 244, 0.12);
+  font-size: 9px; font-weight: 600; line-height: 14px; text-align: center; color: var(--ink);
 }
 .memLogo span.on { background: var(--bone); animation: logoPulse 3.6s ease-in-out infinite; }
 @keyframes logoPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
@@ -517,6 +518,12 @@ input[type="range"]::-moz-range-thumb {
   min-height: 1.4em; margin-bottom: 2.5vh; color: var(--bone); transition: color 0.12s;
 }
 .memHead.bad { color: #ff5f9e; }
+.memTime { margin-left: 14px; font-variant-numeric: tabular-nums; color: var(--muted); letter-spacing: 0.08em; }
+.memBar {
+  width: min(72vmin, 520px); height: 3px; border-radius: 2px; margin: -1.5vh 0 2vh;
+  background: rgba(239, 240, 244, 0.1); overflow: hidden;
+}
+.memBar div { height: 100%; background: var(--bone); transform-origin: left; transform: scaleX(1); }
 
 .memGrid {
   --size: min(72vmin, 520px);
@@ -533,10 +540,12 @@ input[type="range"]::-moz-range-thumb {
 .tile {
   border-radius: 12px; border: 1px solid var(--line);
   background: rgba(239, 240, 244, 0.05);
+  font-family: var(--font-display), system-ui, sans-serif; font-weight: 700;
+  font-size: calc(var(--size) / var(--n) * 0.42); color: var(--ink); padding: 0;
   transition: background 0.1s, transform 0.08s, box-shadow 0.12s, border-color 0.1s;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.memGrid.live .tile:hover { background: rgba(239, 240, 244, 0.12); border-color: rgba(239, 240, 244, 0.4); }
+.memGrid.live .tile:not(.hit):hover { background: rgba(239, 240, 244, 0.12); border-color: rgba(239, 240, 244, 0.4); }
 .memGrid.live .tile:active { transform: scale(0.94); }
 .tile.lit {
   background: #ffffff; border-color: #ffffff; transform: scale(1.05);
@@ -544,5 +553,5 @@ input[type="range"]::-moz-range-thumb {
 }
 .tile.hit { background: rgba(255, 255, 255, 0.88); border-color: #ffffff; }
 .tile.miss { background: #ff5f9e; border-color: #ff5f9e; box-shadow: 0 0 24px rgba(255, 95, 158, 0.5); }
-.tile.reveal { background: rgba(239, 240, 244, 0.06); border-color: #ffffff; box-shadow: inset 0 0 0 2px #ffffff; }
+.tile.reveal { background: rgba(239, 240, 244, 0.06); border-color: #ffffff; box-shadow: inset 0 0 0 2px #ffffff; color: var(--bone); }
 @media (prefers-reduced-motion: reduce) { .memLogo span.on { animation: none; } .memGrid.clear { animation: none; } }

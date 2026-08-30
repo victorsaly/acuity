@@ -109,6 +109,30 @@ export function uiBlip(freq = 587, vol = 0.05, dur = 0.07) {
   o1.stop(t + dur + 0.1); o2.stop(t + dur + 0.1); o3.stop(t + dur + 0.1);
 }
 
+/** Mallet pluck (Echo tiles): soft attack, four partials, the upper ones dying first, wet with reverb. */
+export function pluck(freq: number, vol = 0.09, dur = 0.6) {
+  const c = audio();
+  const t = c.currentTime;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  const partials: [number, number, OscillatorType, number][] = [
+    [1, 1, "sine", 1], [2, 0.32, "sine", 0.55], [3, 0.14, "triangle", 0.3], [4.01, 0.07, "sine", 0.22],
+  ];
+  for (const [mult, amp, type, life] of partials) {
+    const o = c.createOscillator();
+    o.type = type;
+    o.frequency.value = freq * mult;
+    const pg = c.createGain();
+    pg.gain.setValueAtTime(amp, t);
+    pg.gain.exponentialRampToValueAtTime(0.0001, t + dur * life);
+    o.connect(pg); pg.connect(g);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  out(g, 0.45);
+}
+
 /** Wrong-answer thud: a low sawtooth pitch-drop through a closing lowpass. */
 export function buzz() {
   const c = audio();

@@ -99,7 +99,7 @@ export default function Hub() {
                   </svg>
                 </div>
                 <h2>Echo</h2>
-                <p>Tiles light up, then go dark. Tap the pattern back as the grid keeps growing.</p>
+                <p>Numbered tiles flash and vanish. Tap them back in order before the clock runs out.</p>
                 <CardStats game="memory" />
                 <span className="go">Play ▸</span>
               </Link>

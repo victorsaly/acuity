@@ -10,7 +10,7 @@ worse than you think — prove otherwise.
 | **Afterimage** | Color memory | Five colors flood the screen, then you rebuild each one from HSL sliders |
 | **Sine Language** | Pitch memory | Five tones play once, then you dial each back in on a log-scale frequency slider |
 | **Downbeat** | Rhythm | Notes with little faces ride a living lane toward a hit ring — tap dead on time |
-| **Echo** | Spatial memory | Tiles light up on a 3×3–5×5 grid, then go dark — tap the pattern back (all at once, or in order) as each level adds a tile |
+| **Echo** | Spatial memory | Numbered tiles appear on a 4×4–6×6 grid, then vanish — tap them back in order before the clock runs out, one more tile per level |
 
 ## Features
 

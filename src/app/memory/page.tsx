@@ -7,54 +7,59 @@ import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
 import { scoreCard } from "@/lib/share";
-import { uiBlip, buzz } from "@/lib/audio";
+import { uiBlip, pluck, buzz } from "@/lib/audio";
+
+/*
+ * Echo — numbered tiles appear on a grid, vanish, and you tap them back
+ * in order before the clock runs out. Every level adds a tile.
+ */
 
 type Phase = "menu" | "show" | "recall" | "results";
 type Fmt = "flash" | "trail";
 type Mark = "" | "lit" | "hit" | "miss" | "reveal";
 
 const DIFFS: DiffDef[] = [
-  { key: "easy", label: "Easy", sub: "3×3 grid", note: 523 },
-  { key: "hard", label: "Hard", sub: "4×4 grid", note: 659 },
-  { key: "brutal", label: "Brutal", sub: "5×5 grid", note: 784 },
+  { key: "easy", label: "Easy", sub: "4×4 · 1.1s per tile", note: 523 },
+  { key: "hard", label: "Hard", sub: "5×5 · 0.85s per tile", note: 659 },
+  { key: "brutal", label: "Brutal", sub: "6×6 · 0.65s per tile", note: 784 },
 ];
-const GRID: Record<string, number> = { easy: 3, hard: 4, brutal: 5 };
-const FLASH_MS: Record<string, number> = { easy: 1400, hard: 1100, brutal: 800 };  // whole pattern shown
-const STEP_MS: Record<string, number> = { easy: 520, hard: 400, brutal: 300 };     // per tile, trail
+const GRID: Record<string, number> = { easy: 4, hard: 5, brutal: 6 };
+const START_TILES = 4;                                                             // level 1
+const FLASH: Record<string, [number, number]> = { easy: [800, 280], hard: [600, 220], brutal: [420, 160] }; // base + per tile
+const STEP_MS: Record<string, number> = { easy: 480, hard: 380, brutal: 280 };     // trail, per tile
+const RECALL_PER_TILE: Record<string, number> = { easy: 1100, hard: 850, brutal: 650 };
+const RECALL_MIN = 2500;
 const FORMATS = [
-  { key: "flash", label: "Flash · all at once" },
-  { key: "trail", label: "Trail · in order" },
+  { key: "flash", label: "Flash · numbers at once" },
+  { key: "trail", label: "Trail · one by one" },
 ];
 const LIVES = 3;
 
-/** Pentatonic pitch per tile: higher rows ring higher, columns step up. */
-function tileFreq(i: number, n: number): number {
+/** Pentatonic pitch for the k-th number (1-based): the sequence climbs as you get it right. */
+function numFreq(k: number): number {
   const scale = [0, 2, 4, 7, 9];
-  const row = Math.floor(i / n), col = i % n;
-  const deg = col + (n - 1 - row);
-  const semis = Math.floor(deg / 5) * 12 + scale[deg % 5];
-  return 261.63 * Math.pow(2, semis / 12);
+  const d = k - 1;
+  return 261.63 * Math.pow(2, (Math.floor(d / 5) * 12 + scale[d % 5]) / 12);
 }
 
-/* mutable run state lives in a ref so timers never see stale closures */
 type Run = {
   rng: () => number;
-  level: number;        // current level (1-based)
+  level: number;
   lives: number;
   cleared: number;      // levels completed
   tiles: number;        // tiles correctly recalled across the run
-  taps: number;         // total taps
-  pattern: number[];
-  picked: number[];
+  taps: number;
+  pattern: number[];    // cell index per number (pattern[0] is "1")
+  picked: number;       // how many numbers found this level
   marks: Mark[];
   head: string;
   flip: boolean;
+  limit: number;        // recall time allowed, ms
 };
-
 type View = Omit<Run, "rng">;
-const EMPTY_VIEW: View = {
+const EMPTY: View = {
   level: 1, lives: LIVES, cleared: 0, tiles: 0, taps: 0,
-  pattern: [], picked: [], marks: [], head: "", flip: false,
+  pattern: [], picked: 0, marks: [], head: "", flip: false, limit: 0,
 };
 
 export default function MemoryGame() {
@@ -66,16 +71,15 @@ export default function MemoryGame() {
   const fmt = fmtStr as Fmt;
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
-  /* render-side snapshot of the run; logic mutates the ref, then publishes */
-  const [view, setView] = useState<View>(EMPTY_VIEW);
+  const [view, setView] = useState<View>(EMPTY);   // render-side snapshot; logic mutates the ref
 
   const n = GRID[diff];
   const cells = n * n;
-  const R = useRef<Run>({
-    rng: Math.random, level: 1, lives: LIVES, cleared: 0, tiles: 0, taps: 0,
-    pattern: [], picked: [], marks: [], head: "", flip: false,
-  });
+  const R = useRef<Run>({ rng: Math.random, ...EMPTY });
   const timers = useRef<number[]>([]);
+  const clock = useRef({ deadline: 0, total: 1, nextTick: 0 });
+  const barRef = useRef<HTMLDivElement>(null);
+  const timeRef = useRef<HTMLSpanElement>(null);
   const clear = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => clear, []);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
@@ -87,52 +91,51 @@ export default function MemoryGame() {
     publish();
   };
   const blank = () => Array<Mark>(cells).fill("");
-  const ring = (i: number, vol = 0.07, dur = 0.22) => uiBlip(tileFreq(i, n) / 2, vol, dur);
 
-  /* ---------- a level: build the pattern, show it, hand over ---------- */
+  /* ---------- a level: build, show, hand over with the clock running ---------- */
   const runLevel = () => {
     const g = R.current;
-    const count = Math.min(g.level + 2, cells - 1);
+    const count = Math.min(g.level + START_TILES - 1, cells - 1);
     const pool = Array.from({ length: cells }, (_, i) => i);
-    for (let i = pool.length - 1; i > 0; i--) {           // partial Fisher–Yates, seeded
+    for (let i = pool.length - 1; i > 0; i--) {           // Fisher–Yates, seeded
       const j = Math.floor(g.rng() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     g.pattern = pool.slice(0, count);
-    g.picked = [];
+    g.picked = 0;
     g.flip = false;
+    g.limit = Math.max(RECALL_MIN, count * RECALL_PER_TILE[diff]);
     setPhase("show");
     setMarks(blank(), "Watch");
 
+    const handOver = () => {
+      clock.current = { deadline: performance.now() + g.limit, total: g.limit, nextTick: 0 };
+      setMarks(blank(), "Your turn");
+      setPhase("recall");
+    };
+
     if (fmt === "flash") {
+      const [base, per] = FLASH[diff];
       later(() => {
         const m = blank();
         g.pattern.forEach((p) => { m[p] = "lit"; });
         setMarks(m);
-        g.pattern.forEach((p, k) => later(() => ring(p, 0.045, 0.16), k * 45));
-        later(() => {
-          setMarks(blank());
-          later(() => { setMarks(blank(), "Your turn"); setPhase("recall"); }, 260);
-        }, FLASH_MS[diff]);
+        g.pattern.forEach((_, k) => later(() => pluck(numFreq(k + 1), 0.05, 0.4), k * 55));
+        later(() => { setMarks(blank()); later(handOver, 260); }, base + per * count);
       }, 380);
     } else {
       const step = STEP_MS[diff];
       g.pattern.forEach((p, k) => {
-        later(() => {
-          const m = blank(); m[p] = "lit"; setMarks(m); ring(p, 0.06, 0.2);
-        }, 380 + k * step);
-        later(() => setMarks(blank()), 380 + k * step + step * 0.68);
+        later(() => { const m = blank(); m[p] = "lit"; setMarks(m); pluck(numFreq(k + 1), 0.07, 0.5); }, 380 + k * step);
+        later(() => setMarks(blank()), 380 + k * step + step * 0.7);
       });
-      later(() => { setMarks(blank(), "Your turn"); setPhase("recall"); }, 380 + g.pattern.length * step + 200);
+      later(handOver, 380 + count * step + 200);
     }
   };
 
   const start = () => {
     clear();
-    R.current = {
-      rng: rngFor(mode, "memory", diff), level: 1, lives: LIVES, cleared: 0, tiles: 0, taps: 0,
-      pattern: [], picked: [], marks: [], head: "", flip: false,
-    };
+    R.current = { rng: rngFor(mode, "memory", diff), ...EMPTY };
     runLevel();
   };
 
@@ -143,51 +146,73 @@ export default function MemoryGame() {
     if (isRecord) setBest(key, g.cleared);
     setRecord(isRecord);
     recordPlay("memory");
-    setRunStamp(Date.now());
+    setRunStamp((s) => s + 1);
     setPhase("results");
+  };
+
+  /** A miss (wrong tile, or the clock): reveal the order, burn a life. */
+  const fail = (wrongCell: number | null, head: string) => {
+    const g = R.current;
+    g.lives--;
+    const m = [...g.marks];
+    if (wrongCell !== null) m[wrongCell] = "miss";
+    g.pattern.forEach((p) => { if (m[p] !== "hit" && m[p] !== "miss") m[p] = "reveal"; });
+    buzz();
+    setPhase("show");
+    setMarks(m, g.lives > 0 ? head : "Out of lives");
+    later(g.lives > 0 ? runLevel : finish, 1400);
   };
 
   const tap = (i: number) => {
     const g = R.current;
     if (phase !== "recall" || g.marks[i] === "hit") return;
     g.taps++;
-    const want = fmt === "trail" ? g.pattern[g.picked.length] === i : g.pattern.includes(i);
+    if (g.pattern[g.picked] !== i) { fail(i, "Wrong order"); return; }
+
+    g.picked++;
+    g.tiles++;
     const m = [...g.marks];
+    m[i] = "hit";
+    pluck(numFreq(g.picked), 0.1, 0.65);
+    if (g.picked < g.pattern.length) { setMarks(m); return; }
 
-    if (want) {
-      g.picked.push(i);
-      g.tiles++;
-      m[i] = "hit";
-      ring(i);
-      if (g.picked.length < g.pattern.length) { setMarks(m); return; }
-      /* level cleared */
-      g.cleared++;
-      g.level++;
-      g.flip = true;
-      setPhase("show");
-      setMarks(m, "Nice");
-      [0, 1, 2].forEach((k) => later(() => uiBlip(523 * Math.pow(2, k / 3), 0.05, 0.14), 60 + k * 70));
-      later(runLevel, 720);
-      return;
-    }
-
-    /* wrong tile: show what the pattern was, burn a life */
-    g.lives--;
-    m[i] = "miss";
-    g.pattern.forEach((p) => { if (m[p] !== "hit") m[p] = "reveal"; });
-    buzz();
+    /* level cleared */
+    g.cleared++;
+    g.level++;
+    g.flip = true;
     setPhase("show");
-    setMarks(m, g.lives > 0 ? "Miss" : "Out of lives");
-    later(g.lives > 0 ? runLevel : finish, 1100);
+    setMarks(m, "Clear");
+    [0, 1, 2].forEach((k) => later(() => uiBlip(523 * Math.pow(2, k / 3), 0.05, 0.14), 60 + k * 70));
+    later(runLevel, 760);
   };
+
+  /* recall clock: bar drains, hundredths tick down, ticks accelerate in the last stretch */
+  useEffect(() => {
+    if (phase !== "recall") return;
+    let raf = 0;
+    const loop = () => {
+      const cd = clock.current;
+      const now = performance.now();
+      const rem = Math.max(0, cd.deadline - now);
+      const frac = rem / cd.total;
+      if (barRef.current) barRef.current.style.transform = `scaleX(${frac})`;
+      if (timeRef.current) timeRef.current.textContent = (rem / 1000).toFixed(2);
+      if (rem <= 0) { fail(null, "Time"); return; }
+      if (rem < 3000 && now >= cd.nextTick) {
+        const p = 1 - rem / 3000;
+        uiBlip(420 + p * 700, 0.03 + p * 0.03, 0.05);
+        cd.nextTick = now + 90 + 420 * Math.pow(1 - p, 1.5);
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && phase !== "menu" && !document.fullscreenElement) { clear(); setPhase("menu"); return; }
-      if (phase === "recall" && n === 3) {                 // numpad layout: 7 8 9 is the top row
-        const k = parseInt(e.key, 10);
-        if (k >= 1 && k <= 9) tap((2 - Math.floor((k - 1) / 3)) * 3 + (k - 1) % 3);
-      }
+      if (e.key === "Escape" && phase !== "menu" && !document.fullscreenElement) { clear(); setPhase("menu"); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -201,12 +226,13 @@ export default function MemoryGame() {
           <Item><h1 className="wordmark">Echo</h1></Item>
           <Item>
             <div className="memLogo" aria-hidden>
-              {Array.from({ length: 9 }, (_, i) => (
-                <span key={i} className={[0, 4, 5, 7].includes(i) ? "on" : ""} style={{ animationDelay: `${(i % 4) * -0.9}s` }} />
-              ))}
+              {Array.from({ length: 9 }, (_, i) => {
+                const k = [0, 4, 5, 7].indexOf(i);
+                return <span key={i} className={k >= 0 ? "on" : ""} style={{ animationDelay: `${k * -0.9}s` }}>{k >= 0 ? k + 1 : ""}</span>;
+              })}
             </div>
           </Item>
-          <Item><p className="tagline">Tiles light up, then go dark. Tap the pattern back — every level adds one more, and three misses end the run.</p></Item>
+          <Item><p className="tagline">Numbered tiles appear, then vanish. Tap them back in order before the clock runs out — every level adds a tile, three misses end the run.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="memory" diffs={DIFFS} diff={diff} mode={mode}
               onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
@@ -220,39 +246,51 @@ export default function MemoryGame() {
   const g = view;
   const best = getBest(scoreKey("memory", mode, diff));
   const acc = g.taps ? Math.round((g.tiles / g.taps) * 100) : 100;
+  const numberOf = (cell: number) => { const k = g.pattern.indexOf(cell); return k >= 0 ? k + 1 : ""; };
 
   if (phase === "show" || phase === "recall") {
+    const bad = g.head === "Wrong order" || g.head === "Time" || g.head === "Out of lives";
     return (
       <main className="stage">
         <div className="tempoHud memHud">
           <span>Level <b>{g.level}</b></span>
           <span><b>{"●".repeat(g.lives)}{"○".repeat(LIVES - g.lives)}</b></span>
-          <span><b>{g.pattern.length}</b> tiles</span>
-          <span><b>{g.picked.length}/{g.pattern.length}</b> found</span>
+          <span><b>{g.picked}/{g.pattern.length}</b> in order</span>
           <span><b>{g.tiles}</b> recalled</span>
           <span><b>{acc}%</b> acc</span>
           {best > 0 && <span>best <b>{best}</b></span>}
         </div>
-        <div className={`memHead ${g.head === "Miss" || g.head === "Out of lives" ? "bad" : ""}`}>{g.head}</div>
+        <div className={`memHead ${bad ? "bad" : ""}`}>
+          {g.head}
+          {phase === "recall" && <span className="memTime" ref={timeRef}>{(g.limit / 1000).toFixed(2)}</span>}
+        </div>
+        <div className="memBar" aria-hidden>
+          <div ref={barRef} style={{ transform: phase === "recall" ? undefined : "scaleX(0)" }} />
+        </div>
         <div
           className={`memGrid ${g.flip ? "clear" : ""} ${phase === "recall" ? "live" : ""}`}
           style={{ "--n": n } as CSSProperties}
           role="grid"
           aria-label={`${n} by ${n} tiles`}
         >
-          {Array.from({ length: cells }, (_, i) => (
-            <button
-              key={i}
-              className={`tile ${g.marks[i] ?? ""}`}
-              data-silent
-              aria-label={`Tile ${i + 1}`}
-              onPointerDown={(e) => { if (e.button === 0) tap(i); }}
-            />
-          ))}
+          {Array.from({ length: cells }, (_, i) => {
+            const mk = g.marks[i] ?? "";
+            return (
+              <button
+                key={i}
+                className={`tile ${mk}`}
+                data-silent
+                aria-label={`Tile ${i + 1}`}
+                onPointerDown={(e) => { if (e.button === 0) tap(i); }}
+              >
+                {mk === "lit" || mk === "hit" || mk === "reveal" ? numberOf(i) : ""}
+              </button>
+            );
+          })}
         </div>
         <div className="tapHint">
-          {fmt === "trail" ? "Tap the tiles in the order they lit" : "Tap every tile that lit up"}
-          {n === 3 && <span className="deskHint" style={{ position: "static", display: "block", marginTop: 6 }}>Keys 1–9 work like a numpad · Esc menu</span>}
+          Tap 1, 2, 3… in order · {(g.limit / 1000).toFixed(1)}s on the clock
+          <span className="deskHint" style={{ position: "static", display: "block", marginTop: 6 }}>Esc menu</span>
         </div>
       </main>
     );
@@ -279,7 +317,7 @@ export default function MemoryGame() {
         <Item className="stat"><b>{g.cleared}</b><span>levels</span></Item>
         <Item className="stat"><b>{g.tiles}</b><span>tiles recalled</span></Item>
         <Item className="stat"><b>{acc}%</b><span>accuracy</span></Item>
-        <Item className="stat"><b>{Math.min(g.cleared + 2, cells - 1)}</b><span>tiles at peak</span></Item>
+        <Item className="stat"><b>{Math.min(g.cleared + START_TILES, cells - 1)}</b><span>tiles at peak</span></Item>
       </Stagger>
       <div className="resActions">
         <button className="cta" data-note={440} onClick={start}>Play again</button>
