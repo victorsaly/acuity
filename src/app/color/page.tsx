@@ -129,8 +129,9 @@ export default function ColorGame() {
     } else {
       const total = targets.reduce((sum, t, i) => sum + scoreOf(t, next[i]), 0);
       const key = scoreKey("color", diff);
-      const isRecord = total > getBest(key) && total > 0;
-      if (isRecord) setBest(key, Math.round(total * 10) / 10);
+      const rounded = Math.round(total * 10) / 10;
+      const isRecord = rounded > getBest(key) && rounded > 0;
+      if (isRecord) setBest(key, rounded);
       setRecord(isRecord);
       recordPlay("color");
       setRunStamp(Date.now());

@@ -329,7 +329,7 @@ export default function PianoGame() {
           <Item><p className="tagline">A piano phrase plays, then it&apos;s yours — hit the same notes in the same order. Every level adds a note to the same melody; three slips end the run.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="piano" diffs={DIFFS} diff={diff}
-              onDiff={setDiff} onStart={start} refreshToken={runStamp}
+              onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `level ${b}`}
               formats={FORMATS} format={fmtStr} onFormat={setFmt}
               beats={PHRASES} beat={phraseStr} onBeat={setPhrase}
               helpContent={{
@@ -427,7 +427,7 @@ export default function PianoGame() {
         <ShareScore text={scoreCard(
           "Refrain",
           `${diff} · ${fmt === "watch" ? "watch" : "by ear"}`,
-          `Level ${g.cleared} ${barEmoji(g.cleared * 10)}`,
+          `Level ${g.cleared} ${barEmoji(g.cleared * 5)}`,
           "piano",
           diff,
         )} />

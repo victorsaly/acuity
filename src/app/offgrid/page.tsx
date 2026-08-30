@@ -193,7 +193,7 @@ export default function OffGridGame() {
           <Item><h1 className="wordmark">Off-Grid</h1></Item>
           <Item><p className="tagline">Eight hits, and exactly one of them is late. Easy round one — but the nudge shrinks every round until it is almost nothing.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="offgrid" diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
+            <GameSetup game="offgrid" diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `${b} / 50`}
               helpContent={{
                 title: "Off-Grid",
                 description: "A producer's ear test: hear which hit drags behind the grid.",

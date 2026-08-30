@@ -126,8 +126,9 @@ export default function TimeGame() {
     if (slot === SLOTS - 1) {
       const total = targets.reduce((sum, target, index) => sum + scoreOf(target, next[index]), 0);
       const key = scoreKey("time", diff);
-      const isRecord = total > getBest(key) && total > 0;
-      if (isRecord) setBest(key, Math.round(total * 10) / 10);
+      const rounded = Math.round(total * 10) / 10;
+      const isRecord = rounded > getBest(key) && rounded > 0;
+      if (isRecord) setBest(key, rounded);
       setRecord(isRecord);
       recordPlay("time");
       setRunStamp((value) => value + 1);

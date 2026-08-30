@@ -13,7 +13,7 @@ const noopSubscribe = () => () => {};
 export default function GameSetup({
   game, diffs, diff, onDiff, onStart, refreshToken,
   sounds, sound, onSound, formats, format, onFormat, beats, beat, onBeat,
-  helpContent,
+  helpContent, formatBest,
 }: {
   game: string;
   diffs: DiffDef[];
@@ -31,6 +31,8 @@ export default function GameSetup({
   beat?: string;
   onBeat?: (k: string) => void;
   helpContent?: { title: string; description: string; steps: string[] };
+  /** Render the best score; defaults to one decimal. Level-based games pass their own. */
+  formatBest?: (best: number) => string;
 }) {
   const [showHelp, setShowHelp] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -193,7 +195,7 @@ export default function GameSetup({
       )}
       <div className="best">
         {best > 0
-          ? `Best · ${diff} · ${best.toFixed(1)}`
+          ? `Best · ${diff} · ${formatBest ? formatBest(best) : best.toFixed(1)}`
           : `No score yet · ${diff}`}
       </div>
       <div className="kbd">

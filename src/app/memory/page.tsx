@@ -233,7 +233,7 @@ export default function MemoryGame() {
           <Item><p className="tagline">Numbered tiles appear, then vanish. Tap them back in order before the clock runs out — every level adds a tile, three misses end the run.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="memory" diffs={DIFFS} diff={diff}
-              onDiff={setDiff} onStart={start} refreshToken={runStamp}
+              onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `level ${b}`}
               formats={FORMATS} format={fmt} onFormat={setFmt}
               helpContent={{
                 title: "Echo",
@@ -331,7 +331,7 @@ export default function MemoryGame() {
         <ShareScore text={scoreCard(
           "Echo",
           `${diff} · ${fmt}`,
-          `Level ${g.cleared} ${barEmoji(g.cleared * 10)}`,
+          `Level ${g.cleared} ${barEmoji(g.cleared * 5)}`,
           "memory",
           diff,
         )} />

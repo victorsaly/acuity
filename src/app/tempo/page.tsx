@@ -360,7 +360,10 @@ export default function TempoGame() {
 
       /* hud — only touch React state when something changed */
       const mark = r.marks.find((m) => nowT < m.to + 0.8);
-      const pts = Math.round(Math.max(0, r.points * 10 - r.strays * 1.5) * 10) / 10;
+      /* same scale as runScore, over the notes resolved so far, so it converges
+         exactly on the final score instead of running on its own scale */
+      const resolved = r.counts.perfect + r.counts.good + r.counts.ok + r.counts.miss;
+      const pts = Math.round(Math.max(0, ((r.points - r.strays * 0.15) / Math.max(1, resolved)) * 100) * 10) / 10;
       if (mark && (mark.label !== lastHudTrack || r.combo !== lastHudCombo || pts !== lastHudPts)) {
         lastHudTrack = mark.label;
         lastHudCombo = r.combo;
@@ -575,8 +578,9 @@ export default function TempoGame() {
         r.done = true;
         const total = runScore(r);
         const key = scoreKey("tempo", diff);
-        const isRecord = total > getBest(key) && total > 0;
-        if (isRecord) setBest(key, Math.round(total * 10) / 10);
+        const rounded = Math.round(total * 10) / 10;
+        const isRecord = rounded > getBest(key) && rounded > 0;
+        if (isRecord) setBest(key, rounded);
         setRecord(isRecord);
         recordPlay("tempo");
         setRunStamp(Date.now());
@@ -676,7 +680,7 @@ export default function TempoGame() {
             <span><b>{hud.track}</b></span>
             <span><b>{hud.bpm}</b> BPM</span>
             <span>combo <b>{hud.combo}</b></span>
-            <span><b>{hud.pts.toFixed(1)}</b> pts</span>
+            <span><b>{hud.pts.toFixed(1)}</b> / 100</span>
           </div>
           {judge && (
             <div key={judge.id} className="judge pop" style={{ color: judge.color }}>
