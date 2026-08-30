@@ -21,7 +21,21 @@ export default function Hub() {
   return (
     <main className="stage menuStage">
       <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-        <Item><h1 className="wordmark">Delulu Beats</h1></Item>
+        <Item>
+          <div className="brandLockup">
+            <svg className="brandMark" viewBox="0 0 64 64" aria-hidden>
+              <circle cx="32" cy="32" r="17" fill="none" stroke="#f0f0f4" strokeWidth="4" />
+              <circle className="brandBeat" cx="32" cy="32" r="7" fill="none" stroke="#f0f0f4" strokeWidth="1.5" />
+              <circle className="brandCore" cx="32" cy="32" r="5" fill="#f0f0f4" />
+              <g className="brandSatellite">
+                <circle cx="32" cy="9" r="2.5" fill="#f0f0f4" />
+              </g>
+            </svg>
+            <h1 className="wordmark brandName">
+              <span>Delulu</span>{" "}<span>Beats</span>
+            </h1>
+          </div>
+        </Item>
         <Item>
           <p className="tagline">
             Six full-screen perception games. Your memory for color, pitch, melody,
