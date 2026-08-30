@@ -48,6 +48,14 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   background: rgba(12, 13, 18, 0.5);
 }
 .fsBtn:hover { border-color: var(--bone); color: var(--bone); }
+.soundGate {
+  bottom: 18px; left: 50%; transform: translateX(-50%);
+  z-index: 60;
+  padding: 10px 16px; border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(12, 13, 18, 0.88);
+  color: var(--bone);
+}
 .fsBtn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 .homeLink {
   top: 18px; left: 18px;
@@ -536,7 +544,7 @@ input[type="range"]::-moz-range-thumb {
   .stage { padding: 14px 12px 18px; }
   .menuStage {
     padding-top: 12px;
-    padding-bottom: 12px;
+    padding-bottom: 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -617,6 +625,13 @@ input[type="range"]::-moz-range-thumb {
     width: 100%;
     margin-top: auto;
     padding-top: 12px;
+    font-size: 9px;
+    line-height: 1.5;
+    letter-spacing: 0.12em;
+  }
+  .touchNote {
+    max-width: 32ch;
+    margin-inline: auto;
   }
   .diffs, .modes { padding: 0 6px; }
   .tempoHud { flex-wrap: wrap; gap: 10px 22px; padding: 0 60px; }

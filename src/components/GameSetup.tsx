@@ -37,6 +37,8 @@ export default function GameSetup({
   helpContent?: { title: string; description: string; steps: string[] };
 }) {
   const [showHelp, setShowHelp] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const hasExtraOptions = Boolean((sounds && onSound) || (formats && onFormat) || (beats && onBeat));
 
   /* localStorage read that is SSR-safe and refreshes whenever props change */
   const best = useSyncExternalStore(
@@ -79,22 +81,6 @@ export default function GameSetup({
 
   return (
     <>
-      {beats && onBeat && (
-        <div className="modes beatRow" role="group" aria-label="Beat">
-          {beats.map((b, i) => (
-            <button
-              key={b.key}
-              className="mode"
-              aria-pressed={beat === b.key}
-              data-note={330 + i * 44}
-              onClick={() => onBeat(b.key)}
-            >
-              {b.label}
-              {b.sub && <small> {b.sub}</small>}
-            </button>
-          ))}
-        </div>
-      )}
       <div className="diffs" role="group" aria-label="Difficulty">
         {diffs.map((d) => (
           <button
@@ -109,36 +95,6 @@ export default function GameSetup({
           </button>
         ))}
       </div>
-      {sounds && onSound && (
-        <div className="modes" role="group" aria-label="Sound">
-          {sounds.map((s, i) => (
-            <button
-              key={s.key}
-              className="mode"
-              aria-pressed={sound === s.key}
-              data-note={440 + i * 52}
-              onClick={() => onSound(s.key)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      )}
-      {formats && onFormat && (
-        <div className="modes" role="group" aria-label="Format">
-          {formats.map((f, i) => (
-            <button
-              key={f.key}
-              className="mode"
-              aria-pressed={format === f.key}
-              data-note={392 + i * 60}
-              onClick={() => onFormat(f.key)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      )}
       <div className="modes" role="group" aria-label="Mode">
         <button className="mode" aria-pressed={mode === "free"} data-note="392" onClick={() => onMode("free")}>
           Free play
@@ -147,6 +103,69 @@ export default function GameSetup({
           Daily
         </button>
       </div>
+      {hasExtraOptions && (
+        <div className="optionToggleWrap">
+          <button
+            type="button"
+            className="ghost optionToggle"
+            data-note="349"
+            onClick={() => setShowOptions((v) => !v)}
+            aria-expanded={showOptions}
+          >
+            {showOptions ? "Hide options" : "More options"}
+          </button>
+        </div>
+      )}
+      {showOptions && (
+        <>
+          {beats && onBeat && (
+            <div className="modes beatRow" role="group" aria-label="Beat">
+              {beats.map((b, i) => (
+                <button
+                  key={b.key}
+                  className="mode"
+                  aria-pressed={beat === b.key}
+                  data-note={330 + i * 44}
+                  onClick={() => onBeat(b.key)}
+                >
+                  {b.label}
+                  {b.sub && <small> {b.sub}</small>}
+                </button>
+              ))}
+            </div>
+          )}
+          {sounds && onSound && (
+            <div className="modes" role="group" aria-label="Sound">
+              {sounds.map((s, i) => (
+                <button
+                  key={s.key}
+                  className="mode"
+                  aria-pressed={sound === s.key}
+                  data-note={440 + i * 52}
+                  onClick={() => onSound(s.key)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {formats && onFormat && (
+            <div className="modes" role="group" aria-label="Format">
+              {formats.map((f, i) => (
+                <button
+                  key={f.key}
+                  className="mode"
+                  aria-pressed={format === f.key}
+                  data-note={392 + i * 60}
+                  onClick={() => onFormat(f.key)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
       <div className="menuActions">
         {helpContent && (
           <button className="ghost helpToggle" data-note="349" onClick={() => setShowHelp(true)}>

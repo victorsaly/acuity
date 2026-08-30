@@ -27,31 +27,39 @@ let dryBus: GainNode;
 let duckBus: GainNode;
 let wetSend: GainNode;
 
-let primed = false;
-
 function prime(c: AudioContext) {
-  if (primed) return;
-  const src = c.createBufferSource();
-  src.buffer = c.createBuffer(1, 1, c.sampleRate);
-  const g = c.createGain();
-  g.gain.value = 0;
-  src.connect(g);
-  g.connect(c.destination);
-  src.start();
-  src.stop(c.currentTime + 0.001);
-  primed = true;
+  try {
+    const src = c.createBufferSource();
+    src.buffer = c.createBuffer(1, 1, c.sampleRate);
+    const g = c.createGain();
+    g.gain.value = 0;
+    src.connect(g);
+    g.connect(c.destination);
+    src.start();
+    src.stop(c.currentTime + 0.001);
+  } catch {
+    /* ignore */
+  }
 }
 
-export async function unlockAudio() {
+/** Current context state — "none" before the context exists. */
+export function audioState(): "none" | AudioContextState {
+  return ctx ? ctx.state : "none";
+}
+
+/**
+ * Must be called from inside a real user gesture. WebKit only lifts the
+ * mute if resume() and a buffer start happen synchronously on that gesture,
+ * so we prime immediately and again once resume() settles.
+ */
+export function unlockAudio(): Promise<void> {
   const c = audio();
-  if (c.state === "suspended") {
-    try {
-      await c.resume();
-    } catch {
-      return;
-    }
-  }
-  if (c.state === "running") prime(c);
+  prime(c);                                  // synchronous, still inside the gesture
+  if (c.state !== "suspended") return Promise.resolve();
+  return c
+    .resume()
+    .then(() => { prime(c); })
+    .catch(() => {});
 }
 
 export function audio(): AudioContext {
