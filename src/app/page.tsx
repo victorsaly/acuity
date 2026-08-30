@@ -162,18 +162,28 @@ export default function Hub() {
           <Item style={cardWrap}>
             <Tilt style={{ display: "flex", width: "100%" }}>
               <Link href="/fever" className="hubCard" data-note={1047} style={{ width: "100%" }}>
-                <div className="art" aria-hidden style={{ height: 94, background: "repeating-linear-gradient(135deg, #ff4f64 0 14px, #e83c57 14px 28px)" }}>
-                  <svg viewBox="0 0 200 94" style={{ width: "100%", height: "100%" }}>
-                    <path d="M18 22l12-13 6 17M170 13l12 11-14 8M18 72l14 10 3-16M173 66l12 9-14 7" fill="none" stroke="#f7f04a" strokeWidth="5" strokeLinecap="round" />
-                    <rect x="27" y="13" width="146" height="69" fill="#d9d8d2" stroke="#ffffff" strokeWidth="6" />
-                    <rect x="38" y="24" width="91" height="44" fill="#25283f" stroke="#0c0d12" strokeWidth="5" />
-                    <path d="M42 31h83M42 40h83M42 49h83M42 58h83" stroke="#42e8dc" strokeOpacity=".22" strokeWidth="2" />
-                    <ellipse cx="84" cy="54" rx="24" ry="14" fill="#f7f04a" stroke="#0c0d12" strokeWidth="4" />
-                    <circle cx="77" cy="51" r="3" fill="#0c0d12" />
-                    <circle cx="91" cy="51" r="3" fill="#0c0d12" />
-                    <rect x="139" y="23" width="24" height="12" fill="#0c0d12" />
-                    <circle cx="151" cy="48" r="8" fill="#42e8dc" stroke="#0c0d12" strokeWidth="4" />
-                    <circle cx="151" cy="68" r="8" fill="#f7f04a" stroke="#0c0d12" strokeWidth="4" />
+                <div className="art" aria-hidden>
+                  <svg viewBox="0 0 200 72" style={{ width: "100%", height: "100%" }}>
+                    <g stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" fill="none">
+                      <path d="M23 26c-4 6-4 14 0 20" opacity=".45" />
+                      <path d="M13 20c-6 9-6 23 0 32" opacity=".2" />
+                      <path d="M177 26c4 6 4 14 0 20" opacity=".45" />
+                      <path d="M187 20c6 9 6 23 0 32" opacity=".2" />
+                    </g>
+                    <g className="feverShake">
+                      <path d="M52 60v6M148 60v6" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" opacity=".55" />
+                      <rect x="36" y="10" width="128" height="50" rx="7" fill="none" stroke="#ffffff" strokeWidth="3" />
+                      <rect x="44" y="18" width="74" height="34" rx="4" fill="rgba(239,240,244,.07)" stroke="rgba(239,240,244,.45)" strokeWidth="2" />
+                      <path d="M50 25h62M50 47h62" stroke="rgba(239,240,244,.14)" strokeWidth="2" strokeLinecap="round" />
+                      <path d="M72 24q9-7 18 0" fill="none" stroke="rgba(239,240,244,.4)" strokeWidth="2" strokeLinecap="round" />
+                      <ellipse cx="81" cy="40" rx="12" ry="10" fill="#ffffff" />
+                      <circle cx="76.5" cy="38" r="2.2" fill="#0c0d12" />
+                      <circle cx="85.5" cy="38" r="2.2" fill="#0c0d12" />
+                      <path d="M77.5 44q3.5 3 7 0" fill="none" stroke="#0c0d12" strokeWidth="1.8" strokeLinecap="round" />
+                      <rect x="126" y="18" width="30" height="10" rx="2" fill="#ffffff" opacity=".85" />
+                      <circle cx="134" cy="42" r="5.5" fill="none" stroke="#ffffff" strokeWidth="2.5" />
+                      <circle cx="148" cy="42" r="5.5" fill="#ffffff" opacity=".45" />
+                    </g>
                   </svg>
                 </div>
                 <h2>Fever Dream</h2>
@@ -186,12 +196,22 @@ export default function Hub() {
           <Item style={cardWrap}>
             <Tilt style={{ display: "flex", width: "100%" }}>
               <Link href="/phantom" className="hubCard" data-note={1175} style={{ width: "100%" }}>
-                <div className="art" aria-hidden style={{ height: 94, background: "#15172b" }}>
-                  <svg viewBox="0 0 200 94" style={{ width: "100%", height: "100%" }}>
-                    <path d="M0 47h9l7-17 8 36 9-52 9 66 9-45 8 21 8-9h12" fill="none" stroke="#dfff45" strokeWidth="5" strokeLinejoin="round" />
-                    <path d="M122 47h10l7-12 8 34 9-57 8 68 9-43 8 19 8-9h11" fill="none" stroke="#ff456f" strokeWidth="5" strokeLinejoin="round" />
-                    <path d="M88 5l-8 34 9 50M112 5l8 35-9 49" fill="#05060a" stroke="#eff0f4" strokeWidth="3" />
-                    <circle cx="100" cy="47" r="7" fill="#68e8ff" />
+                <div className="art" aria-hidden>
+                  <svg viewBox="0 0 200 72" style={{ width: "100%", height: "100%" }}>
+                    {[40, 46, 32, 38, 24, 28, 15, 11].map((h, i) => (
+                      <rect key={`l${i}`} x={6 + i * 9} y={36 - h / 2} width={4} height={h} rx={2}
+                        fill="#ffffff" opacity={0.95 - i * 0.085} />
+                    ))}
+                    <path d="M79 22v28M117 22v28" stroke="rgba(239,240,244,.22)" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M83 36h31" stroke="rgba(239,240,244,.35)" strokeWidth="2" strokeDasharray="2 8" strokeLinecap="round" />
+                    <g className="phantomDrop">
+                      <path d="M122 7v58" stroke="#ffffff" strokeWidth="2" opacity=".8" />
+                      <circle cx="122" cy="36" r="5" fill="#ffffff" />
+                    </g>
+                    {[50, 36, 44, 28, 34, 22, 26].map((h, i) => (
+                      <rect key={`r${i}`} x={132 + i * 9} y={36 - h / 2} width={4} height={h} rx={2}
+                        fill="#ffffff" opacity={0.95 - i * 0.05} />
+                    ))}
                   </svg>
                 </div>
                 <h2>Phantom Drop</h2>

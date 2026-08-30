@@ -880,3 +880,23 @@ input[type="range"]::-moz-range-thumb {
 @media (max-width: 640px) {
   .pianoWrap { height: clamp(130px, 24vh, 200px); }
 }
+
+/* ---------- hub card art motion ---------- */
+.feverShake, .phantomDrop { transform-box: fill-box; }
+.feverShake { transform-origin: 50% 92%; }
+.phantomDrop { transform-origin: 50% 50%; }
+.hubCard:hover .feverShake { animation: feverNudge 0.62s cubic-bezier(0.2, 0.9, 0.25, 1.3) infinite; }
+.hubCard:hover .phantomDrop { animation: phantomPulse 1.05s ease-out infinite; }
+@keyframes feverNudge {
+  0%, 100% { transform: scale(1, 1); }
+  30% { transform: scale(1.05, 0.92); }
+  62% { transform: scale(0.98, 1.03); }
+}
+@keyframes phantomPulse {
+  0% { opacity: 0.2; transform: scaleY(0.7); }
+  22% { opacity: 1; transform: scaleY(1.08); }
+  100% { opacity: 0.6; transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hubCard:hover .feverShake, .hubCard:hover .phantomDrop { animation: none; }
+}

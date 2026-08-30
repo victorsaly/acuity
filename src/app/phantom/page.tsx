@@ -12,16 +12,16 @@ type Result = { error: number | null; score: number };
 type BarStyle = CSSProperties & { "--height": string; "--delay": string };
 
 const ROUNDS = 3;
-const GROOVE_BEATS = 6;
+const GROOVE_BEATS = 8;
 const DIFFS: DiffDef[] = [
-  { key: "easy", label: "Easy", sub: "2 silent beats", note: 523 },
-  { key: "hard", label: "Hard", sub: "3 silent beats", note: 659 },
-  { key: "brutal", label: "Brutal", sub: "5 silent beats", note: 784 },
+  { key: "easy", label: "Easy", sub: "1 silent bar", note: 523 },
+  { key: "hard", label: "Hard", sub: "2 silent bars", note: 659 },
+  { key: "brutal", label: "Brutal", sub: "3 silent bars", note: 784 },
 ];
 const CONFIG: Record<string, { bpm: number; gap: number; window: number }> = {
-  easy: { bpm: 100, gap: 2, window: 360 },
-  hard: { bpm: 118, gap: 3, window: 270 },
-  brutal: { bpm: 136, gap: 5, window: 190 },
+  easy: { bpm: 100, gap: 4, window: 360 },
+  hard: { bpm: 118, gap: 8, window: 270 },
+  brutal: { bpm: 136, gap: 12, window: 190 },
 };
 const BAR_HEIGHTS = [22, 48, 78, 42, 112, 64, 34, 92, 54, 126, 70, 38, 84, 50, 108, 58, 30, 74, 46, 98, 62, 28, 82, 44];
 
@@ -173,9 +173,9 @@ export default function PhantomGame() {
                 title: "Phantom Drop",
                 description: "Internalize the groove, carry it through silence, and tap where the next downbeat belongs.",
                 steps: [
-                  "Listen to six beats and lock into their pulse.",
-                  "The track disappears for two or more beats, depending on difficulty.",
-                  "Tap once when you believe the drop should land; three rounds make your score.",
+                  "Listen to two full bars, counting 1, 2, 3, 4 with the screen.",
+                  "The track disappears for one or more complete bars, depending on difficulty.",
+                  "Keep counting silently and tap once on the next 1; three drops make your score.",
                 ],
               }} />
           </Item>
@@ -221,10 +221,14 @@ export default function PhantomGame() {
     );
   }
 
+  const count = ((Math.max(1, grooveBeat) - 1) % 4) + 1;
+  const grooveBar = Math.min(2, Math.ceil(Math.max(1, grooveBeat) / 4));
+  const silentBars = CONFIG[diff].gap / 4;
+
   return (
     <main className={`stage ${styles.stage} ${styles.playStage}`} onPointerDown={tap}>
       <div className={styles.eyebrow}>
-        {phase === "groove" ? `Beat ${grooveBeat || 1} of ${GROOVE_BEATS} · lock in` : "The beat is gone"}
+        {phase === "groove" ? `Bar ${grooveBar} of 2 · count ${count}` : "The beat is gone"}
       </div>
       <div className={styles.round}>Drop {round + 1} of {ROUNDS}</div>
       <div key={`${pulse}-${phase}`} className={`${styles.scene} ${phase === "groove" ? styles.beat : styles.silence}`} aria-hidden>
@@ -238,11 +242,11 @@ export default function PhantomGame() {
           ))}
         </div>
         <div className={styles.hole} />
-        <div className={styles.count}>{phase === "groove" ? grooveBeat || 1 : "?"}</div>
+        <div className={styles.count}>{phase === "groove" ? count : "?"}</div>
       </div>
       <div className={styles.instruction}>
-        {phase === "groove" ? "Count with it" : `Count ${CONFIG[diff].gap} silent beats`}
-        <small>{phase === "groove" ? "Watch the bars hit on every number" : "Tap on the next 1 · anywhere or Space"}</small>
+        {phase === "groove" ? "1 · 2 · 3 · 4" : `Count ${silentBars} silent ${silentBars === 1 ? "bar" : "bars"}`}
+        <small>{phase === "groove" ? "Two bars · lock in the tempo" : "Keep 1 · 2 · 3 · 4 going · tap on the next 1"}</small>
       </div>
     </main>
   );
