@@ -38,7 +38,7 @@ export default function Hub() {
         </Item>
         <Item>
           <p className="tagline">
-            Six full-screen perception games. Your memory for color, pitch, melody,
+            Seven full-screen perception games. Your memory for color, pitch, melody,
             time, and space is worse than you think — prove otherwise.
           </p>
         </Item>
@@ -155,6 +155,30 @@ export default function Hub() {
                 <h2>Refrain</h2>
                 <p>A piano phrase grows one note per level — play the same notes back in order.</p>
                 <CardStats game="piano" />
+                <span className="go">Play ▸</span>
+              </Link>
+            </Tilt>
+          </Item>
+          <Item style={cardWrap}>
+            <Tilt style={{ display: "flex", width: "100%" }}>
+              <Link href="/fever" className="hubCard" data-note={1047} style={{ width: "100%" }}>
+                <div className="art" aria-hidden style={{ height: 94, background: "repeating-linear-gradient(135deg, #ff4f64 0 14px, #e83c57 14px 28px)" }}>
+                  <svg viewBox="0 0 200 94" style={{ width: "100%", height: "100%" }}>
+                    <path d="M18 22l12-13 6 17M170 13l12 11-14 8M18 72l14 10 3-16M173 66l12 9-14 7" fill="none" stroke="#f7f04a" strokeWidth="5" strokeLinecap="round" />
+                    <rect x="27" y="13" width="146" height="69" fill="#d9d8d2" stroke="#ffffff" strokeWidth="6" />
+                    <rect x="38" y="24" width="91" height="44" fill="#25283f" stroke="#0c0d12" strokeWidth="5" />
+                    <path d="M42 31h83M42 40h83M42 49h83M42 58h83" stroke="#42e8dc" strokeOpacity=".22" strokeWidth="2" />
+                    <ellipse cx="84" cy="54" rx="24" ry="14" fill="#f7f04a" stroke="#0c0d12" strokeWidth="4" />
+                    <circle cx="77" cy="51" r="3" fill="#0c0d12" />
+                    <circle cx="91" cy="51" r="3" fill="#0c0d12" />
+                    <rect x="139" y="23" width="24" height="12" fill="#0c0d12" />
+                    <circle cx="151" cy="48" r="8" fill="#42e8dc" stroke="#0c0d12" strokeWidth="4" />
+                    <circle cx="151" cy="68" r="8" fill="#f7f04a" stroke="#0c0d12" strokeWidth="4" />
+                  </svg>
+                </div>
+                <h2>Fever Dream</h2>
+                <p>The microwave keeps the beat. Read its movement, then feed it eight taps.</p>
+                <CardStats game="fever" />
                 <span className="go">Play ▸</span>
               </Link>
             </Tilt>
