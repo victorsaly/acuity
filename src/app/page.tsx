@@ -38,7 +38,7 @@ export default function Hub() {
         </Item>
         <Item>
           <p className="tagline">
-            Eight full-screen perception games. Your memory for color, pitch, melody,
+            Nine full-screen perception games. Your memory for color, pitch, melody,
             time, and space is worse than you think — prove otherwise.
           </p>
         </Item>
@@ -217,6 +217,32 @@ export default function Hub() {
                 <h2>Phantom Drop</h2>
                 <p>The beat disappears before the drop. Keep time in the silence and bring it back.</p>
                 <CardStats game="phantom" />
+                <span className="go">Play ▸</span>
+              </Link>
+            </Tilt>
+          </Item>
+          <Item style={cardWrap}>
+            <Tilt style={{ display: "flex", width: "100%" }}>
+              <Link href="/offgrid" className="hubCard" data-note={1319} style={{ width: "100%" }}>
+                <div className="art" aria-hidden>
+                  <svg viewBox="0 0 200 72" style={{ width: "100%", height: "100%" }}>
+                    <path d="M0 58h200" stroke="rgba(239,240,244,.22)" strokeWidth="2" />
+                    {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                      <path key={`t${i}`} d={`M${16 + i * 24} 52v12`} stroke="rgba(239,240,244,.3)" strokeWidth="2" />
+                    ))}
+                    {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+                      const off = i === 4 ? 9 : 0;
+                      return (
+                        <rect key={`s${i}`} x={10 + i * 24 + off} y={i === 4 ? 8 : 14} width={12} height={i === 4 ? 44 : 38} rx={3}
+                          fill={i === 4 ? "#ffffff" : "rgba(239,240,244,.55)"} />
+                      );
+                    })}
+                    <path d="M112 4h13m0 0-4-3.5M125 4l-4 3.5" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <h2>Off-Grid</h2>
+                <p>A loop repeats and one hit lands late. Find it before the nudge shrinks past hearing.</p>
+                <CardStats game="offgrid" />
                 <span className="go">Play ▸</span>
               </Link>
             </Tilt>

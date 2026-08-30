@@ -1,0 +1,253 @@
+.stage {
+  --amber: #ffb02e;
+  --hot: #ff456f;
+  --ok: #59f2b0;
+  background:
+    linear-gradient(rgba(10, 9, 6, 0.62), rgba(10, 9, 6, 0.62)),
+    repeating-linear-gradient(90deg, transparent 0 calc(12.5% - 1px), rgba(255, 176, 46, 0.13) calc(12.5% - 1px) 12.5%),
+    #17130b;
+  overflow: hidden;
+}
+
+.stage::before {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgba(255, 176, 46, 0.22);
+  pointer-events: none;
+}
+
+.menuMark {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 16px);
+  width: min(360px, 80vw);
+  height: 96px;
+  margin: 0 auto 20px;
+  padding: 0 6px;
+  border-block: 1px solid rgba(255, 176, 46, 0.35);
+}
+
+.menuMark span {
+  flex: 1;
+  height: 46px;
+  border-radius: 6px;
+  border: 2px solid var(--bone);
+  background: rgba(239, 240, 244, 0.08);
+}
+
+.menuMark .menuNudged {
+  border-color: var(--amber);
+  background: rgba(255, 176, 46, 0.24);
+  box-shadow: 0 0 26px rgba(255, 176, 46, 0.4);
+  transform: translateX(clamp(7px, 1.8vw, 13px));
+}
+
+.playStage { isolation: isolate; }
+
+.eyebrow {
+  position: fixed;
+  z-index: 4;
+  top: clamp(66px, 9vh, 92px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90vw, 720px);
+  color: var(--amber);
+  text-align: center;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(12px, 2vw, 17px);
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.roundTag {
+  position: fixed;
+  z-index: 4;
+  top: clamp(100px, 13.5vh, 134px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.scene {
+  position: relative;
+  z-index: 2;
+  width: min(880px, 94vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(22px, 5vh, 44px);
+}
+
+.lane {
+  display: flex;
+  width: 100%;
+  gap: clamp(6px, 1.4vw, 14px);
+}
+
+.step {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font: inherit;
+  cursor: default;
+}
+
+.step i {
+  display: block;
+  width: 100%;
+  aspect-ratio: 0.82;
+  border-radius: clamp(8px, 1.2vw, 14px);
+  border: 2px solid rgba(239, 240, 244, 0.35);
+  background: rgba(239, 240, 244, 0.05);
+  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.step b {
+  font-family: var(--font-mono), monospace;
+  font-weight: 600;
+  font-size: clamp(11px, 1.6vw, 14px);
+  letter-spacing: 0.1em;
+}
+
+.on i {
+  border-color: var(--bone);
+  background: rgba(239, 240, 244, 0.85);
+  transform: translateY(-6px) scale(1.04);
+  box-shadow: 0 10px 34px rgba(239, 240, 244, 0.25);
+}
+
+.flash i {
+  border-color: var(--amber);
+  background: var(--amber);
+  box-shadow: 0 0 46px rgba(255, 176, 46, 0.75);
+}
+
+.pickable { cursor: pointer; }
+
+.pickable i {
+  border-color: rgba(239, 240, 244, 0.6);
+  background: rgba(239, 240, 244, 0.09);
+}
+
+.pickable:hover { color: var(--bone); }
+
+.pickable:hover i {
+  border-color: var(--amber);
+  background: rgba(255, 176, 46, 0.16);
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 12px 36px rgba(255, 176, 46, 0.28);
+}
+
+.culprit { color: var(--bone); }
+
+.culprit i {
+  border-color: var(--amber);
+  background: rgba(255, 176, 46, 0.3);
+  box-shadow: 0 0 34px rgba(255, 176, 46, 0.4);
+  transform: translateX(clamp(5px, 1vw, 10px));
+}
+
+.wrongPick i {
+  border-color: var(--hot);
+  background: rgba(255, 69, 111, 0.14);
+}
+
+.countWrap {
+  width: min(420px, 76vw);
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(239, 240, 244, 0.14);
+  overflow: hidden;
+}
+
+.countBar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--amber);
+  transform-origin: left;
+  animation: countDown linear both;
+}
+
+@keyframes countDown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.delta {
+  color: var(--bone);
+  text-align: center;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(30px, 7vw, 62px);
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.delta small {
+  display: block;
+  margin-top: 12px;
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: clamp(11px, 1.8vw, 14px);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: none;
+}
+
+.nextRow {
+  position: relative;
+  z-index: 3;
+  margin-top: clamp(18px, 4vh, 36px);
+}
+
+.hint { bottom: 24px; z-index: 3; }
+
+.feedback {
+  position: relative;
+  z-index: 2;
+  width: min(680px, 92vw);
+  text-align: center;
+}
+
+.score {
+  color: var(--amber);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(72px, 18vw, 150px);
+  font-weight: 900;
+  line-height: 0.9;
+}
+
+.score small { color: var(--bone); font-size: 0.22em; }
+
+@media (max-width: 640px) {
+  .lane { gap: 5px; }
+  .step i { border-radius: 7px; }
+  .hint {
+    position: fixed;
+    bottom: 18px;
+    width: auto;
+    margin: 0;
+    padding: 0 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .on i, .pickable:hover i { transform: none; }
+}
