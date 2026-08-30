@@ -37,9 +37,9 @@ const DIFF_CFG: Record<string, { tracks: { p: string; bars: number }[]; bpm: [nu
 const APPROACH = 1.8;               // seconds a note is on screen before the ring
 const W_PERFECT = 0.05, W_GOOD = 0.1, W_OK = 0.15;
 
-/* the only color in the app lives here, on the beat: solid, distinct hues */
-const KICK_COL = "#3dc9ff";                       // kicks: cyan
-const SNARE_COL = "#ff5f9e";                      // snares: magenta
+/* monochrome rocks: kicks read as filled, snares as hollow */
+const KICK_COL = "#ffffff";
+const SNARE_COL = "#ffffff";
 const TRACK_COLS = ["#3dc9ff", "#ffb454", "#a4ff4f"]; // per-track progress colors
 
 const KITS_UI = [
@@ -401,34 +401,20 @@ export default function TempoGame() {
         g2.beginPath(); g2.moveTo(0, laneY); g2.lineTo(W, laneY); g2.stroke();
       }
 
-      /* timing zones drawn to scale: a rock inside a ring is inside that
-         window. inner = perfect, middle = good, dashed outer = almost */
+      /* one timing circle only: the perfect window, floored so it always
+         reads clearly inside the hit ring — land a rock in it for a perfect */
       const ppOf = (dtv: number) => { const uu = dtv / APPROACH; return (uu * 1.35) / (uu + 0.35); };
       const laneDist = (ppv: number) => {
         if (lane === "curve") { const q = bez!(ppv); return Math.hypot(q.x - hitX, q.y - laneY); }
         if (lane === "orbit") return orbitR * 0.86 * ppv;
         return laneY * 0.92 * ppv;
       };
-      const zones: { rz: number; col: string; dash: number[]; label: string }[] = [
-        { rz: laneDist(ppOf(W_OK)), col: "rgba(239,240,244,.22)", dash: [6 * devicePixelRatio, 8 * devicePixelRatio], label: "almost" },
-        { rz: laneDist(ppOf(W_GOOD)), col: "rgba(239,240,244,.34)", dash: [], label: "good" },
-        { rz: laneDist(ppOf(W_PERFECT)), col: "rgba(255,255,255,.75)", dash: [], label: "perfect" },
-      ];
-      g2.fillStyle = "rgba(255,255,255,.03)";
-      g2.beginPath(); g2.arc(hitX, laneY, zones[0].rz, 0, Math.PI * 2); g2.fill();
+      const perfR = Math.max(laneDist(ppOf(W_PERFECT)), 30 * devicePixelRatio);
       g2.fillStyle = "rgba(255,255,255,.05)";
-      g2.beginPath(); g2.arc(hitX, laneY, zones[2].rz, 0, Math.PI * 2); g2.fill();
-      g2.font = `${10 * devicePixelRatio}px ui-monospace, monospace`;
-      g2.textAlign = "center";
-      for (const z of zones) {
-        g2.setLineDash(z.dash);
-        g2.strokeStyle = z.col;
-        g2.lineWidth = 1.5 * devicePixelRatio;
-        g2.beginPath(); g2.arc(hitX, laneY, z.rz, 0, Math.PI * 2); g2.stroke();
-        g2.fillStyle = "rgba(239,240,244,.4)";
-        g2.fillText(z.label, hitX, laneY - z.rz - 5 * devicePixelRatio);
-      }
-      g2.setLineDash([]);
+      g2.beginPath(); g2.arc(hitX, laneY, perfR, 0, Math.PI * 2); g2.fill();
+      g2.strokeStyle = "rgba(255,255,255,.75)";
+      g2.lineWidth = 1.5 * devicePixelRatio;
+      g2.beginPath(); g2.arc(hitX, laneY, perfR, 0, Math.PI * 2); g2.stroke();
 
       /* hit ring flashes the color of whatever you just hit */
       const ringR = (42 + r.ringPulse * 14) * devicePixelRatio;
@@ -620,7 +606,7 @@ export default function TempoGame() {
             <Item>
               <p className="tagline">
                 A beat rolls and asteroids tumble out of the deep toward the ring. Tap dead on time
-                to blow them up — cyan rocks are kicks, hollow magenta ones are snares. Perfect
+                to blow them up — solid rocks are kicks, hollow ones are snares. Perfect
                 hits explode white; sloppy ones ricochet; misses sail right past.
               </p>
             </Item>
