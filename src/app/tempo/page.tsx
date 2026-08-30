@@ -8,7 +8,6 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, kick, snare, hat, click, uiBlip, setDrumKit, preloadAllKits, type DrumKitName } from "@/lib/audio";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
 import { scoreCard, barEmoji } from "@/lib/share";
-import { speakCue, setVoiceCuesEnabled } from "@/lib/voice";
 
 type Phase = "menu" | "play" | "results";
 
@@ -221,7 +220,6 @@ export default function TempoGame() {
   const [trackPick, setTrackPick] = usePref("tempo-track", "auto");
   const [laneStr, setLane] = usePref("tempo-lane", "curve");
   const lane = laneStr as LaneStyle;
-  const [voiceCues] = usePref("voice-cues", "on");
   const [runStamp, setRunStamp] = useState(0);
   const [hud, setHud] = useState({ track: "", bpm: 0, combo: 0, pts: 0 });
   const [judge, setJudge] = useState<{ text: string; id: number; color: string } | null>(null);
@@ -232,7 +230,6 @@ export default function TempoGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => { preloadAllKits(); }, []);   // sampled kits fetch in the background; synth covers until then
-  useEffect(() => { setVoiceCuesEnabled(voiceCues === "on"); }, [voiceCues]);
 
   /* ---------- build the whole timeline up front ---------- */
   const start = () => {
@@ -306,10 +303,6 @@ export default function TempoGame() {
         else if (ev.type === "open") hat(ev.t, true);
         else {
           click(ev.t, true, ev.f);
-          if (ev.f === 523) speakCue("three");
-          else if (ev.f === 659) speakCue("two");
-          else if (ev.f === 784) speakCue("one");
-          else if (ev.f === 1046) speakCue("go");
         }
       }
     }, 25);
@@ -610,8 +603,6 @@ export default function TempoGame() {
     const latency = c.outputLatency || c.baseLatency || 0;
     const j = applyTap(run.current, c.currentTime - latency);
     uiBlip(j.blip, 0.055, 0.09);
-    if (j.text === "perfect") speakCue("perfect");
-    else if (j.text === "early") speakCue("miss");
     setJudge({ text: j.text, id: ++judgeId.current, color: j.color });
   };
 

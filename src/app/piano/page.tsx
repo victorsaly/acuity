@@ -8,7 +8,6 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
 import { barEmoji, scoreCard } from "@/lib/share";
 import { uiBlip, pianoKey, buzz } from "@/lib/audio";
-import { speakCue, setVoiceCuesEnabled, voiceCuesAvailable } from "@/lib/voice";
 
 /*
  * Refrain — a piano melody grows one note every level. Play the same
@@ -124,7 +123,6 @@ export default function PianoGame() {
   const fmt = fmtStr as Fmt;
   const [phraseStr, setPhrase] = usePref("piano-phrase", "auto");
   const phrase = phraseStr as PhrasePreset;
-  const [voiceCues, setVoiceCues] = usePref("voice-cues", "on");
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
   const [view, setView] = useState<View>(EMPTY);   // render-side snapshot; logic mutates the ref
@@ -137,7 +135,6 @@ export default function PianoGame() {
   const timeRef = useRef<HTMLSpanElement>(null);
   const clear = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => clear, []);
-  useEffect(() => { setVoiceCuesEnabled(voiceCues === "on"); }, [voiceCues]);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
 
   const publish = () => { const { rng: _rng, ...rest } = R.current; void _rng; setView({ ...rest }); };
@@ -183,7 +180,6 @@ export default function PianoGame() {
     g.limit = Math.max(RECALL_MIN, g.melody.length * RECALL_PER_NOTE[diff]);
     setPhase("show");
     setMarks(blank(), "Listen");
-    speakCue("listen");
     const step = STEP_MS[diff];
     g.melody.forEach((ki, k) => {
       later(() => {
@@ -196,7 +192,6 @@ export default function PianoGame() {
       clock.current = { deadline: performance.now() + g.limit, total: g.limit, nextTick: 0 };
       setMarks(blank(), "Your turn");
       setPhase("recall");
-      speakCue("your turn");
     }, 500 + g.melody.length * step + 260);
   };
 
@@ -228,7 +223,6 @@ export default function PianoGame() {
     if (wrongKey !== null) m[wrongKey] = "miss";
     m[g.melody[g.picked]] = "reveal";
     buzz();
-    speakCue(wrongKey === null ? "time" : "wrong note");
     setPhase("show");
     setMarks(m, g.lives > 0 ? head : "Out of lives");
     later(g.lives > 0 ? playLevel : finish, 1500);
@@ -265,7 +259,6 @@ export default function PianoGame() {
     g.level++;
     setPhase("show");
     setMarks(g.marks, "Clear");
-    speakCue("clear");
     [0, 1, 2].forEach((k) => later(() => uiBlip(523 * Math.pow(2, k / 3), 0.05, 0.14), 60 + k * 70));
     later(() => { extend(); playLevel(); }, 860);
   };
@@ -348,19 +341,6 @@ export default function PianoGame() {
                   "Every level adds another note, and mistakes cost lives.",
                 ],
               }} />
-            <div className="modes" role="group" aria-label="Voice cues">
-              <button className="mode" aria-pressed={voiceCues === "off"} data-note={330} onClick={() => setVoiceCues("off")}>
-                Voice cues off
-              </button>
-              <button
-                className="mode"
-                aria-pressed={voiceCues === "on"}
-                data-note={392}
-                onClick={() => setVoiceCues("on")}
-              >
-                Voice cues on{voiceCuesAvailable() ? "" : " (no endpoint)"}
-              </button>
-            </div>
           </Item>
         </Stagger>
       </main>
