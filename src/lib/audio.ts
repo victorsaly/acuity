@@ -27,6 +27,33 @@ let dryBus: GainNode;
 let duckBus: GainNode;
 let wetSend: GainNode;
 
+let primed = false;
+
+function prime(c: AudioContext) {
+  if (primed) return;
+  const src = c.createBufferSource();
+  src.buffer = c.createBuffer(1, 1, c.sampleRate);
+  const g = c.createGain();
+  g.gain.value = 0;
+  src.connect(g);
+  g.connect(c.destination);
+  src.start();
+  src.stop(c.currentTime + 0.001);
+  primed = true;
+}
+
+export async function unlockAudio() {
+  const c = audio();
+  if (c.state === "suspended") {
+    try {
+      await c.resume();
+    } catch {
+      return;
+    }
+  }
+  if (c.state === "running") prime(c);
+}
+
 export function audio(): AudioContext {
   if (!ctx) {
     const AC = window.AudioContext ??
@@ -72,7 +99,9 @@ export function audio(): AudioContext {
     convolver.connect(wet);
     wet.connect(shaper);
   }
-  if (ctx.state === "suspended") ctx.resume();
+  if (ctx.state === "suspended") {
+    void ctx.resume().catch(() => {});
+  }
   return ctx;
 }
 
@@ -129,26 +158,26 @@ function duck(t: number, amount: number) {
 
 /** Crisp rollover/click blip: sine fundamental + octave and 3rd-harmonic sparkle, fast attack. */
 export function uiBlip(freq = 587, vol = 0.05, dur = 0.07) {
-  if (!ctx || ctx.state !== "running") return;
-  const t = ctx.currentTime;
+  const c = audio();
+  const t = c.currentTime;
   const f = freq * 2; // voiced an octave up — bright, glassy
-  const g = ctx.createGain();
+  const g = c.createGain();
   g.gain.setValueAtTime(0, t);
   g.gain.linearRampToValueAtTime(vol, t + 0.003);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
-  const o1 = ctx.createOscillator();
+  const o1 = c.createOscillator();
   o1.type = "sine";
   o1.frequency.value = f;
-  const o2 = ctx.createOscillator();
+  const o2 = c.createOscillator();
   o2.type = "sine";
   o2.frequency.value = f * 2;
-  const g2 = ctx.createGain();
+  const g2 = c.createGain();
   g2.gain.value = 0.25;
-  const o3 = ctx.createOscillator();
+  const o3 = c.createOscillator();
   o3.type = "triangle";
   o3.frequency.value = f * 3;
-  const g3 = ctx.createGain();
+  const g3 = c.createGain();
   g3.gain.value = 0.08;
   o2.connect(g2);
   o3.connect(g3);

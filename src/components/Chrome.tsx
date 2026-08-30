@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { audio, uiBlip } from "@/lib/audio";
+import { uiBlip, unlockAudio } from "@/lib/audio";
 
 /**
  * App-wide chrome: fullscreen toggle, home link, and the rollover
@@ -30,8 +30,11 @@ export default function Chrome() {
   }, [path, router]);
 
   useEffect(() => {
-    const unlock = () => audio();
-    addEventListener("pointerdown", unlock, { once: true, capture: true });
+    const unlock = () => { void unlockAudio(); };
+    window.addEventListener("pointerdown", unlock, { once: true, capture: true });
+    window.addEventListener("touchstart", unlock, { once: true, capture: true });
+    window.addEventListener("mousedown", unlock, { once: true, capture: true });
+    window.addEventListener("keydown", unlock, { once: true, capture: true });
 
     const over = (e: PointerEvent) => {
       if (e.pointerType === "touch") return;
@@ -41,6 +44,7 @@ export default function Chrome() {
       uiBlip(Number(el.dataset.note) || 587);
     };
     const clickFx = (e: MouseEvent) => {
+      void unlockAudio();
       const el = (e.target as Element | null)?.closest<HTMLElement>("button, a");
       if (!el || el.dataset.silent !== undefined) return;
       uiBlip((Number(el.dataset.note) || 587) * 1.5, 0.055, 0.12);
@@ -62,11 +66,15 @@ export default function Chrome() {
       document.removeEventListener("pointerover", over);
       document.removeEventListener("click", clickFx);
       document.removeEventListener("keydown", onKey);
-      removeEventListener("pointerdown", unlock, { capture: true });
+      window.removeEventListener("pointerdown", unlock, { capture: true });
+      window.removeEventListener("touchstart", unlock, { capture: true });
+      window.removeEventListener("mousedown", unlock, { capture: true });
+      window.removeEventListener("keydown", unlock, { capture: true });
     };
   }, []);
 
   const toggleFs = () => {
+    void unlockAudio();
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen().catch(() => {});
   };
