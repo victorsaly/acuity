@@ -567,7 +567,7 @@ input[type="range"]::-moz-range-thumb {
 }
 .pKey {
   position: absolute; top: 0; padding: 0;
-  display: flex; align-items: flex-end; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   transition: background 0.07s, box-shadow 0.1s, transform 0.05s;
 }
@@ -586,9 +586,22 @@ input[type="range"]::-moz-range-thumb {
 }
 .pKey small {
   font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
-  margin-bottom: 9px; color: rgba(12, 13, 18, 0.4); pointer-events: none;
+  margin-bottom: 7px; color: rgba(12, 13, 18, 0.4); pointer-events: none;
 }
 .pKey.black small { margin-bottom: 7px; color: rgba(239, 240, 244, 0.4); }
+
+.pKey .noteLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 2px;
+  color: rgba(12, 13, 18, 0.62);
+  pointer-events: none;
+}
+.pKey.black .noteLabel {
+  margin-bottom: 2px;
+  color: rgba(239, 240, 244, 0.68);
+}
 
 .pianoWrap.live .pKey:not(.miss):hover { filter: brightness(1.12); }
 .pianoWrap.live .pKey:active { transform: translateY(3px); }
@@ -599,17 +612,20 @@ input[type="range"]::-moz-range-thumb {
 }
 .pKey.black.lit, .pKey.black.hit { background: #ffffff; }
 .pKey.black.lit small, .pKey.black.hit small { color: rgba(12, 13, 18, 0.45); }
+.pKey.black.lit .noteLabel, .pKey.black.hit .noteLabel { color: rgba(12, 13, 18, 0.6); }
 .pKey.lit { transform: translateY(2px); }
 .pKey.miss {
   background: #ff5f9e; border-color: #ff5f9e;
   box-shadow: 0 0 24px rgba(255, 95, 158, 0.5);
 }
 .pKey.black.miss small { color: rgba(12, 13, 18, 0.5); }
+.pKey.black.miss .noteLabel { color: rgba(12, 13, 18, 0.64); }
 .pKey.reveal.white { box-shadow: inset 0 0 0 3px #0c0d12, 0 0 22px rgba(255, 255, 255, 0.3); }
 .pKey.reveal.black { box-shadow: inset 0 0 0 3px #ffffff, 0 0 22px rgba(255, 255, 255, 0.3); }
 
 @media (hover: none) and (pointer: coarse) {
-  .pKey small { display: none; }       /* key letters mean nothing to thumbs */
+  .pKey small { display: none; }       /* keyboard letters mean nothing to thumbs */
+  .pKey .noteLabel { font-size: 10px; }
 }
 @media (max-width: 640px) {
   .pianoWrap { height: clamp(130px, 24vh, 200px); }

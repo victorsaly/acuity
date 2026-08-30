@@ -335,7 +335,8 @@ export default function PianoGame() {
                 aria-label={k.name}
                 onPointerDown={(e) => { if (e.button === 0) press(i); }}
               >
-                <small>{k.hint}</small>
+                <span className="noteLabel" aria-hidden>{k.name}</span>
+                {k.hint && <small>{k.hint}</small>}
               </button>
             );
           })}
