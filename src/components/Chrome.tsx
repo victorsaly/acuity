@@ -40,10 +40,13 @@ export default function Chrome() {
 
   useEffect(() => {
     const unlock = () => { void unlockAudio(); };
-    window.addEventListener("pointerdown", unlock, { once: true, capture: true });
-    window.addEventListener("touchstart", unlock, { once: true, capture: true });
-    window.addEventListener("mousedown", unlock, { once: true, capture: true });
-    window.addEventListener("keydown", unlock, { once: true, capture: true });
+    // Keep retrying on real gestures in case iOS blocks the first unlock.
+    window.addEventListener("pointerdown", unlock, { capture: true });
+    window.addEventListener("touchstart", unlock, { capture: true });
+    window.addEventListener("touchend", unlock, { capture: true });
+    window.addEventListener("mousedown", unlock, { capture: true });
+    window.addEventListener("click", unlock, { capture: true });
+    window.addEventListener("keydown", unlock, { capture: true });
 
     const over = (e: PointerEvent) => {
       if (e.pointerType === "touch") return;
@@ -77,7 +80,9 @@ export default function Chrome() {
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("pointerdown", unlock, { capture: true });
       window.removeEventListener("touchstart", unlock, { capture: true });
+      window.removeEventListener("touchend", unlock, { capture: true });
       window.removeEventListener("mousedown", unlock, { capture: true });
+      window.removeEventListener("click", unlock, { capture: true });
       window.removeEventListener("keydown", unlock, { capture: true });
     };
   }, []);

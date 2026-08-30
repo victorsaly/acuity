@@ -16,17 +16,24 @@ export function scoreCard(game: string, detail: string, scoreLine: string): stri
   return `ACUITY · ${game} · ${detail}\n${scoreLine}\n${SITE_URL}`;
 }
 
-/** Copy to clipboard; fall back to the native share sheet. */
+/** Open the native share sheet (mobile, includes WhatsApp); fall back to clipboard. */
 export async function shareText(text: string): Promise<boolean> {
+  if (navigator.share) {
+    try {
+      await navigator.share({ text });
+      return true;
+    } catch {
+      return false; // user cancelled the sheet - don't silently copy instead
+    }
+  }
   try {
     await navigator.clipboard.writeText(text);
     return true;
   } catch { /* clipboard unavailable */ }
-  try {
-    if (navigator.share) {
-      await navigator.share({ text });
-      return true;
-    }
-  } catch { /* user dismissed */ }
   return false;
+}
+
+/** wa.me deep link so the same score card opens straight into WhatsApp on any device. */
+export function whatsappShareUrl(text: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }

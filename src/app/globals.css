@@ -281,6 +281,15 @@ input[type="range"]::-moz-range-thumb {
   flex: none; display: flex; gap: 12px; justify-content: center;
   padding: 2.5vh 24px max(20px, 3vh); flex-wrap: wrap;
 }
+.shareRow {
+  display: flex; align-items: stretch; justify-content: center; gap: 10px;
+  flex-wrap: wrap;
+}
+.shareAction {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; min-width: 0; flex: 1 1 148px;
+  text-align: center;
+}
 
 /* color results: full-bleed split panels */
 .colorPanels { flex: 1 1 auto; align-self: stretch; display: flex; min-height: 0; }
@@ -561,6 +570,31 @@ input[type="range"]::-moz-range-thumb {
   .hubCard h2 { font-size: 14px; }
   .hubCard p { font-size: 12px; line-height: 1.45; }
   .hubCard .go { padding-top: 8px; font-size: 10px; }
+  .tempoHud {
+    top: 18px;
+    gap: 8px 14px;
+    padding: 0 16px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    flex-wrap: wrap;
+  }
+  .tapHint {
+    bottom: max(16px, 3vh);
+    padding: 0 18px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+  }
+  .resHead {
+    padding-top: 18px;
+  }
+  .resActions {
+    gap: 10px;
+    padding: 1.8vh 16px 16px;
+  }
+  .resActions .cta, .resActions .ghost {
+    min-width: 0;
+    flex: 1 1 140px;
+  }
   .menuActions { width: 100%; }
   .menuActions .cta, .menuActions .helpToggle { flex: 1 1 150px; }
   .menuActions > * { min-height: 48px; }
