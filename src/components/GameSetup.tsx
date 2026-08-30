@@ -133,7 +133,7 @@ export default function GameSetup({
       <div className="kbd">
         <span><b>1–{diffs.length}</b>difficulty</span>
         {sounds && <span><b>S</b>sound</span>}
-        {formats && <span><b>L</b>lane</span>}
+        {formats && <span><b>L</b>format</span>}
         <span><b>D</b>daily</span>
         <span><b>↵</b>start</span>
         <span><b>Esc</b>menu</span>

@@ -18,6 +18,10 @@ const DIFFS: DiffDef[] = [
   { key: "brutal", label: "Brutal", sub: "0.7s each", note: 784 },
 ];
 const REVEAL_MS: Record<string, number> = { easy: 3000, hard: 1500, brutal: 700 };
+const FLOWS = [
+  { key: "single", label: "One at a time" },
+  { key: "batch", label: "All five first" },
+];
 const VOICES = [
   { key: "warm", label: "Warm" },
   { key: "pure", label: "Pure" },
@@ -42,6 +46,7 @@ export default function SoundGame() {
   const [diff, setDiff] = usePref("sound-diff", "easy");
   const [modeStr, setMode] = usePref("sound-mode", "free");
   const mode = modeStr as Mode;
+  const [flow, setFlow] = usePref("sound-flow", "single");
   const [slot, setSlot] = useState(0);
   const [targets, setTargets] = useState<number[]>([]);
   const [guesses, setGuesses] = useState<number[]>([]);
@@ -117,7 +122,8 @@ export default function SoundGame() {
       hush();
       setRevealOn(false);
       later(() => {
-        if (i + 1 < SLOTS) revealSlot(i + 1, tones, ms);
+        if (flow === "single") { setPos(500); setPhase("recall"); hear(posToFreq(500)); }
+        else if (i + 1 < SLOTS) revealSlot(i + 1, tones, ms);
         else { setSlot(0); setPos(500); setPhase("recall"); hear(posToFreq(500)); }
       }, 260);
     }, ms);
@@ -141,7 +147,13 @@ export default function SoundGame() {
     if (next.length < SLOTS) {
       setSlot(next.length);
       setPos(500);
-      hear(posToFreq(500));   // guess stays audible, like Afterimage stays visible
+      if (flow === "single") {
+        hush();
+        setPhase("reveal");
+        revealSlot(next.length, targets, REVEAL_MS[diff]);
+      } else {
+        hear(posToFreq(500));   // guess stays audible, like Afterimage stays visible
+      }
     } else {
       hush();
       const total = targets.reduce((sum, t, i) => sum + scoreOf(t, next[i]), 0);
@@ -210,6 +222,7 @@ export default function SoundGame() {
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
               <GameSetup game="sound" diffs={DIFFS} diff={diff} mode={mode}
                 onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
+                formats={FLOWS} format={flow} onFormat={setFlow}
                 sounds={VOICES} sound={voice}
                 onSound={(k) => {
                   const v = k as ToneVoice;

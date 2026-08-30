@@ -18,6 +18,10 @@ const DIFFS: DiffDef[] = [
   { key: "brutal", label: "Brutal", sub: "1s each", note: 784 },
 ];
 const REVEAL_MS: Record<string, number> = { easy: 5000, hard: 2000, brutal: 1000 };
+const FLOWS = [
+  { key: "single", label: "One at a time" },
+  { key: "batch", label: "All five first" },
+];
 
 /* ---------- color math ---------- */
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
@@ -53,6 +57,7 @@ export default function ColorGame() {
   const [diff, setDiff] = usePref("color-diff", "easy");
   const [modeStr, setMode] = usePref("color-mode", "free");
   const mode = modeStr as Mode;
+  const [flow, setFlow] = usePref("color-flow", "single");
   const [slot, setSlot] = useState(0);
   const [targets, setTargets] = useState<HSL[]>([]);
   const [guesses, setGuesses] = useState<HSL[]>([]);
@@ -63,7 +68,7 @@ export default function ColorGame() {
   const timers = useRef<number[]>([]);
   const ringRef = useRef<SVGCircleElement>(null);
   const countRef = useRef<HTMLDivElement>(null);
-  const countdown = useRef({ deadline: 0, total: 1, lastWhole: -1 });
+  const countdown = useRef({ deadline: 0, total: 1, nextTick: 0 });
   const clear = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => clear, []);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
@@ -71,20 +76,23 @@ export default function ColorGame() {
   function revealSlot(i: number, cols: HSL[], ms: number) {
     setSlot(i);
     setRevealColor(cols[i]);
-    countdown.current = { deadline: performance.now() + ms, total: ms, lastWhole: Math.ceil(ms / 1000) + 1 };
-    const ring = ringRef.current;
-    if (ring) {
+    countdown.current = { deadline: performance.now() + ms, total: ms, nextTick: performance.now() + 200 };
+    /* the ring may be (re)mounting this frame — look it up after commit */
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const ring = ringRef.current;
+      if (!ring) return;
       ring.style.transition = "none";
       ring.style.strokeDashoffset = "0";
-      requestAnimationFrame(() => requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         ring.style.transition = `stroke-dashoffset ${ms}ms linear`;
         ring.style.strokeDashoffset = String(RING_C);
-      }));
-    }
+      });
+    }));
     later(() => {
       setRevealColor(null); // dark gap so consecutive colors don't blend
       later(() => {
-        if (i + 1 < SLOTS) revealSlot(i + 1, cols, ms);
+        if (flow === "single") { setGuess({ h: 180, s: 50, l: 50 }); setPhase("recall"); }
+        else if (i + 1 < SLOTS) revealSlot(i + 1, cols, ms);
         else { setSlot(0); setGuess({ h: 180, s: 50, l: 50 }); setPhase("recall"); }
       }, 220);
     }, ms);
@@ -110,6 +118,7 @@ export default function ColorGame() {
     if (next.length < SLOTS) {
       setSlot(next.length);
       setGuess({ h: 180, s: 50, l: 50 });
+      if (flow === "single") { setPhase("reveal"); revealSlot(next.length, targets, REVEAL_MS[diff]); }
     } else {
       const total = targets.reduce((sum, t, i) => sum + scoreOf(t, next[i]), 0);
       const key = scoreKey("color", mode, diff);
@@ -119,21 +128,29 @@ export default function ColorGame() {
     }
   };
 
-  /* decimal countdown readout + progressive ticks while memorizing */
+  /* racing countdown while memorizing: hundredths on every frame, the
+     digits swell, and the ticks come faster and higher as time runs out */
   useEffect(() => {
     if (phase !== "reveal") return;
-    const iv = window.setInterval(() => {
+    let raf = 0;
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
       const cd = countdown.current;
-      const rem = Math.max(0, cd.deadline - performance.now());
-      if (countRef.current) countRef.current.textContent = (rem / 1000).toFixed(1);
-      const whole = Math.ceil(rem / 1000);
-      if (whole < cd.lastWhole) {
-        cd.lastWhole = whole;
-        const progress = 1 - rem / cd.total;
-        uiBlip(380 + progress * 640, 0.05, 0.08);   // ticks climb as time runs out
+      const now = performance.now();
+      const rem = Math.max(0, cd.deadline - now);
+      const progress = 1 - rem / cd.total;
+      const el = countRef.current;
+      if (el) {
+        el.textContent = (rem / 1000).toFixed(2);
+        el.style.transform = `scale(${1 + progress * 0.5})`;
       }
-    }, 50);
-    return () => clearInterval(iv);
+      if (rem > 0 && now >= cd.nextTick) {
+        uiBlip(360 + progress * 800, 0.04 + progress * 0.03, 0.06);
+        cd.nextTick = now + 70 + 560 * Math.pow(1 - progress, 1.6);   // 630ms apart → 70ms
+      }
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
   }, [phase]);
 
   useEffect(() => {
@@ -162,7 +179,8 @@ export default function ColorGame() {
           <Item><p className="tagline">Five colors flood the screen. Then they&apos;re gone, and you rebuild every one from memory.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="color" diffs={DIFFS} diff={diff} mode={mode}
-              onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp} />
+              onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
+              formats={FLOWS} format={flow} onFormat={setFlow} />
           </Item>
         </Stagger>
       </main>
