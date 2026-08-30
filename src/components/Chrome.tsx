@@ -102,7 +102,7 @@ export default function Chrome() {
 
   return (
     <>
-      {locked && (
+      {locked && !path.startsWith("/about") && (
         <button
           className="corner soundGate"
           data-silent

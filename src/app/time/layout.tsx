@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import { routeMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Second Sense",
-  description: "Experience five durations, then recreate each one from memory without a clock.",
-};
+export const metadata = routeMetadata(
+  "Second Sense",
+  "Experience five durations, then recreate each one from memory without a clock.",
+  "/time/",
+);
 
 export default function TimeLayout({ children }: { children: React.ReactNode }) {
   return children;

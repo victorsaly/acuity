@@ -1,8 +1,9 @@
 # Delulu Beats
 
-Delulu Beats is a collection of six full-screen perception games for color, pitch,
+Delulu Beats is a collection of nine full-screen perception games for color, pitch,
 duration, rhythm, spatial memory, and melody. See it, hear it, remember it, then try to dial it
-back in.
+back in. It also includes Beat Lab, a browser-based studio for building and downloading your own
+rap, R&B, or house loop.
 
 **Play now: https://delulubeats.com/**
 
@@ -14,6 +15,9 @@ back in.
 | **Downbeat** | Rhythm and timing | Follow the track and hit each incoming note on the beat |
 | **Echo** | Spatial memory | Recall numbered tiles on increasingly difficult grids before time runs out |
 | **Refrain** | Melody memory | Replay a piano phrase that grows by one note each level |
+| **Fever Dream** | Beat memory | Read a microwave's movement, then feed the rhythm back with eight taps |
+| **Phantom Drop** | Internal timing | Keep time through a silent bar and catch the returning drop |
+| **Off-Grid** | Microtiming | Find the one late hit hidden inside a repeating drum loop |
 
 ## What's included
 
@@ -29,6 +33,7 @@ back in.
 - Per-mode best scores, play counts, daily streaks, saved preferences, and new-best celebrations
 - Shareable emoji score cards with native sharing, clipboard fallback, and WhatsApp sharing
 - Built-in How to play guides, audio feedback, fullscreen mode, and four animated backgrounds
+- Beat Lab with mix-and-match drums, bass, chords, melody, vocal chops, and track download
 
 Keyboard shortcuts appear in each game. Common controls include number keys for difficulty,
 `D` for Daily, `Enter` to start, `Esc` to return to the menu, and `F` for fullscreen.
@@ -54,4 +59,11 @@ npm run build    # static export to out/
 Pushes to `main` deploy automatically to GitHub Pages at
 [delulubeats.com](https://delulubeats.com/).
 
-Inspired by the perception-game genre popularized by [dialed.gg](https://dialed.gg).
+## About and credits
+
+Delulu Beats was created and vibe-coded by Oliver Saly and his dad, Victor Saly.
+
+The games draw inspiration from playful browser experiments such as
+[Neal.fun](https://neal.fun/) and the perception-game genre popularized by
+[dialed.gg](https://dialed.gg/). Delulu Beats is an original, independent project and is not
+affiliated with either site.

@@ -248,6 +248,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .hubCard p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .hubCard .go { margin-top: auto; padding-top: 12px; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
 .hubCard:hover .go { color: var(--bone); }
+.hubMetaLink { color: var(--bone); border-bottom: 1px solid rgba(239, 240, 244, 0.3); }
+.hubMetaLink:hover { border-bottom-color: var(--bone); }
 
 /* ---------- reveal ---------- */
 .slotTag { font-size: 13px; letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 2vh; }
@@ -909,4 +911,14 @@ input[type="range"]::-moz-range-thumb {
 }
 @media (prefers-reduced-motion: reduce) {
   .hubCard:hover .feverShake, .hubCard:hover .phantomDrop { animation: none; }
+}
+
+/* ---------- Beat Lab banner card ---------- */
+.studioCard { flex-direction: row; align-items: center; gap: 22px; max-width: none; }
+.studioCard .art { flex: 0 0 200px; height: 72px; margin-bottom: 0; }
+.studioCopy { display: flex; flex-direction: column; gap: 8px; }
+.studioCopy .go { padding-top: 4px; }
+@media (max-width: 640px) {
+  .studioCard { flex-direction: column; align-items: stretch; }
+  .studioCard .art { flex: none; }
 }

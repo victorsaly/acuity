@@ -23,6 +23,8 @@
  */
 
 let ctx: AudioContext | null = null;
+let masterBus: GainNode | null = null;
+let streamTap: MediaStreamAudioDestinationNode | null = null;
 let dryBus: GainNode;
 let duckBus: GainNode;
 let wetSend: GainNode;
@@ -71,6 +73,7 @@ export function audio(): AudioContext {
     const master = ctx.createGain();
     master.gain.value = 0.92;
     master.connect(ctx.destination);
+    masterBus = master;
 
     const limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -1.5;
@@ -754,4 +757,65 @@ export function pianoKey(freq: number, vol = 0.14, dur?: number) {
   n.connect(bp); bp.connect(ng);
   out(ng, 0.2);
   n.start(t); n.stop(t + 0.05);
+}
+
+/* ---------------- output tap (Beat Lab recording) ---------------- */
+
+/** A MediaStream carrying the master output, for MediaRecorder capture. */
+export function outputStream(): MediaStream {
+  const c = audio();
+  if (!streamTap) {
+    streamTap = c.createMediaStreamDestination();
+    masterBus!.connect(streamTap);
+  }
+  return streamTap.stream;
+}
+
+/* ---------------- Beat Lab pack (vocal chops, FX, textures) ----------------
+ *
+ * ElevenLabs one-shots rendered by scripts/gen-lab.mjs into
+ * public/samples/lab/.  Deliberately atonal roles only — tonal layers stay
+ * synthesized so they are always in key.  Missing files fail silently.
+ */
+
+export const LAB_SOUNDS = [
+  "vox-hey", "vox-oh", "vox-yeah", "vox-uh", "vox-la", "vox-chant",
+  "fx-riser", "fx-drop", "fx-vinyl", "fx-sweep", "fx-scratch", "fx-air",
+] as const;
+export type LabSound = (typeof LAB_SOUNDS)[number];
+
+const labBufs: Partial<Record<LabSound, AudioBuffer>> = {};
+let labLoading = false;
+
+export function loadLabSamples() {
+  if (typeof window === "undefined" || labLoading) return;
+  labLoading = true;
+  const c = ctx ?? new OfflineAudioContext(1, 1, 44100);
+  LAB_SOUNDS.forEach(async (name) => {
+    try {
+      const r = await fetch(`${BASE_PATH}/samples/lab/${name}.mp3`);
+      if (!r.ok) return;
+      labBufs[name] = await c.decodeAudioData(await r.arrayBuffer());
+    } catch { /* not generated yet */ }
+  });
+}
+
+export function labReady(name: LabSound): boolean {
+  return !!labBufs[name];
+}
+
+/** Play one lab sample; false (silently) if it is not loaded. */
+export function labPlay(name: LabSound, t: number, vol = 0.5, rate = 1, send = 0.3): boolean {
+  const buf = labBufs[name];
+  if (!buf) return false;
+  const c = audio();
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.value = rate;
+  const g = c.createGain();
+  g.gain.value = vol;
+  src.connect(g);
+  out(g, send);
+  src.start(t);
+  return true;
 }
