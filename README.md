@@ -1,7 +1,7 @@
 # Delulu Beats
 
-Delulu Beats is a collection of five full-screen perception games for color, pitch,
-rhythm, spatial memory, and melody. See it, hear it, remember it, then try to dial it
+Delulu Beats is a collection of six full-screen perception games for color, pitch,
+duration, rhythm, spatial memory, and melody. See it, hear it, remember it, then try to dial it
 back in.
 
 **Play now: https://delulubeats.com/**
@@ -10,6 +10,7 @@ back in.
 | --- | --- | --- |
 | **Afterimage** | Color memory | Rebuild five colors from memory with HSL controls |
 | **Sine Language** | Pitch memory | Hear five tones, then recover each pitch on a frequency slider |
+| **Second Sense** | Time perception | Feel each duration, then hold and release to recreate it without a clock |
 | **Downbeat** | Rhythm and timing | Follow the track and hit each incoming note on the beat |
 | **Echo** | Spatial memory | Recall numbered tiles on increasingly difficult grids before time runs out |
 | **Refrain** | Melody memory | Replay a piano phrase that grows by one note each level |

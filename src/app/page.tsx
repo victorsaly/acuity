@@ -24,7 +24,7 @@ export default function Hub() {
         <Item><h1 className="wordmark">Delulu Beats</h1></Item>
         <Item>
           <p className="tagline">
-            Five full-screen perception games. Your memory for color, pitch, melody,
+            Six full-screen perception games. Your memory for color, pitch, melody,
             time, and space is worse than you think — prove otherwise.
           </p>
         </Item>
@@ -61,6 +61,25 @@ export default function Hub() {
                 <h2>Sine Language</h2>
                 <p>Five tones play once each, then you pull every pitch back out of thin air.</p>
                 <CardStats game="sound" />
+                <span className="go">Play ▸</span>
+              </Link>
+            </Tilt>
+          </Item>
+          <Item style={cardWrap}>
+            <Tilt style={{ display: "flex", width: "100%" }}>
+              <Link href="/time" className="hubCard" data-note={698} style={{ width: "100%" }}>
+                <div className="art" aria-hidden>
+                  <svg viewBox="0 0 200 72" style={{ width: "100%", height: "100%" }}>
+                    <circle cx="100" cy="36" r="29" fill="none" stroke="rgba(239,240,244,.18)" strokeWidth="1" />
+                    <circle cx="100" cy="36" r="20" fill="none" stroke="rgba(239,240,244,.3)" strokeWidth="1" />
+                    <path d="M100 7 A29 29 0 0 1 127 47" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+                    <circle cx="127" cy="47" r="4" fill="#ffffff" />
+                    <circle cx="100" cy="36" r="3" fill="#ffffff" opacity=".65" />
+                  </svg>
+                </div>
+                <h2>Second Sense</h2>
+                <p>Feel each duration, then hold and release to recreate it without a clock.</p>
+                <CardStats game="time" />
                 <span className="go">Play ▸</span>
               </Link>
             </Tilt>

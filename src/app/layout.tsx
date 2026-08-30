@@ -20,10 +20,10 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://delulubeats.com/"),
   title: { default: "Delulu Beats", template: "%s · Delulu Beats" },
   description:
-    "Five full-screen perception games. Your memory for color, pitch, melody, time, and space is worse than you think — prove otherwise.",
+    "Six full-screen perception games. Test your memory for color, pitch, melody, duration, rhythm, and space.",
   openGraph: {
     title: "Delulu Beats",
-    description: "Full-screen perception games: color, pitch, melody, tempo, and spatial memory.",
+    description: "Full-screen perception games: color, pitch, melody, duration, rhythm, and spatial memory.",
     url: "https://delulubeats.com/",
     siteName: "Delulu Beats",
     type: "website",

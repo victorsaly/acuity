@@ -1,0 +1,174 @@
+.stage {
+  overflow: hidden;
+}
+
+.dial {
+  --progress: 0;
+  width: min(52vmin, 390px);
+  aspect-ratio: 1;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(239, 240, 244, 0.22);
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle, transparent 0 13%, rgba(239, 240, 244, 0.055) 13.4% 13.8%, transparent 14.2% 20%),
+    radial-gradient(circle, rgba(239, 240, 244, 0.08), transparent 62%);
+  box-shadow: 0 0 90px rgba(75, 225, 255, 0.08);
+}
+
+.dial::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(var(--bone) calc(var(--progress) * 1turn), transparent 0);
+  mask: radial-gradient(circle, transparent calc(50% - 2px), #000 calc(50% - 1px));
+  opacity: 0.9;
+}
+
+.dial::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: -4px;
+  left: calc(50% - 4px);
+  border-radius: 50%;
+  background: var(--bone);
+  box-shadow: 0 0 22px rgba(239, 240, 244, 0.9);
+  transform-origin: 4px calc(min(52vmin, 390px) / 2 + 4px);
+  transform: rotate(calc(var(--progress) * 1turn));
+}
+
+.core {
+  width: 58%;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(239, 240, 244, 0.13);
+  border-radius: 50%;
+  background: rgba(12, 13, 18, 0.72);
+  text-align: center;
+}
+
+.core strong {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(28px, 7vmin, 58px);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.core span,
+.eyebrow {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.stage > .eyebrow {
+  margin-bottom: clamp(20px, 3.5vh, 36px);
+}
+
+.pulse {
+  animation: breathe 1.4s ease-in-out infinite alternate;
+}
+
+.action {
+  min-width: min(300px, 82vw);
+  min-height: 64px;
+  margin-top: 5vh;
+  font-size: 17px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.feedback {
+  width: min(620px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.delta {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(42px, 12vw, 92px);
+  font-weight: 900;
+  line-height: 1;
+  margin: 2vh 0 1vh;
+  font-variant-numeric: tabular-nums;
+}
+
+.comparison {
+  display: flex;
+  gap: clamp(28px, 8vw, 90px);
+  margin: 3vh 0;
+}
+
+.comparison div {
+  display: grid;
+  gap: 5px;
+}
+
+.comparison b {
+  font-size: clamp(22px, 5vw, 36px);
+  font-variant-numeric: tabular-nums;
+}
+
+.comparison span {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.resultGrid {
+  width: min(760px, calc(100% - 32px));
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 3vh auto 1vh;
+}
+
+.resultCell {
+  min-width: 0;
+  padding: 16px 8px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.resultCell b,
+.resultCell span {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.resultCell b {
+  font-size: 18px;
+}
+
+.resultCell span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+@keyframes breathe {
+  to { transform: scale(1.045); box-shadow: 0 0 120px rgba(75, 225, 255, 0.15); }
+}
+
+@media (max-width: 600px) {
+  .dial { width: min(76vw, 330px); }
+  .dial::after { transform-origin: 4px calc(min(76vw, 330px) / 2 + 4px); }
+  .resultGrid { grid-template-columns: repeat(5, minmax(54px, 1fr)); overflow-x: auto; justify-content: start; }
+  .resultCell { padding-inline: 4px; }
+  .action { margin-top: 3vh; }
+}
