@@ -48,8 +48,11 @@ export default function Chrome() {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       if (e.key === "f" || e.key === "F") {
-        if (document.fullscreenElement) document.exitFullscreen();
-        else document.documentElement.requestFullscreen().catch(() => {});
+        setTimeout(() => {                    // let a game claim F first (it's a piano key in Refrain)
+          if (e.defaultPrevented) return;
+          if (document.fullscreenElement) document.exitFullscreen();
+          else document.documentElement.requestFullscreen().catch(() => {});
+        }, 0);
       }
     };
     document.addEventListener("pointerover", over);

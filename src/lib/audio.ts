@@ -3,16 +3,28 @@
 /**
  * Shared Web Audio engine for all the games.
  *
- * Graph:  source ──► dry ──► compressor ──► destination
- *                └──► reverb send ──► convolver ──► wet ──► compressor
+ * Master chain (every voice runs through it, so the whole app is "glued"):
  *
- * The compressor acts as a gentle limiter so overlapping voices
- * (drums + blips + tones) never clip; the convolver adds a short
- * generated room so everything sounds "placed" instead of raw.
+ *   voices ──► dry bus ─────────┐
+ *   hats/bass ► duck bus ───────┼──► saturator ─► glue comp ─► limiter ─► master ─► out
+ *   per-voice sends ► convolver ┘    (tanh 1.8,   (-20dB 2.6:1)  (-1.5dB
+ *                                     2x overs.)                  20:1)
+ *
+ * The saturator adds harmonic weight, the glue compressor makes the layers
+ * breathe together, and the limiter catches peaks so nothing ever clips.
+ * The duck bus dips ~4dB for 60ms whenever a kick lands — the sidechain
+ * "pump" of a produced record.  A generated-noise convolver gives a short
+ * room on a per-voice send.
+ *
+ * Drum voices are pre-rendered one-shots (scripts/kits/build.py) listed in
+ * public/samples/manifest.json — 2-3 round-robin variants per voice, played
+ * with ±6 cent / ±0.5dB humanisation.  Until they finish loading, a synth
+ * fallback covers every voice.
  */
 
 let ctx: AudioContext | null = null;
-let dry: GainNode;
+let dryBus: GainNode;
+let duckBus: GainNode;
 let wetSend: GainNode;
 
 export function audio(): AudioContext {
@@ -21,29 +33,58 @@ export function audio(): AudioContext {
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     ctx = new AC();
 
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -18;
-    comp.knee.value = 24;
-    comp.ratio.value = 6;
-    comp.attack.value = 0.003;
-    comp.release.value = 0.2;
-    comp.connect(ctx.destination);
+    const master = ctx.createGain();
+    master.gain.value = 0.92;
+    master.connect(ctx.destination);
 
-    dry = ctx.createGain();
-    dry.gain.value = 0.9;
-    dry.connect(comp);
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -1.5;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.002;
+    limiter.release.value = 0.08;
+    limiter.connect(master);
+
+    const glue = ctx.createDynamicsCompressor();
+    glue.threshold.value = -20;
+    glue.knee.value = 8;
+    glue.ratio.value = 2.6;
+    glue.attack.value = 0.006;
+    glue.release.value = 0.18;
+    glue.connect(limiter);
+
+    const shaper = ctx.createWaveShaper();
+    shaper.curve = satCurve(1.8);
+    shaper.oversample = "2x";
+    shaper.connect(glue);
+
+    dryBus = ctx.createGain();
+    dryBus.connect(shaper);
+    duckBus = ctx.createGain();
+    duckBus.connect(shaper);
 
     const convolver = ctx.createConvolver();
-    convolver.buffer = makeImpulse(ctx, 1.6, 2.8);
+    convolver.buffer = makeImpulse(ctx, 1.5, 2.6);
     const wet = ctx.createGain();
-    wet.gain.value = 0.22;
+    wet.gain.value = 0.8;
     wetSend = ctx.createGain();
     wetSend.connect(convolver);
     convolver.connect(wet);
-    wet.connect(comp);
+    wet.connect(shaper);
   }
   if (ctx.state === "suspended") ctx.resume();
   return ctx;
+}
+
+function satCurve(drive: number) {
+  const n = 2048;
+  const curve = new Float32Array(n);
+  const norm = Math.tanh(drive);
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1;
+    curve[i] = Math.tanh(x * drive) / norm;
+  }
+  return curve;
 }
 
 /** Exponentially decaying stereo noise — a small, soft room. */
@@ -61,7 +102,7 @@ function makeImpulse(c: AudioContext, seconds: number, decay: number): AudioBuff
 }
 
 function out(node: AudioNode, reverbAmount = 0.15) {
-  node.connect(dry);
+  node.connect(dryBus);
   if (reverbAmount > 0) {
     const send = ctx!.createGain();
     send.gain.value = reverbAmount;
@@ -72,6 +113,16 @@ function out(node: AudioNode, reverbAmount = 0.15) {
 
 export function now(): number {
   return audio().currentTime;
+}
+
+/** Sidechain pump: dip the duck bus when a kick lands. */
+function duck(t: number, amount: number) {
+  if (!ctx || amount <= 0) return;
+  const g = duckBus.gain;
+  const t0 = Math.max(t, ctx.currentTime);
+  g.cancelScheduledValues(t0);
+  g.setTargetAtTime(1 - amount, t0, 0.006);
+  g.setTargetAtTime(1, t0 + 0.055, 0.085);
 }
 
 /* ---------------- UI blips ---------------- */
@@ -107,30 +158,6 @@ export function uiBlip(freq = 587, vol = 0.05, dur = 0.07) {
   out(g, 0.35);
   o1.start(t); o2.start(t); o3.start(t);
   o1.stop(t + dur + 0.1); o2.stop(t + dur + 0.1); o3.stop(t + dur + 0.1);
-}
-
-/** Mallet pluck (Echo tiles): soft attack, four partials, the upper ones dying first, wet with reverb. */
-export function pluck(freq: number, vol = 0.09, dur = 0.6) {
-  const c = audio();
-  const t = c.currentTime;
-  const g = c.createGain();
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(vol, t + 0.006);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  const partials: [number, number, OscillatorType, number][] = [
-    [1, 1, "sine", 1], [2, 0.32, "sine", 0.55], [3, 0.14, "triangle", 0.3], [4.01, 0.07, "sine", 0.22],
-  ];
-  for (const [mult, amp, type, life] of partials) {
-    const o = c.createOscillator();
-    o.type = type;
-    o.frequency.value = freq * mult;
-    const pg = c.createGain();
-    pg.gain.setValueAtTime(amp, t);
-    pg.gain.exponentialRampToValueAtTime(0.0001, t + dur * life);
-    o.connect(pg); pg.connect(g);
-    o.start(t); o.stop(t + dur + 0.05);
-  }
-  out(g, 0.45);
 }
 
 /** Wrong-answer thud: a low sawtooth pitch-drop through a closing lowpass. */
@@ -250,9 +277,10 @@ export function toneActive(): boolean {
   return !!toneGain && toneGain.gain.value > 0.004;
 }
 
-/* ---------------- drum voices (tempo game) ---------------- */
+/* ---------------- drum kits (tempo game) ---------------- */
 
 export type DrumKitName = "punch" | "boom" | "club" | "wood";
+export type DrumVoice = "kick" | "snare" | "clap" | "hat" | "open" | "rim" | "perc" | "bass";
 
 const KITS: Record<DrumKitName, {
   kickStart: number; kickEnd: number; kickDecay: number;
@@ -272,30 +300,28 @@ export function setDrumKit(k: DrumKitName) {
   loadKitSamples(k);
 }
 
-/* ---------------- sampled kits (one-shots generated by scripts/gen-samples.mjs) ----------------
+/* ---------------- sampled kits (one-shots rendered by scripts/kits/build.py) ----------------
  *
- * Each kit may have public/samples/<kit>/{kick,snare,hat,open}.mp3. Files are
- * fetched lazily, trimmed of lead-in silence and peak-normalised; any sound
- * that is missing (or not yet loaded) plays through the synth voice below.
+ * public/samples/manifest.json lists, per kit and voice, the round-robin
+ * files plus mix gain, reverb send and duck amount.  Files are fetched
+ * lazily; any voice not yet loaded plays through the synth fallback.
  */
 
-type SampleName = "kick" | "snare" | "hat" | "open";
-const SAMPLE_NAMES: SampleName[] = ["kick", "snare", "hat", "open"];
-type Sample = { buf: AudioBuffer; offset: number; gain: number };
-const samples: Partial<Record<DrumKitName, Partial<Record<SampleName, Sample>>>> = {};
-const samplesLoading = new Set<DrumKitName>();
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+type VoiceDef = { files: string[]; gain: number; send: number; duck: number };
+type Manifest = { bassRoot: number; kits: Record<string, Record<string, VoiceDef>> };
 
-/** First moment the sample rises above the noise floor, and 1/peak for normalising. */
-function analyse(buf: AudioBuffer): { offset: number; gain: number } {
-  const d = buf.getChannelData(0);
-  let first = -1, peak = 0;
-  for (let i = 0; i < d.length; i++) {
-    const a = Math.abs(d[i]);
-    if (first < 0 && a > 0.02) first = i;
-    if (a > peak) peak = a;
-  }
-  return { offset: Math.max(0, first - 8) / buf.sampleRate, gain: peak > 0 ? 0.9 / peak : 1 };
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+let manifest: Manifest | null = null;
+let manifestP: Promise<Manifest | null> | null = null;
+const samples: Partial<Record<DrumKitName, Partial<Record<DrumVoice, AudioBuffer[]>>>> = {};
+const samplesLoading = new Set<DrumKitName>();
+
+function fetchManifest(): Promise<Manifest | null> {
+  manifestP ??= fetch(`${BASE_PATH}/samples/manifest.json`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((m: Manifest | null) => (manifest = m))
+    .catch(() => null);
+  return manifestP;
 }
 
 export function loadKitSamples(k: DrumKitName = kitName) {
@@ -304,15 +330,22 @@ export function loadKitSamples(k: DrumKitName = kitName) {
   // Decode on an offline context so preloading never spins up the live
   // AudioContext before the first user gesture.
   const c = ctx ?? new OfflineAudioContext(1, 1, 44100);
-  Promise.all(SAMPLE_NAMES.map(async (n) => {
-    try {
-      const r = await fetch(`${BASE_PATH}/samples/${k}/${n}.mp3`);
-      if (!r.ok || !(r.headers.get("content-type") ?? "").startsWith("audio")) return null;
-      const buf = await c.decodeAudioData(await r.arrayBuffer());
-      return [n, { buf, ...analyse(buf) }] as const;
-    } catch { return null; }
-  })).then((entries) => {
-    samples[k] = Object.fromEntries(entries.filter((e): e is NonNullable<typeof e> => !!e));
+  fetchManifest().then(async (m) => {
+    const kit = m?.kits[k];
+    if (!kit) return;
+    const loaded: Partial<Record<DrumVoice, AudioBuffer[]>> = {};
+    await Promise.all((Object.keys(kit) as DrumVoice[]).map(async (voice) => {
+      const bufs = await Promise.all(kit[voice].files.map(async (f) => {
+        try {
+          const r = await fetch(`${BASE_PATH}/samples/${k}/${f}`);
+          if (!r.ok) return null;
+          return await c.decodeAudioData(await r.arrayBuffer());
+        } catch { return null; }
+      }));
+      const ok = bufs.filter((b): b is AudioBuffer => !!b);
+      if (ok.length) loaded[voice] = ok;
+    }));
+    samples[k] = loaded;
   }).finally(() => samplesLoading.delete(k));
 }
 
@@ -320,28 +353,62 @@ export function preloadAllKits() {
   (Object.keys(KITS) as DrumKitName[]).forEach(loadKitSamples);
 }
 
-/** Play a one-shot if its sample exists; returns false so the caller can fall back to synth. */
-function playSample(name: SampleName, t: number, vol: number, maxDur: number, reverb: number): boolean {
-  const s = samples[kitName]?.[name];
-  if (!s) return false;
-  const c = audio();
-  const src = c.createBufferSource();
-  src.buffer = s.buf;
-  const g = c.createGain();
-  const end = Math.min(maxDur, s.buf.duration - s.offset);
-  g.gain.setValueAtTime(vol * s.gain, t);
-  g.gain.setValueAtTime(vol * s.gain, t + end * 0.6);
-  g.gain.exponentialRampToValueAtTime(0.001, t + end);
-  src.connect(g);
-  out(g, reverb);
-  src.start(t, s.offset);
-  src.stop(t + end + 0.02);
-  return true;
+/* round-robin state: never the same variant twice in a row */
+const rrState: Record<string, number> = {};
+function nextVariant(key: string, n: number): number {
+  if (n < 2) return 0;
+  const prev = rrState[key] ?? Math.floor(Math.random() * n);
+  const i = (prev + 1 + Math.floor(Math.random() * (n - 1))) % n;
+  rrState[key] = i;
+  return i;
 }
 
-/** Kick: sine with a fast pitch drop + a tiny click transient. */
+/* choke groups: a closed hat chokes the open hat; a new bass note chokes the last */
+let lastOpen: { g: GainNode; src: AudioBufferSourceNode } | null = null;
+let lastBass: { g: GainNode; src: AudioBufferSourceNode } | null = null;
+
+function choke(v: { g: GainNode; src: AudioBufferSourceNode } | null, t: number, ms = 0.02) {
+  if (!v || !ctx) return;
+  const t0 = Math.max(t, ctx.currentTime);
+  try {
+    v.g.gain.cancelScheduledValues(t0);
+    v.g.gain.setValueAtTime(v.g.gain.value, t0);
+    v.g.gain.linearRampToValueAtTime(0.0001, t0 + ms);
+    v.src.stop(t0 + ms + 0.005);
+  } catch { /* already stopped */ }
+}
+
+/** Play one sampled voice; null if its buffers aren't ready yet (caller falls back to synth). */
+function playVoice(
+  voice: DrumVoice, t: number, vol = 1, rate = 1, humanize = true,
+): { g: GainNode; src: AudioBufferSourceNode } | null {
+  const def = manifest?.kits[kitName]?.[voice];
+  const bufs = samples[kitName]?.[voice];
+  if (!def || !bufs?.length) return null;
+  const c = audio();
+  const src = c.createBufferSource();
+  src.buffer = bufs[nextVariant(`${kitName}/${voice}`, bufs.length)];
+  const cents = humanize ? (Math.random() * 2 - 1) * 6 : 0;
+  src.playbackRate.value = rate * Math.pow(2, cents / 1200);
+  const g = c.createGain();
+  const trim = humanize ? Math.pow(10, ((Math.random() * 2 - 1) * 0.5) / 20) : 1;
+  g.gain.value = def.gain * vol * trim;
+  src.connect(g);
+  g.connect(def.duck > 0 ? duckBus : dryBus);
+  if (def.send > 0) {
+    const s = c.createGain();
+    s.gain.value = def.send;
+    g.connect(s);
+    s.connect(wetSend);
+  }
+  src.start(t);
+  return { g, src };
+}
+
+/** Kick: sampled (with sidechain pump), else sine pitch-drop + click transient. */
 export function kick(t: number, vol = 0.9) {
-  if (playSample("kick", t, vol, 0.6, 0.06)) return;
+  duck(t, 0.45);
+  if (playVoice("kick", t, vol)) return;
   const c = audio();
   const K = KITS[kitName];
   const o = c.createOscillator();
@@ -392,9 +459,9 @@ function snareBurst(c: AudioContext, t: number, vol: number, freq: number) {
   n.start(t); n.stop(t + 0.2);
 }
 
-/** Snare: bandpassed noise crack + a tuned body (club kit doubles the crack into a clap). */
-export function snare(t: number, vol = 0.7) {
-  if (playSample("snare", t, vol * 0.8, 0.45, 0.22)) return;
+/** Snare: sampled, else bandpassed noise crack + a tuned body. */
+export function snare(t: number, vol = 0.8) {
+  if (playVoice("snare", t, vol)) return;
   const c = audio();
   const K = KITS[kitName];
   snareBurst(c, t, vol * 0.5, K.snareFreq);
@@ -412,10 +479,21 @@ export function snare(t: number, vol = 0.7) {
   body.start(t); body.stop(t + 0.12);
 }
 
-/** Hi-hat: highpassed noise, closed or open (wood kit plays it as a shaker). */
+/** Clap: sampled, else the synth snare's noise crack doubled. */
+export function clap(t: number, vol = 0.8) {
+  if (playVoice("clap", t, vol)) return;
+  const c = audio();
+  const K = KITS[kitName];
+  snareBurst(c, t, vol * 0.4, K.snareFreq);
+  snareBurst(c, t + 0.028, vol * 0.3, K.snareFreq * 0.9);
+}
+
+/** Hi-hat: closed chokes open; sampled, else highpassed noise. */
 export function hat(t: number, open = false, vol?: number) {
   const K = KITS[kitName];
-  if (playSample(open ? "open" : "hat", t, (vol ?? K.hatVol) * 1.3, open ? 0.4 : 0.1, 0.12)) return;
+  if (!open) choke(lastOpen, t);
+  const v = playVoice(open ? "open" : "hat", t, vol ?? 1);
+  if (v) { if (open) lastOpen = v; return; }
   const c = audio();
   const n = noise(c);
   const hp = c.createBiquadFilter();
@@ -428,6 +506,151 @@ export function hat(t: number, open = false, vol?: number) {
   n.connect(hp); hp.connect(g);
   out(g, 0.12);
   n.start(t); n.stop(t + dur + 0.05);
+}
+
+/** Rimshot / woodblock accent: sampled, else a short ping. */
+export function rim(t: number, vol = 0.8) {
+  if (playVoice("rim", t, vol)) return;
+  const c = audio();
+  const o = c.createOscillator();
+  o.type = "sine";
+  o.frequency.value = 820;
+  const g = c.createGain();
+  g.gain.setValueAtTime(vol * 0.3, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  o.connect(g);
+  out(g, 0.18);
+  o.start(t); o.stop(t + 0.07);
+}
+
+/** Percussion (cowbell / conga / tom flavor per kit): sampled, else a tuned blip. */
+export function perc(t: number, vol = 0.8) {
+  if (playVoice("perc", t, vol)) return;
+  const c = audio();
+  const o = c.createOscillator();
+  o.type = "triangle";
+  o.frequency.setValueAtTime(240, t);
+  o.frequency.exponentialRampToValueAtTime(180, t + 0.08);
+  const g = c.createGain();
+  g.gain.setValueAtTime(vol * 0.3, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+  o.connect(g);
+  out(g, 0.2);
+  o.start(t); o.stop(t + 0.14);
+}
+
+/** Bass note, in semitones from the kit's root (F1). Mono — a new note chokes the last. */
+export function bass(t: number, semis = 0, vol = 1) {
+  choke(lastBass, t, 0.015);
+  const rate = Math.pow(2, semis / 12);
+  const v = playVoice("bass", t, vol, rate, false);
+  if (v) { lastBass = v; return; }
+  const m = manifest?.bassRoot ?? 43.65;
+  const c = audio();
+  const o = c.createOscillator();
+  o.type = "sine";
+  o.frequency.value = m * rate;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol * 0.5, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+  o.connect(g);
+  g.connect(duckBus);
+  o.start(t); o.stop(t + 0.45);
+}
+
+/** Soft mallet pluck (memory game): sine + faint octave through a closing lowpass. */
+export function pluck(freq: number, vol = 0.06, dur = 0.4) {
+  const c = audio();
+  const t = c.currentTime;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  const lpf = c.createBiquadFilter();
+  lpf.type = "lowpass";
+  lpf.frequency.setValueAtTime(freq * 8, t);
+  lpf.frequency.exponentialRampToValueAtTime(freq * 2, t + dur * 0.7);
+  const o1 = c.createOscillator();
+  o1.type = "sine";
+  o1.frequency.value = freq;
+  const o2 = c.createOscillator();
+  o2.type = "triangle";
+  o2.frequency.value = freq * 2;
+  const g2 = c.createGain();
+  g2.gain.value = 0.22;
+  o2.connect(g2);
+  o1.connect(lpf);
+  g2.connect(lpf);
+  lpf.connect(g);
+  out(g, 0.3);
+  o1.start(t); o2.start(t);
+  o1.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+}
+
+/* ---------------- melodic stabs (song hooks) ---------------- */
+
+export type LeadVoice = "piano" | "pluck" | "saw" | "steel" | "brass";
+
+/**
+ * One melodic stab for song-mode hooks — synthesized, so every hook is an
+ * original rendition. `midi` is a MIDI note number (69 = A4).
+ */
+export function stab(t: number, midi: number, dur = 0.3, voice: LeadVoice = "piano", vol = 0.16) {
+  const c = audio();
+  const f = 440 * Math.pow(2, (midi - 69) / 12);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
+  const lpf = c.createBiquadFilter();
+  lpf.type = "lowpass";
+  lpf.connect(g);
+  const oscs: OscillatorNode[] = [];
+  const mk = (type: OscillatorType, mult: number, gain: number, detune = 0) => {
+    const o = c.createOscillator();
+    o.type = type;
+    o.frequency.value = f * mult;
+    o.detune.value = detune;
+    const og = c.createGain();
+    og.gain.value = gain;
+    o.connect(og);
+    og.connect(lpf);
+    oscs.push(o);
+  };
+  let rel = 0.08;                    // release tail after dur
+  if (voice === "piano") {
+    mk("triangle", 1, 1); mk("triangle", 2, 0.35, 4); mk("sine", 4, 0.12);
+    lpf.frequency.setValueAtTime(f * 9, t);
+    lpf.frequency.exponentialRampToValueAtTime(f * 2.5, t + Math.max(0.1, dur));
+    g.gain.setTargetAtTime(vol * 0.35, t + 0.02, Math.max(0.1, dur * 0.6));
+  } else if (voice === "pluck") {
+    mk("sawtooth", 1, 0.7); mk("sine", 1, 0.5);
+    lpf.frequency.setValueAtTime(f * 7, t);
+    lpf.frequency.exponentialRampToValueAtTime(f * 1.6, t + 0.12);
+    rel = 0.05;
+  } else if (voice === "saw") {
+    mk("sawtooth", 1, 0.5, -7); mk("sawtooth", 1, 0.5, 7); mk("sawtooth", 0.5, 0.25);
+    lpf.frequency.setValueAtTime(f * 3, t);
+    lpf.frequency.linearRampToValueAtTime(f * 8, t + 0.05);
+    lpf.frequency.setTargetAtTime(f * 3.5, t + 0.08, 0.15);
+    rel = 0.1;
+  } else if (voice === "steel") {
+    mk("sine", 1, 1); mk("sine", 2.02, 0.45); mk("sine", 2.9, 0.25); mk("triangle", 3.98, 0.12);
+    lpf.frequency.value = Math.min(12000, f * 12);
+    g.gain.setTargetAtTime(vol * 0.25, t + 0.015, Math.max(0.09, dur * 0.5));
+    rel = 0.12;
+  } else {                            // brass
+    mk("sawtooth", 1, 0.6); mk("square", 1, 0.25, 5); mk("sawtooth", 2, 0.15);
+    lpf.frequency.setValueAtTime(f * 2, t);
+    lpf.frequency.linearRampToValueAtTime(f * 6, t + 0.06);
+    rel = 0.09;
+  }
+  const end = t + dur;
+  g.gain.cancelScheduledValues(end);
+  g.gain.setValueAtTime(vol * 0.4, end);
+  g.gain.exponentialRampToValueAtTime(0.0001, end + rel);
+  out(g, 0.24);
+  oscs.forEach((o) => { o.start(t); o.stop(end + rel + 0.05); });
 }
 
 /** Count-in / metronome click. */
@@ -449,4 +672,49 @@ export function playTone(freq: number, ms = 700) {
   toneOn(freq);
   window.clearTimeout((playTone as unknown as { t?: number }).t);
   (playTone as unknown as { t?: number }).t = window.setTimeout(() => toneOff(), ms);
+}
+
+/* ---------------- piano key (Refrain) ---------------- */
+
+/** Piano-ish key: hammer-noise transient + slightly inharmonic partials,
+ *  the upper ones dying first. Higher notes decay a touch faster. */
+export function pianoKey(freq: number, vol = 0.14, dur?: number) {
+  const c = audio();
+  const t = c.currentTime;
+  const life = dur ?? Math.max(0.5, 1.15 - (freq - 261) / 1600);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + life);
+  const partials: [number, number, OscillatorType, number][] = [
+    [1, 1, "sine", 1],
+    [2.001, 0.44, "sine", 0.62],
+    [2.997, 0.2, "sine", 0.38],
+    [4.19, 0.09, "triangle", 0.24],
+    [5.42, 0.045, "sine", 0.14],
+  ];
+  for (const [mult, amp, type, part] of partials) {
+    const o = c.createOscillator();
+    o.type = type;
+    o.frequency.value = freq * mult;
+    const pg = c.createGain();
+    pg.gain.setValueAtTime(amp, t);
+    pg.gain.exponentialRampToValueAtTime(0.0001, t + life * part);
+    o.connect(pg); pg.connect(g);
+    o.start(t); o.stop(t + life + 0.05);
+  }
+  out(g, 0.5);
+
+  // hammer: a tiny bandpassed noise thump right at the attack
+  const n = noise(c);
+  const bp = c.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = Math.min(freq * 6, 4200);
+  bp.Q.value = 1.1;
+  const ng = c.createGain();
+  ng.gain.setValueAtTime(vol * 0.5, t);
+  ng.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+  n.connect(bp); bp.connect(ng);
+  out(ng, 0.2);
+  n.start(t); n.stop(t + 0.05);
 }

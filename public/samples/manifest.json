@@ -1,0 +1,311 @@
+{
+ "sampleRate": 44100,
+ "bassRoot": 43.65,
+ "kits": {
+  "punch": {
+   "kick": {
+    "files": [
+     "kick-1.wav",
+     "kick-2.wav",
+     "kick-3.wav"
+    ],
+    "gain": 1.0,
+    "send": 0.04,
+    "duck": 0
+   },
+   "snare": {
+    "files": [
+     "snare-1.wav",
+     "snare-2.wav",
+     "snare-3.wav"
+    ],
+    "gain": 0.85,
+    "send": 0.22,
+    "duck": 0
+   },
+   "clap": {
+    "files": [
+     "clap-1.wav",
+     "clap-2.wav"
+    ],
+    "gain": 0.7,
+    "send": 0.3,
+    "duck": 0
+   },
+   "hat": {
+    "files": [
+     "hat-1.wav",
+     "hat-2.wav",
+     "hat-3.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.08,
+    "duck": 0.5
+   },
+   "open": {
+    "files": [
+     "open-1.wav",
+     "open-2.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.14,
+    "duck": 0.5
+   },
+   "rim": {
+    "files": [
+     "rim-1.wav",
+     "rim-2.wav"
+    ],
+    "gain": 0.55,
+    "send": 0.18,
+    "duck": 0
+   },
+   "perc": {
+    "files": [
+     "perc-1.wav",
+     "perc-2.wav"
+    ],
+    "gain": 0.45,
+    "send": 0.2,
+    "duck": 0
+   },
+   "bass": {
+    "files": [
+     "bass-1.wav"
+    ],
+    "gain": 0.8,
+    "send": 0.0,
+    "duck": 1
+   }
+  },
+  "boom": {
+   "kick": {
+    "files": [
+     "kick-1.wav",
+     "kick-2.wav",
+     "kick-3.wav"
+    ],
+    "gain": 1.0,
+    "send": 0.05,
+    "duck": 0
+   },
+   "snare": {
+    "files": [
+     "snare-1.wav",
+     "snare-2.wav",
+     "snare-3.wav"
+    ],
+    "gain": 0.85,
+    "send": 0.28,
+    "duck": 0
+   },
+   "clap": {
+    "files": [
+     "clap-1.wav",
+     "clap-2.wav"
+    ],
+    "gain": 0.65,
+    "send": 0.32,
+    "duck": 0
+   },
+   "hat": {
+    "files": [
+     "hat-1.wav",
+     "hat-2.wav",
+     "hat-3.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.08,
+    "duck": 0.4
+   },
+   "open": {
+    "files": [
+     "open-1.wav",
+     "open-2.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.15,
+    "duck": 0.4
+   },
+   "rim": {
+    "files": [
+     "rim-1.wav",
+     "rim-2.wav"
+    ],
+    "gain": 0.55,
+    "send": 0.2,
+    "duck": 0
+   },
+   "perc": {
+    "files": [
+     "perc-1.wav",
+     "perc-2.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.22,
+    "duck": 0
+   },
+   "bass": {
+    "files": [
+     "bass-1.wav"
+    ],
+    "gain": 0.85,
+    "send": 0.0,
+    "duck": 1
+   }
+  },
+  "club": {
+   "kick": {
+    "files": [
+     "kick-1.wav",
+     "kick-2.wav",
+     "kick-3.wav"
+    ],
+    "gain": 1.0,
+    "send": 0.03,
+    "duck": 0
+   },
+   "snare": {
+    "files": [
+     "snare-1.wav",
+     "snare-2.wav",
+     "snare-3.wav"
+    ],
+    "gain": 0.85,
+    "send": 0.26,
+    "duck": 0
+   },
+   "clap": {
+    "files": [
+     "clap-1.wav",
+     "clap-2.wav"
+    ],
+    "gain": 0.7,
+    "send": 0.34,
+    "duck": 0
+   },
+   "hat": {
+    "files": [
+     "hat-1.wav",
+     "hat-2.wav",
+     "hat-3.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.07,
+    "duck": 0.6
+   },
+   "open": {
+    "files": [
+     "open-1.wav",
+     "open-2.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.14,
+    "duck": 0.6
+   },
+   "rim": {
+    "files": [
+     "rim-1.wav",
+     "rim-2.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.2,
+    "duck": 0
+   },
+   "perc": {
+    "files": [
+     "perc-1.wav",
+     "perc-2.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.2,
+    "duck": 0
+   },
+   "bass": {
+    "files": [
+     "bass-1.wav"
+    ],
+    "gain": 0.85,
+    "send": 0.0,
+    "duck": 1
+   }
+  },
+  "wood": {
+   "kick": {
+    "files": [
+     "kick-1.wav",
+     "kick-2.wav",
+     "kick-3.wav"
+    ],
+    "gain": 1.0,
+    "send": 0.08,
+    "duck": 0
+   },
+   "snare": {
+    "files": [
+     "snare-1.wav",
+     "snare-2.wav",
+     "snare-3.wav"
+    ],
+    "gain": 0.85,
+    "send": 0.3,
+    "duck": 0
+   },
+   "clap": {
+    "files": [
+     "clap-1.wav",
+     "clap-2.wav"
+    ],
+    "gain": 0.6,
+    "send": 0.3,
+    "duck": 0
+   },
+   "hat": {
+    "files": [
+     "hat-1.wav",
+     "hat-2.wav",
+     "hat-3.wav"
+    ],
+    "gain": 0.45,
+    "send": 0.1,
+    "duck": 0.3
+   },
+   "open": {
+    "files": [
+     "open-1.wav",
+     "open-2.wav"
+    ],
+    "gain": 0.4,
+    "send": 0.2,
+    "duck": 0.3
+   },
+   "rim": {
+    "files": [
+     "rim-1.wav",
+     "rim-2.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.2,
+    "duck": 0
+   },
+   "perc": {
+    "files": [
+     "perc-1.wav",
+     "perc-2.wav",
+     "perc-3.wav"
+    ],
+    "gain": 0.5,
+    "send": 0.24,
+    "duck": 0
+   },
+   "bass": {
+    "files": [
+     "bass-1.wav"
+    ],
+    "gain": 0.8,
+    "send": 0.0,
+    "duck": 1
+   }
+  }
+ }
+}

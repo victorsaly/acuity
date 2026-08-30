@@ -23,7 +23,10 @@ export default function Aurora() {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       if (e.key === "b" || e.key === "B") {
-        setMode((m) => MODES[(MODES.indexOf(m) + 1) % MODES.length]);
+        setTimeout(() => {                    // let a game claim B first (it's a piano key in Refrain)
+          if (e.defaultPrevented) return;
+          setMode((m) => MODES[(MODES.indexOf(m) + 1) % MODES.length]);
+        }, 0);
       }
     };
     document.addEventListener("keydown", onKey);

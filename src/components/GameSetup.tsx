@@ -14,7 +14,7 @@ const noopSubscribe = () => () => {};
  */
 export default function GameSetup({
   game, diffs, diff, mode, onDiff, onMode, onStart, refreshToken,
-  sounds, sound, onSound, formats, format, onFormat,
+  sounds, sound, onSound, formats, format, onFormat, beats, beat, onBeat,
 }: {
   game: string;
   diffs: DiffDef[];
@@ -30,6 +30,9 @@ export default function GameSetup({
   formats?: { key: string; label: string }[];
   format?: string;
   onFormat?: (k: string) => void;
+  beats?: { key: string; label: string; sub?: string }[];
+  beat?: string;
+  onBeat?: (k: string) => void;
 }) {
   /* localStorage read that is SSR-safe and refreshes whenever props change */
   const best = useSyncExternalStore(
@@ -58,15 +61,36 @@ export default function GameSetup({
         onFormat(formats[(i + 1) % formats.length].key);
         return;
       }
+      if ((e.key === "b" || e.key === "B") && beats && onBeat) {
+        const i = beats.findIndex((b) => b.key === beat);
+        onBeat(beats[(i + 1) % beats.length].key);
+        return;
+      }
       const idleFocus = !document.activeElement || document.activeElement === document.body;
       if ((e.key === "Enter" || e.key === " ") && idleFocus) { e.preventDefault(); onStart(); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [diffs, mode, onDiff, onMode, onStart, sounds, sound, onSound, formats, format, onFormat]);
+  }, [diffs, mode, onDiff, onMode, onStart, sounds, sound, onSound, formats, format, onFormat, beats, beat, onBeat]);
 
   return (
     <>
+      {beats && onBeat && (
+        <div className="modes beatRow" role="group" aria-label="Beat">
+          {beats.map((b, i) => (
+            <button
+              key={b.key}
+              className="mode"
+              aria-pressed={beat === b.key}
+              data-note={330 + i * 44}
+              onClick={() => onBeat(b.key)}
+            >
+              {b.label}
+              {b.sub && <small> {b.sub}</small>}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="diffs" role="group" aria-label="Difficulty">
         {diffs.map((d) => (
           <button
@@ -133,6 +157,7 @@ export default function GameSetup({
       <div className="kbd">
         <span><b>1–{diffs.length}</b>difficulty</span>
         {sounds && <span><b>S</b>sound</span>}
+        {beats && <span><b>B</b>beat</span>}
         {formats && <span><b>L</b>format</span>}
         <span><b>D</b>daily</span>
         <span><b>↵</b>start</span>

@@ -24,8 +24,8 @@ export default function Hub() {
         <Item><h1 className="wordmark">Acuity</h1></Item>
         <Item>
           <p className="tagline">
-            Four full-screen perception games. Your memory for color, pitch, time,
-            and space is worse than you think — prove otherwise.
+            Five full-screen perception games. Your memory for color, pitch, melody,
+            time, and space is worse than you think — prove otherwise.
           </p>
         </Item>
         <Stagger className="hubCards" delay={0.12}>
@@ -101,6 +101,27 @@ export default function Hub() {
                 <h2>Echo</h2>
                 <p>Numbered tiles flash and vanish. Tap them back in order before the clock runs out.</p>
                 <CardStats game="memory" />
+                <span className="go">Play ▸</span>
+              </Link>
+            </Tilt>
+          </Item>
+          <Item style={cardWrap}>
+            <Tilt style={{ display: "flex", width: "100%" }}>
+              <Link href="/piano" className="hubCard" data-note={988} style={{ width: "100%" }}>
+                <div className="art" aria-hidden>
+                  <svg viewBox="0 0 200 72" style={{ width: "100%", height: "100%" }}>
+                    {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                      <rect key={`w${i}`} x={i * 25 + 1} y={2} width={23} height={68} rx={3}
+                        fill={i === 4 ? "#b9b9c2" : "#eff0f4"} />
+                    ))}
+                    {[0, 1, 3, 4, 5].map((i) => (
+                      <rect key={`b${i}`} x={i * 25 + 17} y={2} width={16} height={40} rx={2.5} fill="#0c0d12" />
+                    ))}
+                  </svg>
+                </div>
+                <h2>Refrain</h2>
+                <p>A piano phrase grows one note per level — play the same notes back in order.</p>
+                <CardStats game="piano" />
                 <span className="go">Play ▸</span>
               </Link>
             </Tilt>
