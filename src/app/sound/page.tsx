@@ -322,7 +322,9 @@ export default function SoundGame() {
             <ShareScore text={scoreCard(
               "Sine Language",
               diff,
-              `${resTotal.toFixed(1)}/50 ${resScores.map(slotEmoji).join("")}`,
+              `${resTotal.toFixed(1)} / 50 | Grades: ${resScores.map(slotEmoji).join(" ")}`,
+              "sound",
+              diff,
             )} />
             <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
           </div>

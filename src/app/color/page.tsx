@@ -299,7 +299,9 @@ export default function ColorGame() {
         <ShareScore text={scoreCard(
           "Afterimage",
           diff,
-          `${total.toFixed(1)}/50 ${scores.map(slotEmoji).join("")}`,
+          `${total.toFixed(1)} / 50 | Grades: ${scores.map(slotEmoji).join(" ")}`,
+          "color",
+          diff,
         )} />
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
       </div>

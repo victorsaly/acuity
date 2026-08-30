@@ -282,8 +282,9 @@ export default function TimeGame() {
       <div className="resActions">
         <button className="cta" data-note={523} onClick={start}>Again</button>
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Menu</button>
-        <ShareScore text={scoreCard("SECOND SENSE", `${diff.toUpperCase()} · ${todayStamp()}`,
-          `${scores.map(slotEmoji).join("")} ${total.toFixed(1)}/50`)} />
+        <ShareScore text={scoreCard("Second Sense", `${diff} · ${todayStamp()}`,
+          `${total.toFixed(1)} / 50 | Grades: ${scores.map(slotEmoji).join(" ")}`,
+          "time", diff)} />
       </div>
     </main>
   );

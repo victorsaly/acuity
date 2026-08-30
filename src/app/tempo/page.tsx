@@ -729,7 +729,9 @@ export default function TempoGame() {
               <ShareScore text={scoreCard(
                 "Downbeat",
                 `${diff} · ${kit}/${lane}`,
-                `${total.toFixed(1)}/100 ${barEmoji(total)} · ${final.maxCombo} combo`,
+                `${total.toFixed(1)} / 100 ${barEmoji(total)} · ${final.maxCombo} combo`,
+                "tempo",
+                diff,
               )} />
               <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
             </div>

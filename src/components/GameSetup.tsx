@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getBest, scoreKey } from "@/lib/store";
 
 export type DiffDef = { key: string; label: string; sub: string; note: number };
@@ -34,7 +34,17 @@ export default function GameSetup({
 }) {
   const [showHelp, setShowHelp] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const appliedSharedLevel = useRef(false);
   const hasExtraOptions = Boolean((sounds && onSound) || (formats && onFormat) || (beats && onBeat));
+
+  useEffect(() => {
+    if (appliedSharedLevel.current) return;
+    appliedSharedLevel.current = true;
+    const sharedLevel = new URLSearchParams(window.location.search).get("level");
+    if (sharedLevel && sharedLevel !== diff && diffs.some(({ key }) => key === sharedLevel)) {
+      onDiff(sharedLevel);
+    }
+  }, [diff, diffs, onDiff]);
 
   /* localStorage read that is SSR-safe and refreshes whenever props change */
   const best = useSyncExternalStore(

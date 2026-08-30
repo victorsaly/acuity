@@ -2,18 +2,27 @@
 
 /* Wordle-style shareable score cards. */
 
-export const SITE_URL = "https://delulubeats.com/";
+export const SITE_URL = "https://delulubeats.com";
 
 export const slotEmoji = (score10: number) =>
-  score10 >= 9 ? "🟩" : score10 >= 7 ? "🟨" : score10 >= 4 ? "🟧" : "🟥";
+  score10 >= 9 ? "A" : score10 >= 7 ? "B" : score10 >= 4 ? "C" : "D";
 
 export const barEmoji = (pct: number) => {
   const filled = Math.round(Math.max(0, Math.min(100, pct)) / 10);
-  return "🟩".repeat(filled) + "⬛".repeat(10 - filled);
+  return `[${"#".repeat(filled)}${"-".repeat(10 - filled)}]`;
 };
 
-export function scoreCard(game: string, detail: string, scoreLine: string): string {
-  return `DELULU BEATS · ${game} · ${detail}\n${scoreLine}\n${SITE_URL}`;
+export function scoreCard(
+  game: string,
+  detail: string,
+  scoreLine: string,
+  route?: string,
+  level?: string,
+): string {
+  const challengeUrl = route && level
+    ? `${SITE_URL}/${route}/?level=${encodeURIComponent(level)}`
+    : `${SITE_URL}/`;
+  return `DELULU BEATS · ${game.toUpperCase()} · ${detail.toUpperCase()}\n\n${scoreLine}\n\nThink you can beat it?\n${challengeUrl}`;
 }
 
 /** Open the native share sheet (mobile, includes WhatsApp); fall back to clipboard. */

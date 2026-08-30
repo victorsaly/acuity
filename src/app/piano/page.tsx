@@ -6,7 +6,7 @@ import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
-import { scoreCard } from "@/lib/share";
+import { barEmoji, scoreCard } from "@/lib/share";
 import { uiBlip, pianoKey, buzz } from "@/lib/audio";
 import { speakCue, setVoiceCuesEnabled, voiceCuesAvailable } from "@/lib/voice";
 
@@ -447,7 +447,9 @@ export default function PianoGame() {
         <ShareScore text={scoreCard(
           "Refrain",
           `${diff} · ${fmt === "watch" ? "watch" : "by ear"}`,
-          `🎹 Level ${g.cleared} ${"🟩".repeat(Math.min(g.cleared, 10))}${"⬛".repeat(Math.max(0, 10 - g.cleared))}`,
+          `Level ${g.cleared} ${barEmoji(g.cleared * 10)}`,
+          "piano",
+          diff,
         )} />
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
       </div>
