@@ -5,7 +5,7 @@ import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
 import { scoreCard } from "@/lib/share";
 import { uiBlip, pianoKey, buzz } from "@/lib/audio";
 import { speakCue, setVoiceCuesEnabled, voiceCuesAvailable } from "@/lib/voice";
@@ -120,8 +120,6 @@ function buildInspiredPhrase(preset: Exclude<PhrasePreset, "auto">, n: number): 
 export default function PianoGame() {
   const [phase, setPhase] = useState<Phase>("menu");
   const [diff, setDiff] = usePref("piano-diff", "easy");
-  const [modeStr, setMode] = usePref("piano-mode", "free");
-  const mode = modeStr as Mode;
   const [fmtStr, setFmt] = usePref("piano-fmt", "watch");
   const fmt = fmtStr as Fmt;
   const [phraseStr, setPhrase] = usePref("piano-phrase", "auto");
@@ -204,7 +202,7 @@ export default function PianoGame() {
 
   const start = () => {
     clear();
-    const rng = rngFor(mode, "piano", diff);
+    const rng = runRng();
     const phraseBank = phrase === "auto" ? [] : buildInspiredPhrase(phrase, keys.length);
     R.current = { rng, ...EMPTY, melody: [], marks: [], phrase, phraseBank };
     extend();
@@ -213,7 +211,7 @@ export default function PianoGame() {
 
   const finish = () => {
     const g = R.current;
-    const key = scoreKey("piano", mode, diff);
+    const key = scoreKey("piano", diff);
     const isRecord = g.cleared > getBest(key) && g.cleared > 0;
     if (isRecord) setBest(key, g.cleared);
     setRecord(isRecord);
@@ -337,8 +335,8 @@ export default function PianoGame() {
           </Item>
           <Item><p className="tagline">A piano phrase plays, then it&apos;s yours — hit the same notes in the same order. Every level adds a note to the same melody; three slips end the run.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="piano" diffs={DIFFS} diff={diff} mode={mode}
-              onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
+            <GameSetup game="piano" diffs={DIFFS} diff={diff}
+              onDiff={setDiff} onStart={start} refreshToken={runStamp}
               formats={FORMATS} format={fmtStr} onFormat={setFmt}
               beats={PHRASES} beat={phraseStr} onBeat={setPhrase}
               helpContent={{
@@ -370,7 +368,7 @@ export default function PianoGame() {
   }
 
   const g = view;
-  const best = getBest(scoreKey("piano", mode, diff));
+  const best = getBest(scoreKey("piano", diff));
   const acc = g.taps ? Math.round((g.notes / g.taps) * 100) : 100;
 
   if (phase === "show" || phase === "recall") {
@@ -433,7 +431,7 @@ export default function PianoGame() {
       <Pop className="resHead">
         <h2 className="resVerdict">{verdict}</h2>
         <div className="resTotal">
-          <b>Level {g.cleared}</b> · {mode} · {diff} · {fmt === "watch" ? "watch" : "by ear"}
+          <b>Level {g.cleared}</b> · {diff} · {fmt === "watch" ? "watch" : "by ear"}
           {g.phrase !== "auto" && ` · ${g.phrase === "west" ? "west coast" : "snap bounce"}`}
           {best > 0 && ` · best ${best}`}
         </div>
@@ -448,7 +446,7 @@ export default function PianoGame() {
         <button className="cta" data-note={440} onClick={start}>Play again</button>
         <ShareScore text={scoreCard(
           "Refrain",
-          `${diff} · ${fmt === "watch" ? "watch" : "by ear"}${mode === "daily" ? ` · daily ${todayStamp()}` : ""}`,
+          `${diff} · ${fmt === "watch" ? "watch" : "by ear"}`,
           `🎹 Level ${g.cleared} ${"🟩".repeat(Math.min(g.cleared, 10))}${"⬛".repeat(Math.max(0, 10 - g.cleared))}`,
         )} />
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>

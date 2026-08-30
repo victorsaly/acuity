@@ -5,7 +5,7 @@ import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, click, uiBlip } from "@/lib/audio";
-import { getBest, recordPlay, rngFor, scoreKey, setBest, todayStamp, usePref, type Mode } from "@/lib/store";
+import { getBest, recordPlay, runRng, scoreKey, setBest, todayStamp, usePref } from "@/lib/store";
 import { scoreCard, slotEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
@@ -42,8 +42,6 @@ type ProgressStyle = CSSProperties & { "--progress": number };
 export default function TimeGame() {
   const [phase, setPhase] = useState<Phase>("menu");
   const [diff, setDiff] = usePref("time-diff", "easy");
-  const [modeStr, setMode] = usePref("time-mode", "free");
-  const mode = modeStr as Mode;
   const [targets, setTargets] = useState<number[]>([]);
   const [guesses, setGuesses] = useState<number[]>([]);
   const [slot, setSlot] = useState(0);
@@ -54,7 +52,7 @@ export default function TimeGame() {
   const feedbackAt = useRef(0);
 
   const start = () => {
-    const rng = rngFor(mode, "time", diff);
+    const rng = runRng();
     const [min, max] = RANGES[diff];
     const next = Array.from({ length: SLOTS }, () => Math.round((min + rng() * (max - min)) / 10) * 10);
     setTargets(next);
@@ -127,7 +125,7 @@ export default function TimeGame() {
     uiBlip(880, 0.06, 0.16);
     if (slot === SLOTS - 1) {
       const total = targets.reduce((sum, target, index) => sum + scoreOf(target, next[index]), 0);
-      const key = scoreKey("time", mode, diff);
+      const key = scoreKey("time", diff);
       const isRecord = total > getBest(key) && total > 0;
       if (isRecord) setBest(key, Math.round(total * 10) / 10);
       setRecord(isRecord);
@@ -178,8 +176,8 @@ export default function TimeGame() {
           <Item><h1 className="wordmark">Second Sense</h1></Item>
           <Item><p className="tagline">Listen to a measured stretch of time, then immediately recreate it by holding down. Five rounds test your inner clock.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="time" diffs={DIFFS} diff={diff} mode={mode}
-              onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
+            <GameSetup game="time" diffs={DIFFS} diff={diff}
+              onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Second Sense",
                 description: "Experience each duration through a steady sequence of taps, then immediately reproduce it without seeing a clock.",
@@ -264,7 +262,7 @@ export default function TimeGame() {
 
   const scores = targets.map((target, index) => scoreOf(target, guesses[index]));
   const total = scores.reduce((sum, score) => sum + score, 0);
-  const best = getBest(scoreKey("time", mode, diff));
+  const best = getBest(scoreKey("time", diff));
   return (
     <main className="stage resStage">
       <Pop className="resHead">
@@ -284,7 +282,7 @@ export default function TimeGame() {
       <div className="resActions">
         <button className="cta" data-note={523} onClick={start}>Again</button>
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Menu</button>
-        <ShareScore text={scoreCard("SECOND SENSE", `${mode.toUpperCase()} · ${diff.toUpperCase()} · ${todayStamp()}`,
+        <ShareScore text={scoreCard("SECOND SENSE", `${diff.toUpperCase()} · ${todayStamp()}`,
           `${scores.map(slotEmoji).join("")} ${total.toFixed(1)}/50`)} />
       </div>
     </main>

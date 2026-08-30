@@ -5,7 +5,7 @@ import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
 import { scoreCard } from "@/lib/share";
 import { uiBlip, pluck, buzz } from "@/lib/audio";
 
@@ -65,8 +65,6 @@ const EMPTY: View = {
 export default function MemoryGame() {
   const [phase, setPhase] = useState<Phase>("menu");
   const [diff, setDiff] = usePref("memory-diff", "easy");
-  const [modeStr, setMode] = usePref("memory-mode", "free");
-  const mode = modeStr as Mode;
   const [fmtStr, setFmt] = usePref("memory-fmt", "flash");
   const fmt = fmtStr as Fmt;
   const [runStamp, setRunStamp] = useState(0);
@@ -135,13 +133,13 @@ export default function MemoryGame() {
 
   const start = () => {
     clear();
-    R.current = { rng: rngFor(mode, "memory", diff), ...EMPTY };
+    R.current = { rng: runRng(), ...EMPTY };
     runLevel();
   };
 
   const finish = () => {
     const g = R.current;
-    const key = scoreKey("memory", mode, diff);
+    const key = scoreKey("memory", diff);
     const isRecord = g.cleared > getBest(key) && g.cleared > 0;
     if (isRecord) setBest(key, g.cleared);
     setRecord(isRecord);
@@ -234,8 +232,8 @@ export default function MemoryGame() {
           </Item>
           <Item><p className="tagline">Numbered tiles appear, then vanish. Tap them back in order before the clock runs out — every level adds a tile, three misses end the run.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="memory" diffs={DIFFS} diff={diff} mode={mode}
-              onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
+            <GameSetup game="memory" diffs={DIFFS} diff={diff}
+              onDiff={setDiff} onStart={start} refreshToken={runStamp}
               formats={FORMATS} format={fmt} onFormat={setFmt}
               helpContent={{
                 title: "Echo",
@@ -253,7 +251,7 @@ export default function MemoryGame() {
   }
 
   const g = view;
-  const best = getBest(scoreKey("memory", mode, diff));
+  const best = getBest(scoreKey("memory", diff));
   const acc = g.taps ? Math.round((g.tiles / g.taps) * 100) : 100;
   const numberOf = (cell: number) => { const k = g.pattern.indexOf(cell); return k >= 0 ? k + 1 : ""; };
 
@@ -318,7 +316,7 @@ export default function MemoryGame() {
       <Pop className="resHead">
         <h2 className="resVerdict">{verdict}</h2>
         <div className="resTotal">
-          <b>Level {g.cleared}</b> · {mode} · {diff} · {fmt}
+          <b>Level {g.cleared}</b> · {diff} · {fmt}
           {best > 0 && ` · best ${best}`}
         </div>
       </Pop>
@@ -332,7 +330,7 @@ export default function MemoryGame() {
         <button className="cta" data-note={440} onClick={start}>Play again</button>
         <ShareScore text={scoreCard(
           "Echo",
-          `${diff} · ${fmt}${mode === "daily" ? ` · daily ${todayStamp()}` : ""}`,
+          `${diff} · ${fmt}`,
           `Level ${g.cleared} ${"🟩".repeat(Math.min(g.cleared, 10))}${"⬛".repeat(Math.max(0, 10 - g.cleared))}`,
         )} />
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>

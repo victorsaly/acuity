@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import type { Mode } from "@/lib/store";
 import { getBest, scoreKey } from "@/lib/store";
 
 export type DiffDef = { key: string; label: string; sub: string; note: number };
@@ -9,20 +8,17 @@ export type DiffDef = { key: string; label: string; sub: string; note: number };
 const noopSubscribe = () => () => {};
 
 /**
- * Shared menu block: difficulty pills, free/daily mode toggle,
- * start button, best-score line.
+ * Shared menu block: difficulty pills, start button, best-score line.
  */
 export default function GameSetup({
-  game, diffs, diff, mode, onDiff, onMode, onStart, refreshToken,
+  game, diffs, diff, onDiff, onStart, refreshToken,
   sounds, sound, onSound, formats, format, onFormat, beats, beat, onBeat,
   helpContent,
 }: {
   game: string;
   diffs: DiffDef[];
   diff: string;
-  mode: Mode;
   onDiff: (d: string) => void;
-  onMode: (m: Mode) => void;
   onStart: () => void;
   refreshToken?: unknown;
   sounds?: { key: string; label: string }[];
@@ -45,18 +41,17 @@ export default function GameSetup({
     noopSubscribe,
     () => {
       void refreshToken;
-      return getBest(scoreKey(game, mode, diff));
+      return getBest(scoreKey(game, diff));
     },
     () => 0,
   );
 
-  /* keyboard: 1–N picks difficulty, D toggles daily, Enter/Space starts */
+  /* keyboard: 1–N picks difficulty, Enter/Space starts */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       const n = parseInt(e.key, 10);
       if (n >= 1 && n <= diffs.length) { onDiff(diffs[n - 1].key); return; }
-      if (e.key === "d" || e.key === "D") { onMode(mode === "free" ? "daily" : "free"); return; }
       if ((e.key === "s" || e.key === "S") && sounds && onSound) {
         const i = sounds.findIndex((s) => s.key === sound);
         onSound(sounds[(i + 1) % sounds.length].key);
@@ -77,7 +72,7 @@ export default function GameSetup({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [diffs, mode, onDiff, onMode, onStart, sounds, sound, onSound, formats, format, onFormat, beats, beat, onBeat]);
+  }, [diffs, onDiff, onStart, sounds, sound, onSound, formats, format, onFormat, beats, beat, onBeat]);
 
   return (
     <>
@@ -94,14 +89,6 @@ export default function GameSetup({
             <small>{d.sub}</small>
           </button>
         ))}
-      </div>
-      <div className="modes" role="group" aria-label="Mode">
-        <button className="mode" aria-pressed={mode === "free"} data-note="392" onClick={() => onMode("free")}>
-          Free play
-        </button>
-        <button className="mode" aria-pressed={mode === "daily"} data-note="494" onClick={() => onMode("daily")}>
-          Daily
-        </button>
       </div>
       {hasExtraOptions && (
         <div className="optionToggleWrap">
@@ -196,18 +183,14 @@ export default function GameSetup({
       )}
       <div className="best">
         {best > 0
-          ? `Best · ${mode} · ${diff} · ${best.toFixed(1)}`
-          : `No score yet · ${mode} · ${diff}`}
+          ? `Best · ${diff} · ${best.toFixed(1)}`
+          : `No score yet · ${diff}`}
       </div>
-      {mode === "daily" && (
-        <div className="dailyNote">Same puzzle for everyone today — new one at midnight.</div>
-      )}
       <div className="kbd">
         <span><b>1–{diffs.length}</b>difficulty</span>
         {sounds && <span><b>S</b>sound</span>}
         {beats && <span><b>B</b>beat</span>}
         {formats && <span><b>L</b>format</span>}
-        <span><b>D</b>daily</span>
         <span><b>↵</b>start</span>
         <span><b>Esc</b>menu</span>
         <span><b>F</b>fullscreen</span>

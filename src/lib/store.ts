@@ -2,7 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-/* Best scores, remembered preferences, seeded randomness for daily mode. */
+/* Best scores, remembered preferences, and run randomness. */
 
 /** A localStorage-backed preference that survives refreshes. SSR-safe. */
 export function usePref(key: string, def: string): [string, (v: string) => void] {
@@ -37,20 +37,9 @@ export function setBest(key: string, v: number) {
   }
 }
 
-export type Mode = "free" | "daily";
-
 export function todayStamp(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function hash(str: string): number {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
 }
 
 function mulberry32(seed: number): () => number {
@@ -63,9 +52,8 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-/** Daily mode: same sequence for everyone on the same date; free mode: fresh every run. */
-export function rngFor(mode: Mode, game: string, diff: string): () => number {
-  if (mode === "daily") return mulberry32(hash(`${todayStamp()}/${game}/${diff}`));
+/** A fresh deterministic stream for each run. */
+export function runRng(): () => number {
   return mulberry32((Math.random() * 4294967296) >>> 0);
 }
 
@@ -116,6 +104,6 @@ export function useStats(game: string): Stats {
   try { return raw ? (JSON.parse(raw) as Stats) : { plays: 0, days: [] }; } catch { return { plays: 0, days: [] }; }
 }
 
-export function scoreKey(game: string, mode: Mode, diff: string): string {
-  return mode === "daily" ? `${game}-daily-${diff}-${todayStamp()}` : `${game}-${diff}`;
+export function scoreKey(game: string, diff: string): string {
+  return `${game}-${diff}`;
 }

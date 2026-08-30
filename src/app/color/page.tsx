@@ -5,7 +5,7 @@ import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
 import { scoreCard, slotEmoji } from "@/lib/share";
 import { uiBlip } from "@/lib/audio";
 
@@ -63,8 +63,6 @@ const deltaLabel = (t: HSL, g: HSL) => {
 export default function ColorGame() {
   const [phase, setPhase] = useState<Phase>("menu");
   const [diff, setDiff] = usePref("color-diff", "easy");
-  const [modeStr, setMode] = usePref("color-mode", "free");
-  const mode = modeStr as Mode;
   const [flow, setFlow] = usePref("color-flow", "single");
   const [slot, setSlot] = useState(0);
   const [targets, setTargets] = useState<HSL[]>([]);
@@ -109,7 +107,7 @@ export default function ColorGame() {
 
   const start = () => {
     clear();
-    const rng = rngFor(mode, "color", diff);
+    const rng = runRng();
     const cols: HSL[] = Array.from({ length: SLOTS }, () => ({
       h: Math.floor(rng() * 360),
       s: 35 + Math.floor(rng() * 60),
@@ -130,7 +128,7 @@ export default function ColorGame() {
       if (flow === "single") { setPhase("reveal"); revealSlot(next.length, targets, REVEAL_MS[diff]); }
     } else {
       const total = targets.reduce((sum, t, i) => sum + scoreOf(t, next[i]), 0);
-      const key = scoreKey("color", mode, diff);
+      const key = scoreKey("color", diff);
       const isRecord = total > getBest(key) && total > 0;
       if (isRecord) setBest(key, Math.round(total * 10) / 10);
       setRecord(isRecord);
@@ -190,8 +188,8 @@ export default function ColorGame() {
           </Item>
           <Item><p className="tagline">Five colors flood the screen. Then they&apos;re gone, and you rebuild every one from memory.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="color" diffs={DIFFS} diff={diff} mode={mode}
-              onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
+            <GameSetup game="color" diffs={DIFFS} diff={diff}
+              onDiff={setDiff} onStart={start} refreshToken={runStamp}
               formats={FLOWS} format={flow} onFormat={setFlow}
               helpContent={{
                 title: "Afterimage",
@@ -263,7 +261,7 @@ export default function ColorGame() {
   /* results */
   const scores = targets.map((t, i) => scoreOf(t, guesses[i]));
   const total = scores.reduce((a, b) => a + b, 0);
-  const best = getBest(scoreKey("color", mode, diff));
+  const best = getBest(scoreKey("color", diff));
   const verdict =
     total >= 45 ? "Dialed in." :
     total >= 38 ? "Sharp eye." :
@@ -276,7 +274,7 @@ export default function ColorGame() {
       <Pop className="resHead">
         <h2 className="resVerdict">{verdict}</h2>
         <div className="resTotal">
-          <b>{total.toFixed(1)} / 50</b> · {mode} · {diff}
+          <b>{total.toFixed(1)} / 50</b> · {diff}
           {best > 0 && ` · best ${best.toFixed(1)}`}
         </div>
       </Pop>
@@ -300,7 +298,7 @@ export default function ColorGame() {
         <button className="cta" data-note={440} onClick={start}>Play again</button>
         <ShareScore text={scoreCard(
           "Afterimage",
-          `${diff}${mode === "daily" ? ` · daily ${todayStamp()}` : ""}`,
+          diff,
           `${total.toFixed(1)}/50 ${scores.map(slotEmoji).join("")}`,
         )} />
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>

@@ -6,7 +6,7 @@ import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, toneOn, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
-import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
 import { scoreCard, slotEmoji } from "@/lib/share";
 
 type Phase = "menu" | "reveal" | "recall" | "results";
@@ -45,8 +45,6 @@ const resVerdict = (total: number) =>
 export default function SoundGame() {
   const [phase, setPhase] = useState<Phase>("menu");
   const [diff, setDiff] = usePref("sound-diff", "easy");
-  const [modeStr, setMode] = usePref("sound-mode", "free");
-  const mode = modeStr as Mode;
   const [flow, setFlow] = usePref("sound-flow", "single");
   const [slot, setSlot] = useState(0);
   const [targets, setTargets] = useState<number[]>([]);
@@ -135,7 +133,7 @@ export default function SoundGame() {
     clear();
     audio();
     setToneVoice(voice);   // remembered preference may not have touched the engine yet
-    const rng = rngFor(mode, "sound", diff);
+    const rng = runRng();
     const tones = Array.from({ length: SLOTS }, () => posToFreq(40 + rng() * 920));
     setTargets(tones);
     setGuesses([]);
@@ -159,7 +157,7 @@ export default function SoundGame() {
     } else {
       hush();
       const total = targets.reduce((sum, t, i) => sum + scoreOf(t, next[i]), 0);
-      const key = scoreKey("sound", mode, diff);
+      const key = scoreKey("sound", diff);
       const isRecord = total > getBest(key) && total > 0;
       if (isRecord) setBest(key, Math.round(total * 10) / 10);
       setRecord(isRecord);
@@ -213,7 +211,7 @@ export default function SoundGame() {
 
   const resScores = phase === "results" ? targets.map((t, i) => scoreOf(t, guesses[i])) : [];
   const resTotal = resScores.reduce((a, b) => a + b, 0);
-  const resBest = phase === "results" ? getBest(scoreKey("sound", mode, diff)) : 0;
+  const resBest = phase === "results" ? getBest(scoreKey("sound", diff)) : 0;
 
   return (
     <>
@@ -225,8 +223,8 @@ export default function SoundGame() {
             <Item><h1 className="wordmark">Sine Language</h1></Item>
             <Item><p className="tagline">Five tones, one each. Then silence — and you pull every pitch back out of thin air.</p></Item>
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-              <GameSetup game="sound" diffs={DIFFS} diff={diff} mode={mode}
-                onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
+              <GameSetup game="sound" diffs={DIFFS} diff={diff}
+                onDiff={setDiff} onStart={start} refreshToken={runStamp}
                 formats={FLOWS} format={flow} onFormat={setFlow}
                 sounds={VOICES} sound={voice}
                 onSound={(k) => {
@@ -288,7 +286,7 @@ export default function SoundGame() {
           <Pop className="resHead">
             <h2 className="resVerdict">{resVerdict(resTotal)}</h2>
             <div className="resTotal">
-              <b>{resTotal.toFixed(1)} / 50</b> · {mode} · {diff}
+              <b>{resTotal.toFixed(1)} / 50</b> · {diff}
               {resBest > 0 && ` · best ${resBest.toFixed(1)}`}
             </div>
           </Pop>
@@ -323,7 +321,7 @@ export default function SoundGame() {
             <button className="cta" data-note={440} onClick={start}>Play again</button>
             <ShareScore text={scoreCard(
               "Sine Language",
-              `${diff}${mode === "daily" ? ` · daily ${todayStamp()}` : ""}`,
+              diff,
               `${resTotal.toFixed(1)}/50 ${resScores.map(slotEmoji).join("")}`,
             )} />
             <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>

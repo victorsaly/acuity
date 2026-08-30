@@ -6,7 +6,7 @@ import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, kick, snare, hat, click, uiBlip, setDrumKit, preloadAllKits, type DrumKitName } from "@/lib/audio";
-import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
 import { scoreCard, barEmoji } from "@/lib/share";
 import { speakCue, setVoiceCuesEnabled } from "@/lib/voice";
 
@@ -216,8 +216,6 @@ type Run = {
 export default function TempoGame() {
   const [phase, setPhase] = useState<Phase>("menu");
   const [diff, setDiff] = usePref("tempo-diff", "medium");
-  const [modeStr, setMode] = usePref("tempo-mode", "free");
-  const mode = modeStr as Mode;
   const [kitStr, setKit] = usePref("tempo-kit", "punch");
   const kit = kitStr as DrumKitName;
   const [trackPick, setTrackPick] = usePref("tempo-track", "auto");
@@ -240,7 +238,7 @@ export default function TempoGame() {
   const start = () => {
     const c = audio();
     setDrumKit(kit);   // remembered preference may not have touched the engine yet
-    const rng = rngFor(mode, "tempo", diff);
+    const rng = runRng();
     const baseCfg = DIFF_CFG[diff];
     const cfg = trackPick === "auto" ? baseCfg : {
       ...baseCfg,
@@ -583,7 +581,7 @@ export default function TempoGame() {
       if (nowT > r.endT && !r.done) {
         r.done = true;
         const total = runScore(r);
-        const key = scoreKey("tempo", mode, diff);
+        const key = scoreKey("tempo", diff);
         const isRecord = total > getBest(key) && total > 0;
         if (isRecord) setBest(key, Math.round(total * 10) / 10);
         setRecord(isRecord);
@@ -600,7 +598,7 @@ export default function TempoGame() {
       cancelAnimationFrame(raf);
       removeEventListener("resize", resize);
     };
-  }, [phase, diff, mode, lane]);
+  }, [phase, diff, lane]);
 
   /* ---------- input ---------- */
   const judgeId = useRef(0);
@@ -653,8 +651,8 @@ export default function TempoGame() {
               </p>
             </Item>
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-              <GameSetup game="tempo" diffs={DIFFS} diff={diff} mode={mode}
-                onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
+              <GameSetup game="tempo" diffs={DIFFS} diff={diff}
+                onDiff={setDiff} onStart={start} refreshToken={runStamp}
                 beats={TRACKS_UI} beat={trackPick} onBeat={setTrackPick}
                 formats={LANES_UI} format={lane}
                 onFormat={(k) => setLane(k as LaneStyle)}
@@ -707,14 +705,14 @@ export default function TempoGame() {
           total >= 75 ? "In the pocket." :
           total >= 55 ? "Solid groove." :
           total >= 35 ? "Rushing a little." : "Timing is a suggestion.";
-        const best = getBest(scoreKey("tempo", mode, diff));
+        const best = getBest(scoreKey("tempo", diff));
         return (
           <main className="stage resStage">
             {record && <Celebrate />}
             <Pop className="resHead">
               <h2 className="resVerdict">{verdict}</h2>
               <div className="resTotal">
-                <b>{total.toFixed(1)} / 100</b> · {mode} · {diff}
+                <b>{total.toFixed(1)} / 100</b> · {diff}
                 {best > 0 && ` · best ${best.toFixed(1)}`}
               </div>
             </Pop>
@@ -730,7 +728,7 @@ export default function TempoGame() {
               <button className="cta" data-note={440} onClick={start}>Play again</button>
               <ShareScore text={scoreCard(
                 "Downbeat",
-                `${diff} · ${kit}/${lane}${mode === "daily" ? ` · daily ${todayStamp()}` : ""}`,
+                `${diff} · ${kit}/${lane}`,
                 `${total.toFixed(1)}/100 ${barEmoji(total)} · ${final.maxCombo} combo`,
               )} />
               <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
