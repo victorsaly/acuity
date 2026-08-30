@@ -316,11 +316,11 @@ export function hat(t: number, open = false, vol?: number) {
 }
 
 /** Count-in / metronome click. */
-export function click(t: number, accent = false) {
+export function click(t: number, accent = false, freq?: number) {
   const c = audio();
   const o = c.createOscillator();
   o.type = "sine";
-  o.frequency.value = accent ? 2093 : 1397;
+  o.frequency.value = freq ?? (accent ? 2093 : 1397);
   const g = c.createGain();
   g.gain.setValueAtTime(accent ? 0.22 : 0.14, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);

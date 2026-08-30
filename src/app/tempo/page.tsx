@@ -106,7 +106,7 @@ function drawFace(
   }
 }
 
-type Ev = { t: number; type: "kick" | "snare" | "hat" | "open" | "click" };
+type Ev = { t: number; type: "kick" | "snare" | "hat" | "open" | "click"; f?: number };
 type Note = { t: number; kind: "kick" | "snare"; state: "pending" | "hit" | "miss"; value: number };
 type TrackMark = { from: number; to: number; label: string; bpm: number };
 
@@ -176,7 +176,7 @@ export default function TempoGame() {
   const [laneStr, setLane] = usePref("tempo-lane", "curve");
   const lane = laneStr as LaneStyle;
   const [runStamp, setRunStamp] = useState(0);
-  const [hud, setHud] = useState({ track: "", bpm: 0, combo: 0 });
+  const [hud, setHud] = useState({ track: "", bpm: 0, combo: 0, pts: 0 });
   const [judge, setJudge] = useState<{ text: string; id: number; color: string } | null>(null);
   const [final, setFinal] = useState<Run | null>(null);
 
@@ -203,7 +203,9 @@ export default function TempoGame() {
       const pat = PATTERNS[tr.p];
       const from = t;
 
-      for (let i = 0; i < 4; i++) { events.push({ t: t + i * spb, type: "click" }); beats.push(t + i * spb); }
+      /* progressive count-in: each click steps up toward the downbeat */
+      const COUNT_F = [523, 659, 784, 1046];
+      for (let i = 0; i < 4; i++) { events.push({ t: t + i * spb, type: "click", f: COUNT_F[i] }); beats.push(t + i * spb); }
       t += 4 * spb;
 
       for (let bar = 0; bar < tr.bars; bar++) {
@@ -227,7 +229,7 @@ export default function TempoGame() {
       counts: { perfect: 0, good: 0, ok: 0, miss: 0 },
       pulse: 0, ringPulse: 0, flashCol: "#ffffff", ringEase: -1, done: false,
     };
-    setHud({ track: marks[0].label, bpm: marks[0].bpm, combo: 0 });
+    setHud({ track: marks[0].label, bpm: marks[0].bpm, combo: 0, pts: 0 });
     setFinal(null);
     setPhase("play");
   };
@@ -246,7 +248,7 @@ export default function TempoGame() {
         else if (ev.type === "snare") snare(ev.t);
         else if (ev.type === "hat") hat(ev.t);
         else if (ev.type === "open") hat(ev.t, true);
-        else click(ev.t, true);
+        else click(ev.t, true, ev.f);
       }
     }, 25);
 
@@ -259,6 +261,7 @@ export default function TempoGame() {
     let raf = 0;
     let lastHudTrack = "";
     let lastHudCombo = -1;
+    let lastHudPts = -1;
     const loop = () => {
       raf = requestAnimationFrame(loop);
       const nowT = c.currentTime;
@@ -267,7 +270,7 @@ export default function TempoGame() {
          a note sits exactly on the hit ring at its moment. */
       let hitX: number, laneY: number;
       if (lane === "curve") {
-        hitX = W * (0.26 + 0.05 * Math.sin(nowT * 0.13));
+        hitX = W * (0.2 + 0.05 * Math.sin(nowT * 0.13));
         laneY = H * (0.56 + 0.07 * Math.sin(nowT * 0.17 + 2.1));
       } else if (lane === "orbit") {
         hitX = W * (0.5 + 0.03 * Math.sin(nowT * 0.15));
@@ -280,9 +283,9 @@ export default function TempoGame() {
         hitX = r.ringEase;
         laneY = H * (0.74 + 0.015 * Math.sin(nowT * 0.2));
       }
-      const vpX = W * (0.78 + 0.05 * Math.sin(nowT * 0.11 + 1.2));
+      const vpX = W * (0.84 + 0.04 * Math.sin(nowT * 0.11 + 1.2));
       const vpY = H * (0.26 + 0.09 * Math.sin(nowT * 0.19 + 4.2));
-      const orbitR = Math.min(W, H) * 0.42;
+      const orbitR = Math.min(W, H) * 0.47;
 
       /* judge overdue notes as misses */
       for (const n of r.notes) {
@@ -300,12 +303,14 @@ export default function TempoGame() {
       r.pulse *= 0.94;
       r.ringPulse *= 0.9;
 
-      /* hud track label — only touch React state when something changed */
+      /* hud — only touch React state when something changed */
       const mark = r.marks.find((m) => nowT < m.to + 0.8);
-      if (mark && (mark.label !== lastHudTrack || r.combo !== lastHudCombo)) {
+      const pts = Math.round(Math.max(0, r.points * 10 - r.strays * 1.5) * 10) / 10;
+      if (mark && (mark.label !== lastHudTrack || r.combo !== lastHudCombo || pts !== lastHudPts)) {
         lastHudTrack = mark.label;
         lastHudCombo = r.combo;
-        setHud({ track: mark.label, bpm: mark.bpm, combo: r.combo });
+        lastHudPts = pts;
+        setHud({ track: mark.label, bpm: mark.bpm, combo: r.combo, pts });
       }
 
       /* ---- draw ---- */
@@ -353,7 +358,7 @@ export default function TempoGame() {
           const pq = bez(d / 5);
           g2.strokeStyle = "rgba(239,240,244,.08)";
           g2.beginPath();
-          g2.arc(pq.x, pq.y, 22 * devicePixelRatio * (1 - (d / 5) * 0.82), 0, Math.PI * 2);
+          g2.arc(pq.x, pq.y, 32 * devicePixelRatio * (1 - (d / 5) * 0.7), 0, Math.PI * 2);
           g2.stroke();
         }
       } else if (lane === "orbit") {
@@ -373,7 +378,7 @@ export default function TempoGame() {
       }
 
       /* hit ring flashes the color of whatever you just hit */
-      const ringR = (28 + r.ringPulse * 11) * devicePixelRatio;
+      const ringR = (42 + r.ringPulse * 14) * devicePixelRatio;
       g2.strokeStyle = r.ringPulse > 0.04
         ? mixHex("#f0f0f4", r.flashCol, Math.min(1, r.ringPulse * 1.2))
         : `rgba(240,240,244,${0.7 + r.pulse * 0.3})`;
@@ -401,8 +406,8 @@ export default function TempoGame() {
           x = rainX(n, W) + Math.sin(nowT * 2 + n.t * 3) * 10 * devicePixelRatio * pp;
           y = laneY - pp * laneY * 0.92;
         }
-        const depth = 1 - pp * (lane === "curve" ? 0.82 : 0.55);
-        const rad = (n.kind === "kick" ? 14 : 11) * devicePixelRatio * depth;
+        const depth = 1 - pp * (lane === "curve" ? 0.7 : 0.5);
+        const rad = (n.kind === "kick" ? 22 : 17) * devicePixelRatio * depth;
         const fade = 0.35 + 0.65 * (1 - pp);
         const col = n.kind === "kick" ? KICK_COL : SNARE_COL;
         if (n.state === "hit") {
@@ -540,6 +545,7 @@ export default function TempoGame() {
             <span><b>{hud.track}</b></span>
             <span><b>{hud.bpm}</b> BPM</span>
             <span>combo <b>{hud.combo}</b></span>
+            <span><b>{hud.pts.toFixed(1)}</b> pts</span>
           </div>
           {judge && (
             <div key={judge.id} className="judge pop" style={{ color: judge.color }}>

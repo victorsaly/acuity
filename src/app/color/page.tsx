@@ -6,6 +6,7 @@ import ShareScore from "@/components/ShareScore";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, type Mode } from "@/lib/store";
 import { scoreCard, slotEmoji } from "@/lib/share";
+import { uiBlip } from "@/lib/audio";
 
 type HSL = { h: number; s: number; l: number };
 type Phase = "menu" | "reveal" | "recall" | "results";
@@ -61,6 +62,8 @@ export default function ColorGame() {
 
   const timers = useRef<number[]>([]);
   const ringRef = useRef<SVGCircleElement>(null);
+  const countRef = useRef<HTMLDivElement>(null);
+  const countdown = useRef({ deadline: 0, total: 1, lastWhole: -1 });
   const clear = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => clear, []);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
@@ -68,6 +71,7 @@ export default function ColorGame() {
   function revealSlot(i: number, cols: HSL[], ms: number) {
     setSlot(i);
     setRevealColor(cols[i]);
+    countdown.current = { deadline: performance.now() + ms, total: ms, lastWhole: Math.ceil(ms / 1000) + 1 };
     const ring = ringRef.current;
     if (ring) {
       ring.style.transition = "none";
@@ -114,6 +118,23 @@ export default function ColorGame() {
       setPhase("results");
     }
   };
+
+  /* decimal countdown readout + progressive ticks while memorizing */
+  useEffect(() => {
+    if (phase !== "reveal") return;
+    const iv = window.setInterval(() => {
+      const cd = countdown.current;
+      const rem = Math.max(0, cd.deadline - performance.now());
+      if (countRef.current) countRef.current.textContent = (rem / 1000).toFixed(1);
+      const whole = Math.ceil(rem / 1000);
+      if (whole < cd.lastWhole) {
+        cd.lastWhole = whole;
+        const progress = 1 - rem / cd.total;
+        uiBlip(380 + progress * 640, 0.05, 0.08);   // ticks climb as time runs out
+      }
+    }, 50);
+    return () => clearInterval(iv);
+  }, [phase]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -162,6 +183,7 @@ export default function ColorGame() {
               style={{ strokeDasharray: RING_C }} />
           </svg>
         </div>
+        <div className="countNum" ref={countRef} style={{ opacity: c ? 0.9 : 0 }} aria-live="off" />
       </main>
     );
   }
@@ -176,6 +198,7 @@ export default function ColorGame() {
       <main className="stage recallStage" style={{ backgroundColor: css(guess), transition: "background-color .08s linear" }}>
         <div className={`recallHead ${isLight(guess) ? "onLight" : "onDark"}`}>
           Rebuild color {guesses.length + 1} of {SLOTS}
+          {guesses.length > 0 && ` · ${guesses.reduce((s, g, i) => s + scoreOf(targets[i], g), 0).toFixed(1)} pts so far`}
         </div>
         <div className="mixer">
           {(["h", "s", "l"] as const).map((k) => (

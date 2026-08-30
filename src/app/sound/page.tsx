@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { audio, toneOn, toneGlide, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
+import { audio, toneOn, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
 import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, type Mode } from "@/lib/store";
 import { scoreCard, slotEmoji } from "@/lib/share";
 
@@ -118,7 +118,7 @@ export default function SoundGame() {
       setRevealOn(false);
       later(() => {
         if (i + 1 < SLOTS) revealSlot(i + 1, tones, ms);
-        else { setSlot(0); setPos(500); setPhase("recall"); }
+        else { setSlot(0); setPos(500); setPhase("recall"); hear(posToFreq(500)); }
       }, 260);
     }, ms);
   }
@@ -136,13 +136,14 @@ export default function SoundGame() {
   };
 
   const lock = () => {
-    hush();
     const next = [...guesses, posToFreq(pos)];
     setGuesses(next);
     if (next.length < SLOTS) {
       setSlot(next.length);
       setPos(500);
+      hear(posToFreq(500));   // guess stays audible, like Afterimage stays visible
     } else {
+      hush();
       const total = targets.reduce((sum, t, i) => sum + scoreOf(t, next[i]), 0);
       const key = scoreKey("sound", mode, diff);
       if (total > getBest(key)) setBest(key, Math.round(total * 10) / 10);
@@ -236,6 +237,7 @@ export default function SoundGame() {
         <main className="stage recallStage">
           <div className="recallHead" style={{ color: "var(--muted)" }}>
             Rebuild tone {guesses.length + 1} of {SLOTS}
+            {guesses.length > 0 && ` · ${guesses.reduce((s, g, i) => s + scoreOf(targets[i], g), 0).toFixed(1)} pts so far`}
           </div>
           <div className="hz" style={{ color: colorOf(guessFreq) }}>
             {Math.round(guessFreq)}<small>Hz</small>
@@ -243,16 +245,7 @@ export default function SoundGame() {
           <div className="mixer">
             <input type="range" className="freqSlider" min={0} max={1000} step={1} value={pos}
               aria-label="Frequency"
-              onChange={(e) => { const p = +e.target.value; setPos(p); toneGlide(posToFreq(p)); wave.current.liveFreq = posToFreq(p); }}
-              onPointerDown={() => hear(posToFreq(pos))}
-              onPointerUp={hush}
-              onKeyDown={(e) => {
-                if (e.key.startsWith("Arrow")) {
-                  hear(posToFreq(pos));
-                  window.clearTimeout((wave.current as unknown as { kt?: number }).kt);
-                  (wave.current as unknown as { kt?: number }).kt = window.setTimeout(hush, 350);
-                }
-              }} />
+              onChange={(e) => { const p = +e.target.value; setPos(p); hear(posToFreq(p)); }} />
             <div className="rangeTags"><span>110 Hz · Low</span><span>880 Hz · High</span></div>
             <button className="lock" data-note={440} onClick={lock}>Lock it in</button>
             <div className="kbd" style={{ marginTop: 12 }}>
