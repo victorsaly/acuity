@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
+import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, kick, snare, hat, click, uiBlip, setDrumKit, preloadAllKits, type DrumKitName } from "@/lib/audio";
-import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
 import { scoreCard, barEmoji } from "@/lib/share";
 
 type Phase = "menu" | "play" | "results";
@@ -179,6 +180,7 @@ export default function TempoGame() {
   const [hud, setHud] = useState({ track: "", bpm: 0, combo: 0, pts: 0 });
   const [judge, setJudge] = useState<{ text: string; id: number; color: string } | null>(null);
   const [final, setFinal] = useState<Run | null>(null);
+  const [record, setRecord] = useState(false);
 
   const run = useRef<Run | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -460,7 +462,10 @@ export default function TempoGame() {
         r.done = true;
         const total = runScore(r);
         const key = scoreKey("tempo", mode, diff);
-        if (total > getBest(key)) setBest(key, Math.round(total * 10) / 10);
+        const isRecord = total > getBest(key) && total > 0;
+        if (isRecord) setBest(key, Math.round(total * 10) / 10);
+        setRecord(isRecord);
+        recordPlay("tempo");
         setRunStamp(Date.now());
         setFinal({ ...r });
         setPhase("results");
@@ -570,6 +575,7 @@ export default function TempoGame() {
         const best = getBest(scoreKey("tempo", mode, diff));
         return (
           <main className="stage resStage">
+            {record && <Celebrate />}
             <Pop className="resHead">
               <h2 className="resVerdict">{verdict}</h2>
               <div className="resTotal">

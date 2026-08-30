@@ -14,11 +14,14 @@ than you think — prove otherwise.
 ## Features
 
 - Free play and a seeded **Daily** puzzle (same for everyone, per difficulty)
-- Selectable **tone voices** (Warm / Pure / Organ / Chip) and **drum kits** (Punch / Boom / Club / Wood), all synthesized live with Web Audio — no samples
-- Three Downbeat **lane formats**: Curve, Orbit, Rain
+- **One at a time** (guess each color/tone right after it appears) or **All five first** flows for the memory games
+- Selectable **tone voices** (Warm / Pure / Organ / Chip) and **drum kits** (Punch / Boom / Club / Wood) — sampled one-shots with a live Web Audio synth fallback
+- Three Downbeat **lane formats**: Curve, Orbit, Rain — notes are little faces that grin when you hit them
+- Live decimal points while you play, a racing hundredths countdown with accelerating ticks, and a confetti fanfare on a new best
+- **Share score** cards (Wordle-style emoji), per-game play counts and daily streaks on the hub, remembered preferences
 - Four ambient backgrounds — a different one on every refresh (or press `B`)
-- Full keyboard control (`1–4` difficulty, `S` sound, `L` lane, `D` daily, `↵` start, `Esc` menu, `F` fullscreen)
-- Rollover sound feedback on every control, perceptual Lab ΔE / cents / timing-window scoring, per-mode best scores
+- Full keyboard control (`1–4` difficulty, `S` sound, `L` format, `D` daily, `↵` start, `Esc` menu, `F` fullscreen); works on touch too
+- Rollover sound feedback on every control, perceptual Lab ΔE / cents / latency-compensated timing scoring, per-mode best scores
 
 ## Stack
 

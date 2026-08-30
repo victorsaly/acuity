@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
+import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, toneOn, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
-import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
 import { scoreCard, slotEmoji } from "@/lib/share";
 
 type Phase = "menu" | "reveal" | "recall" | "results";
@@ -55,6 +56,7 @@ export default function SoundGame() {
   const voice = voiceStr as ToneVoice;
   const [revealOn, setRevealOn] = useState(false);
   const [runStamp, setRunStamp] = useState(0);
+  const [record, setRecord] = useState(false);
 
   const timers = useRef<number[]>([]);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
@@ -158,7 +160,10 @@ export default function SoundGame() {
       hush();
       const total = targets.reduce((sum, t, i) => sum + scoreOf(t, next[i]), 0);
       const key = scoreKey("sound", mode, diff);
-      if (total > getBest(key)) setBest(key, Math.round(total * 10) / 10);
+      const isRecord = total > getBest(key) && total > 0;
+      if (isRecord) setBest(key, Math.round(total * 10) / 10);
+      setRecord(isRecord);
+      recordPlay("sound");
       setRunStamp(Date.now());
       setPhase("results");
     }
@@ -270,6 +275,7 @@ export default function SoundGame() {
 
       {phase === "results" && (
         <main className="stage resStage">
+          {record && <Celebrate />}
           <Pop className="resHead">
             <h2 className="resVerdict">{resVerdict(resTotal)}</h2>
             <div className="resTotal">

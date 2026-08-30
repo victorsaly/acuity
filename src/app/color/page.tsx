@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
+import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
 import { scoreCard, slotEmoji } from "@/lib/share";
 import { uiBlip } from "@/lib/audio";
 
@@ -52,6 +53,13 @@ const scoreOf = (t: HSL, g: HSL) => Math.max(0, 10 * (1 - deltaE(t, g) / 55));
 
 const RING_C = 2 * Math.PI * 25;
 
+/* "how far off" hint: signed hue (shortest way round), saturation, lightness */
+const signed = (n: number) => `${n > 0 ? "+" : ""}${n}`;
+const deltaLabel = (t: HSL, g: HSL) => {
+  const dh = ((g.h - t.h + 540) % 360) - 180;
+  return `H ${signed(dh)}° · S ${signed(g.s - t.s)} · L ${signed(g.l - t.l)}`;
+};
+
 export default function ColorGame() {
   const [phase, setPhase] = useState<Phase>("menu");
   const [diff, setDiff] = usePref("color-diff", "easy");
@@ -64,6 +72,7 @@ export default function ColorGame() {
   const [guess, setGuess] = useState<HSL>({ h: 180, s: 50, l: 50 });
   const [revealColor, setRevealColor] = useState<HSL | null>(null);
   const [runStamp, setRunStamp] = useState(0);
+  const [record, setRecord] = useState(false);
 
   const timers = useRef<number[]>([]);
   const ringRef = useRef<SVGCircleElement>(null);
@@ -122,7 +131,10 @@ export default function ColorGame() {
     } else {
       const total = targets.reduce((sum, t, i) => sum + scoreOf(t, next[i]), 0);
       const key = scoreKey("color", mode, diff);
-      if (total > getBest(key)) setBest(key, Math.round(total * 10) / 10);
+      const isRecord = total > getBest(key) && total > 0;
+      if (isRecord) setBest(key, Math.round(total * 10) / 10);
+      setRecord(isRecord);
+      recordPlay("color");
       setRunStamp(Date.now());
       setPhase("results");
     }
@@ -251,6 +263,7 @@ export default function ColorGame() {
 
   return (
     <main className="stage resStage">
+      {record && <Celebrate />}
       <Pop className="resHead">
         <h2 className="resVerdict">{verdict}</h2>
         <div className="resTotal">
@@ -267,7 +280,10 @@ export default function ColorGame() {
               <span className={isLight(t) ? "onLight" : "onDark"}>target</span>
               <span className={isLight(guesses[i]) ? "onLight" : "onDark"}>you</span>
             </div>
-            <div className="chip">{scores[i].toFixed(2)}</div>
+            <div className="chip">
+              {scores[i].toFixed(2)}
+              <small>{deltaLabel(t, guesses[i])}</small>
+            </div>
           </Item>
         ))}
       </Stagger>

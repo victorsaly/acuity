@@ -2,8 +2,20 @@
 
 import Link from "next/link";
 import { Stagger, Item, Tilt } from "@/components/Fx";
+import { useStats, streakOf } from "@/lib/store";
 
 const cardWrap: React.CSSProperties = { display: "flex", flex: "1 1 240px", maxWidth: 280 };
+
+function CardStats({ game }: { game: string }) {
+  const s = useStats(game);
+  const streak = streakOf(s);
+  if (!s.plays) return <span className="cardStats">Not played yet</span>;
+  return (
+    <span className="cardStats">
+      Played {s.plays}{streak > 1 ? ` · ${streak}-day streak` : ""}
+    </span>
+  );
+}
 
 export default function Hub() {
   return (
@@ -30,6 +42,7 @@ export default function Hub() {
                 />
                 <h2>Afterimage</h2>
                 <p>Five colors flood the screen, then you rebuild each one from memory.</p>
+                <CardStats game="color" />
                 <span className="go">Play ▸</span>
               </Link>
             </Tilt>
@@ -47,6 +60,7 @@ export default function Hub() {
                 </div>
                 <h2>Sine Language</h2>
                 <p>Five tones play once each, then you pull every pitch back out of thin air.</p>
+                <CardStats game="sound" />
                 <span className="go">Play ▸</span>
               </Link>
             </Tilt>
@@ -65,6 +79,7 @@ export default function Hub() {
                 </div>
                 <h2>Downbeat</h2>
                 <p>A beat rolls, notes swing in from the deep — tap dead on time or eat the miss.</p>
+                <CardStats game="tempo" />
                 <span className="go">Play ▸</span>
               </Link>
             </Tilt>

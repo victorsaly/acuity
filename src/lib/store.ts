@@ -69,6 +69,53 @@ export function rngFor(mode: Mode, game: string, diff: string): () => number {
   return mulberry32((Math.random() * 4294967296) >>> 0);
 }
 
+/* ---------- play stats: games played + daily streak, per game ---------- */
+
+export type Stats = { plays: number; days: string[] };
+
+export function getStats(game: string): Stats {
+  try {
+    const raw = localStorage.getItem(`dialed-stats-${game}`);
+    if (raw) return JSON.parse(raw) as Stats;
+  } catch { /* fall through */ }
+  return { plays: 0, days: [] };
+}
+
+/** Call once per finished run. Keeps the last 60 distinct play dates. */
+export function recordPlay(game: string) {
+  const s = getStats(game);
+  const today = todayStamp();
+  s.plays += 1;
+  if (!s.days.includes(today)) s.days = [...s.days, today].slice(-60);
+  try { localStorage.setItem(`dialed-stats-${game}`, JSON.stringify(s)); } catch { /* no persistence */ }
+  window.dispatchEvent(new Event("acuity-pref"));
+}
+
+/** Consecutive days played, ending today or yesterday. */
+export function streakOf(s: Stats): number {
+  const set = new Set(s.days);
+  const d = new Date();
+  const stamp = (x: Date) =>
+    `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+  if (!set.has(stamp(d))) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (set.has(stamp(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+/** Reactive stats for the hub (re-reads when a run is recorded). */
+export function useStats(game: string): Stats {
+  const subscribe = useCallback((cb: () => void) => {
+    window.addEventListener("acuity-pref", cb);
+    return () => window.removeEventListener("acuity-pref", cb);
+  }, []);
+  const get = useCallback(() => {
+    try { return localStorage.getItem(`dialed-stats-${game}`) ?? ""; } catch { return ""; }
+  }, [game]);
+  const raw = useSyncExternalStore(subscribe, get, () => "");
+  try { return raw ? (JSON.parse(raw) as Stats) : { plays: 0, days: [] }; } catch { return { plays: 0, days: [] }; }
+}
+
 export function scoreKey(game: string, mode: Mode, diff: string): string {
   return mode === "daily" ? `${game}-daily-${diff}-${todayStamp()}` : `${game}-${diff}`;
 }

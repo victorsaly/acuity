@@ -471,3 +471,15 @@ input[type="range"]::-moz-range-thumb {
   letter-spacing: 0.12em; font-variant-numeric: tabular-nums;
   min-height: 1.4em; transition: opacity 0.15s;
 }
+
+/* results: how-far-off hint under the score chip */
+.chip small {
+  display: block; margin-top: 3px;
+  font-size: 10px; font-weight: 400; letter-spacing: 0.08em;
+  color: var(--muted); font-variant-numeric: tabular-nums;
+}
+/* hub: play counts + streak */
+.cardStats {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted); margin-top: 2px;
+}
