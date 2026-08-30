@@ -187,7 +187,7 @@ export function toneOn(freq: number) {
   const t = c.currentTime;
   toneSetFreq(freq, t);
   toneGain!.gain.cancelScheduledValues(t);
-  toneGain!.gain.setTargetAtTime(0.16, t, 0.015);
+  toneGain!.gain.setTargetAtTime(0.085, t, 0.015);   // quieter — it's on continuously while you tune
 }
 
 export function toneGlide(freq: number) {

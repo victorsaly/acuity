@@ -177,7 +177,7 @@ export default function ColorGame() {
   /* ---------- render ---------- */
   if (phase === "menu") {
     return (
-      <main className="stage">
+      <main className="stage menuStage">
         <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
           <Item><h1 className="wordmark">Afterimage</h1></Item>
           <Item>

@@ -19,7 +19,7 @@ function CardStats({ game }: { game: string }) {
 
 export default function Hub() {
   return (
-    <main className="stage">
+    <main className="stage menuStage">
       <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <Item><h1 className="wordmark">Acuity</h1></Item>
         <Item>

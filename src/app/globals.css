@@ -451,7 +451,8 @@ input[type="range"]::-moz-range-thumb {
 /* ================= mobile ================= */
 /* short/narrow screens: menus may exceed the viewport — let them
    scroll, and keep centering only when it fits ("safe center") */
-.stage { overflow-y: auto; justify-content: safe center; }
+.menuStage { overflow-y: auto; justify-content: safe center; overscroll-behavior: contain; }
+.stage:not(.menuStage) { overflow: hidden; }
 
 .touchNote { display: none; }
 @media (hover: none) and (pointer: coarse) {
@@ -482,4 +483,19 @@ input[type="range"]::-moz-range-thumb {
 .cardStats {
   font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--muted); margin-top: 2px;
+}
+
+/* compact menus: several option rows must fit without scrolling */
+.modes { margin-bottom: 10px; }
+.menuStage .cta { margin-top: 14px; }
+.menuStage .tagline { margin-bottom: 3vh; }
+.menuStage .best { margin-top: 2vh; }
+@media (max-height: 820px) {
+  .menuStage .wordmark { font-size: clamp(24px, 5vw, 44px); margin-bottom: 4px; }
+  .menuStage .tagline { margin-bottom: 14px; font-size: 14px; }
+  .menuStage .diffs { margin-bottom: 10px; }
+  .menuStage .diff { padding: 8px 14px; }
+  .menuStage .best { margin-top: 10px; }
+  .menuStage .swatches { margin-bottom: 12px; }
+  .menuStage .kbd { margin-top: 8px; }
 }

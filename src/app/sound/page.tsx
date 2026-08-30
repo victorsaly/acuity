@@ -220,7 +220,7 @@ export default function SoundGame() {
       <canvas ref={canvasRef} className="fullCanvas" aria-hidden />
 
       {phase === "menu" && (
-        <main className="stage">
+        <main className="stage menuStage">
           <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <Item><h1 className="wordmark">Sine Language</h1></Item>
             <Item><p className="tagline">Five tones, one each. Then silence — and you pull every pitch back out of thin air.</p></Item>

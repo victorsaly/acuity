@@ -518,7 +518,7 @@ export default function TempoGame() {
       <canvas ref={canvasRef} className="fullCanvas" aria-hidden />
 
       {phase === "menu" && (
-        <main className="stage">
+        <main className="stage menuStage">
           <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <Item><h1 className="wordmark">Downbeat</h1></Item>
             <Item>
