@@ -1,0 +1,278 @@
+.stage {
+  --acid: #dfff45;
+  --hot: #ff456f;
+  --ice: #68e8ff;
+  background:
+    linear-gradient(rgba(8, 9, 14, 0.72), rgba(8, 9, 14, 0.72)),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(104, 232, 255, 0.1) 32px),
+    #15172b;
+  overflow: hidden;
+}
+
+.stage::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 7.9vw, rgba(239, 240, 244, 0.055) 8vw);
+  pointer-events: none;
+}
+
+.menuMark {
+  position: relative;
+  width: min(340px, 76vw);
+  height: 112px;
+  margin: 0 auto 18px;
+}
+
+.menuMark::before,
+.menuMark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 42%;
+  height: 54px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(90deg, var(--acid) 0 8px, transparent 8px 15px);
+  clip-path: polygon(0 45%, 8% 25%, 16% 72%, 25% 8%, 34% 88%, 44% 30%, 56% 66%, 68% 18%, 80% 82%, 90% 38%, 100% 48%, 100% 52%, 90% 62%, 80% 88%, 68% 28%, 56% 76%, 44% 40%, 34% 96%, 25% 18%, 16% 82%, 8% 35%, 0 55%);
+}
+
+.menuMark::before { left: 0; }
+.menuMark::after { right: 0; transform: translateY(-50%) scaleX(-1); background-color: var(--hot); }
+
+.void {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72px;
+  height: 104px;
+  transform: translate(-50%, -50%) skewX(-8deg);
+  background: #05060a;
+  border-inline: 3px solid var(--bone);
+  box-shadow: -12px 0 30px rgba(223, 255, 69, 0.22), 12px 0 30px rgba(255, 69, 111, 0.22);
+}
+
+.playStage { cursor: pointer; }
+
+.eyebrow {
+  position: fixed;
+  z-index: 4;
+  top: clamp(68px, 9vh, 96px);
+  left: 50%;
+  width: min(88vw, 720px);
+  transform: translateX(-50%);
+  color: var(--acid);
+  text-align: center;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(12px, 2vw, 17px);
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.round {
+  position: fixed;
+  z-index: 4;
+  top: clamp(102px, 14vh, 138px);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.scene {
+  position: relative;
+  z-index: 2;
+  width: min(980px, 92vw);
+  height: min(56vh, 500px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  gap: clamp(5px, 1vw, 12px);
+}
+
+.bar {
+  flex: 1;
+  max-width: 18px;
+  min-width: 5px;
+  height: var(--height);
+  background: var(--ice);
+  box-shadow: 0 0 18px rgba(104, 232, 255, 0.4);
+  transform-origin: center;
+  transition: height 0.18s ease, opacity 0.25s ease, transform 0.25s ease;
+}
+
+.bar:nth-child(3n) { background: var(--acid); }
+.bar:nth-child(4n) { background: var(--hot); }
+.beat .bar { animation: barPunch 0.46s cubic-bezier(0.18, 0.8, 0.25, 1) var(--delay) both; }
+
+.hole {
+  position: relative;
+  z-index: 3;
+  width: clamp(88px, 13vw, 150px);
+  height: clamp(250px, 44vh, 430px);
+  background: #030408;
+  transform: skewX(-6deg);
+  border-inline: 2px solid rgba(239, 240, 244, 0.2);
+  box-shadow: -24px 0 60px rgba(223, 255, 69, 0.12), 24px 0 60px rgba(255, 69, 111, 0.12);
+  transition: width 0.35s ease, box-shadow 0.35s ease;
+}
+
+.beat .hole { animation: holePulse 0.46s cubic-bezier(0.2, 0.85, 0.25, 1.2) both; }
+
+.count {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-5deg);
+  color: var(--bone);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(64px, 12vw, 118px);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 34px rgba(104, 232, 255, 0.35);
+}
+
+.beat .count { animation: countPunch 0.46s cubic-bezier(0.15, 0.9, 0.2, 1.3) both; }
+
+.silence .wave { opacity: 0.08; transform: scaleX(1.18); }
+.silence .bar { height: 3px; box-shadow: none; animation: barCollapse 0.4s ease-in both; }
+.silence .hole {
+  width: clamp(220px, 42vw, 460px);
+  box-shadow: -35px 0 80px rgba(223, 255, 69, 0.1), 35px 0 80px rgba(255, 69, 111, 0.1);
+  animation: voidOpen 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.silence .count { color: var(--muted); animation: questionFade 0.7s ease-out both; }
+
+.drop .hole { animation: dropImpact 0.58s cubic-bezier(0.15, 0.9, 0.2, 1.25); }
+.drop .wave { animation: waveImpact 0.58s ease-out; }
+
+.instruction {
+  position: fixed;
+  z-index: 5;
+  bottom: clamp(64px, 10vh, 96px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90vw, 520px);
+  color: var(--bone);
+  text-align: center;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(16px, 4vw, 34px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.instruction small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+
+.feedback {
+  position: relative;
+  z-index: 4;
+  width: min(680px, 92vw);
+  text-align: center;
+}
+
+.delta {
+  color: var(--acid);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(64px, 16vw, 142px);
+  font-weight: 900;
+  line-height: 0.92;
+}
+
+.delta small { display: block; margin-top: 14px; color: var(--bone); font-size: 0.16em; letter-spacing: 0.12em; text-transform: uppercase; }
+
+.feedback p {
+  margin: 20px auto 4px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.score {
+  color: var(--acid);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(72px, 18vw, 150px);
+  font-weight: 900;
+  line-height: 0.9;
+}
+
+.score small { color: var(--bone); font-size: 0.22em; }
+
+@keyframes dropImpact {
+  0% { transform: skewX(-6deg) scaleX(1); background: #030408; }
+  35% { transform: skewX(8deg) scaleX(0.08); background: var(--bone); }
+  65% { transform: skewX(-12deg) scaleX(1.55); }
+  100% { transform: skewX(-6deg) scaleX(1); background: #030408; }
+}
+
+@keyframes barPunch {
+  0% { transform: scaleY(0.22); opacity: 0.35; }
+  32% { transform: scaleY(1.55); opacity: 1; }
+  100% { transform: scaleY(0.74); opacity: 0.72; }
+}
+
+@keyframes holePulse {
+  0% { transform: skewX(-6deg) scaleX(1.35); }
+  35% { transform: skewX(6deg) scaleX(0.7); }
+  100% { transform: skewX(-6deg) scaleX(1); }
+}
+
+@keyframes countPunch {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(-5deg) scale(0.3); }
+  38% { opacity: 1; transform: translate(-50%, -50%) rotate(3deg) scale(1.18); }
+  100% { opacity: 0.88; transform: translate(-50%, -50%) rotate(-5deg) scale(1); }
+}
+
+@keyframes barCollapse {
+  from { height: var(--height); opacity: 0.7; }
+  to { height: 3px; opacity: 0.08; }
+}
+
+@keyframes voidOpen {
+  from { width: clamp(88px, 13vw, 150px); }
+  to { width: clamp(220px, 42vw, 460px); }
+}
+
+@keyframes questionFade {
+  from { opacity: 0; transform: translate(-50%, -50%) rotate(-5deg) scale(1.8); }
+  to { opacity: 0.65; transform: translate(-50%, -50%) rotate(-5deg) scale(1); }
+}
+
+@keyframes waveImpact {
+  0% { transform: scale(0.25); opacity: 0; }
+  42% { transform: scale(1.16); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .scene { width: 96vw; height: 52vh; }
+  .wave { gap: 5px; height: 120px; }
+  .bar { min-width: 3px; }
+  .hole { height: 280px; }
+  .silence .hole { width: 62vw; }
+  .instruction { bottom: 58px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop .hole, .drop .wave { animation-duration: 0.12s; }
+}

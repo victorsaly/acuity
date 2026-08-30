@@ -38,7 +38,7 @@ export default function Hub() {
         </Item>
         <Item>
           <p className="tagline">
-            Seven full-screen perception games. Your memory for color, pitch, melody,
+            Eight full-screen perception games. Your memory for color, pitch, melody,
             time, and space is worse than you think — prove otherwise.
           </p>
         </Item>
@@ -179,6 +179,24 @@ export default function Hub() {
                 <h2>Fever Dream</h2>
                 <p>The microwave keeps the beat. Read its movement, then feed it eight taps.</p>
                 <CardStats game="fever" />
+                <span className="go">Play ▸</span>
+              </Link>
+            </Tilt>
+          </Item>
+          <Item style={cardWrap}>
+            <Tilt style={{ display: "flex", width: "100%" }}>
+              <Link href="/phantom" className="hubCard" data-note={1175} style={{ width: "100%" }}>
+                <div className="art" aria-hidden style={{ height: 94, background: "#15172b" }}>
+                  <svg viewBox="0 0 200 94" style={{ width: "100%", height: "100%" }}>
+                    <path d="M0 47h9l7-17 8 36 9-52 9 66 9-45 8 21 8-9h12" fill="none" stroke="#dfff45" strokeWidth="5" strokeLinejoin="round" />
+                    <path d="M122 47h10l7-12 8 34 9-57 8 68 9-43 8 19 8-9h11" fill="none" stroke="#ff456f" strokeWidth="5" strokeLinejoin="round" />
+                    <path d="M88 5l-8 34 9 50M112 5l8 35-9 49" fill="#05060a" stroke="#eff0f4" strokeWidth="3" />
+                    <circle cx="100" cy="47" r="7" fill="#68e8ff" />
+                  </svg>
+                </div>
+                <h2>Phantom Drop</h2>
+                <p>The beat disappears before the drop. Keep time in the silence and bring it back.</p>
+                <CardStats game="phantom" />
                 <span className="go">Play ▸</span>
               </Link>
             </Tilt>
