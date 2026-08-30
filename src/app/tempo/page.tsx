@@ -8,7 +8,7 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, kick, snare, hat, click, uiBlip, setDrumKit, preloadAllKits, type DrumKitName } from "@/lib/audio";
 import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
 import { scoreCard, barEmoji } from "@/lib/share";
-import { speakCue, setVoiceCuesEnabled, voiceCuesAvailable } from "@/lib/voice";
+import { speakCue, setVoiceCuesEnabled } from "@/lib/voice";
 
 type Phase = "menu" | "play" | "results";
 
@@ -223,7 +223,7 @@ export default function TempoGame() {
   const [trackPick, setTrackPick] = usePref("tempo-track", "auto");
   const [laneStr, setLane] = usePref("tempo-lane", "curve");
   const lane = laneStr as LaneStyle;
-  const [voiceCues, setVoiceCues] = usePref("voice-cues", "on");
+  const [voiceCues] = usePref("voice-cues", "on");
   const [runStamp, setRunStamp] = useState(0);
   const [hud, setHud] = useState({ track: "", bpm: 0, combo: 0, pts: 0 });
   const [judge, setJudge] = useState<{ text: string; id: number; color: string } | null>(null);
@@ -675,19 +675,6 @@ export default function TempoGame() {
                     "White explosions are perfect; misses and mistimed taps lose points fast.",
                   ],
                 }} />
-              <div className="modes" role="group" aria-label="Voice cues">
-                <button className="mode" aria-pressed={voiceCues === "off"} data-note={330} onClick={() => setVoiceCues("off")}>
-                  Voice cues off
-                </button>
-                <button
-                  className="mode"
-                  aria-pressed={voiceCues === "on"}
-                  data-note={392}
-                  onClick={() => setVoiceCues("on")}
-                >
-                  Voice cues on{voiceCuesAvailable() ? "" : " (no endpoint)"}
-                </button>
-              </div>
             </Item>
           </Stagger>
           <div className="hint">Tap · click · or spacebar</div>
