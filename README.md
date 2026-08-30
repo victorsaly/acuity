@@ -1,7 +1,7 @@
 # Acuity
 
-Three full-screen perception games. Your memory for color, pitch, and time is worse
-than you think — prove otherwise.
+Four full-screen perception games. Your memory for color, pitch, time, and space is
+worse than you think — prove otherwise.
 
 **Play it: https://victorsaly.github.io/acuity/**
 
@@ -10,6 +10,7 @@ than you think — prove otherwise.
 | **Afterimage** | Color memory | Five colors flood the screen, then you rebuild each one from HSL sliders |
 | **Sine Language** | Pitch memory | Five tones play once, then you dial each back in on a log-scale frequency slider |
 | **Downbeat** | Rhythm | Notes with little faces ride a living lane toward a hit ring — tap dead on time |
+| **Echo** | Spatial memory | Tiles light up on a 3×3–5×5 grid, then go dark — tap the pattern back (all at once, or in order) as each level adds a tile |
 
 ## Features
 

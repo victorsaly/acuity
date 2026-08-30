@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Shared Web Audio engine for all three games.
+ * Shared Web Audio engine for all the games.
  *
  * Graph:  source ──► dry ──► compressor ──► destination
  *                └──► reverb send ──► convolver ──► wet ──► compressor
@@ -107,6 +107,26 @@ export function uiBlip(freq = 587, vol = 0.05, dur = 0.07) {
   out(g, 0.35);
   o1.start(t); o2.start(t); o3.start(t);
   o1.stop(t + dur + 0.1); o2.stop(t + dur + 0.1); o3.stop(t + dur + 0.1);
+}
+
+/** Wrong-answer thud: a low sawtooth pitch-drop through a closing lowpass. */
+export function buzz() {
+  const c = audio();
+  const t = c.currentTime;
+  const o = c.createOscillator();
+  o.type = "sawtooth";
+  o.frequency.setValueAtTime(95, t);
+  o.frequency.exponentialRampToValueAtTime(48, t + 0.22);
+  const lp = c.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.setValueAtTime(900, t);
+  lp.frequency.exponentialRampToValueAtTime(120, t + 0.25);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+  o.connect(lp); lp.connect(g);
+  out(g, 0.15);
+  o.start(t); o.stop(t + 0.3);
 }
 
 /* ---------------- sustained tone (sound game) ---------------- */

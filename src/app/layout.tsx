@@ -20,10 +20,10 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://victorsaly.github.io/acuity/"),
   title: { default: "Acuity", template: "%s · Acuity" },
   description:
-    "Three full-screen perception games. Your memory for color, pitch, and time is worse than you think — prove otherwise.",
+    "Four full-screen perception games. Your memory for color, pitch, time, and space is worse than you think — prove otherwise.",
   openGraph: {
     title: "Acuity",
-    description: "Full-screen perception games: color, pitch, and tempo memory.",
+    description: "Full-screen perception games: color, pitch, tempo, and spatial memory.",
     url: "https://victorsaly.github.io/acuity/",
     siteName: "Acuity",
     type: "website",

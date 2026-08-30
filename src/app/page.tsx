@@ -24,8 +24,8 @@ export default function Hub() {
         <Item><h1 className="wordmark">Acuity</h1></Item>
         <Item>
           <p className="tagline">
-            Three full-screen perception games. Your memory for color, pitch, and time
-            is worse than you think — prove otherwise.
+            Four full-screen perception games. Your memory for color, pitch, time,
+            and space is worse than you think — prove otherwise.
           </p>
         </Item>
         <Stagger className="hubCards" delay={0.12}>
@@ -80,6 +80,27 @@ export default function Hub() {
                 <h2>Downbeat</h2>
                 <p>A beat rolls, notes swing in from the deep — tap dead on time or eat the miss.</p>
                 <CardStats game="tempo" />
+                <span className="go">Play ▸</span>
+              </Link>
+            </Tilt>
+          </Item>
+          <Item style={cardWrap}>
+            <Tilt style={{ display: "flex", width: "100%" }}>
+              <Link href="/memory" className="hubCard" data-note={880} style={{ width: "100%" }}>
+                <div className="art" aria-hidden>
+                  <svg viewBox="0 0 200 72" style={{ width: "100%", height: "100%" }}>
+                    {[0, 1, 2].map((r) => [0, 1, 2, 3, 4, 5, 6].map((c) => {
+                      const on = [[0, 1], [1, 2], [1, 4], [2, 3], [0, 5], [2, 6]].some(([rr, cc]) => rr === r && cc === c);
+                      return (
+                        <rect key={`${r}-${c}`} x={10 + c * 26} y={4 + r * 22} width={20} height={18} rx={4}
+                          fill={on ? "#ffffff" : "rgba(239,240,244,.12)"} />
+                      );
+                    }))}
+                  </svg>
+                </div>
+                <h2>Echo</h2>
+                <p>Tiles light up, then go dark. Tap the pattern back as the grid keeps growing.</p>
+                <CardStats game="memory" />
                 <span className="go">Play ▸</span>
               </Link>
             </Tilt>
