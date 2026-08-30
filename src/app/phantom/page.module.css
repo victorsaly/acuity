@@ -53,9 +53,18 @@
 
 .playStage { cursor: pointer; }
 
+.tapTarget {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
 .eyebrow {
   position: fixed;
-  z-index: 4;
+  z-index: 5;
   top: clamp(68px, 9vh, 96px);
   left: 50%;
   width: min(88vw, 720px);
@@ -69,9 +78,16 @@
   text-transform: uppercase;
 }
 
+.listen { color: var(--hot); }
+
+.yourTurn {
+  color: var(--acid);
+  animation: turnSignal 0.8s steps(2, end) infinite;
+}
+
 .round {
   position: fixed;
-  z-index: 4;
+  z-index: 5;
   top: clamp(102px, 14vh, 138px);
   color: var(--muted);
   font-size: 11px;
@@ -160,6 +176,7 @@
 .instruction {
   position: fixed;
   z-index: 5;
+  pointer-events: none;
   bottom: clamp(64px, 10vh, 96px);
   left: 50%;
   transform: translateX(-50%);
@@ -256,6 +273,11 @@
 @keyframes questionFade {
   from { opacity: 0; transform: translate(-50%, -50%) rotate(-5deg) scale(1.8); }
   to { opacity: 0.65; transform: translate(-50%, -50%) rotate(-5deg) scale(1); }
+}
+
+@keyframes turnSignal {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.48; }
 }
 
 @keyframes waveImpact {

@@ -7,21 +7,22 @@ import { audio, bass, clap, hat, kick } from "@/lib/audio";
 import { getBest, recordPlay, scoreKey, setBest, usePref } from "@/lib/store";
 import styles from "./page.module.css";
 
-type Phase = "menu" | "groove" | "silence" | "feedback" | "results";
+type Phase = "menu" | "groove" | "silence" | "drop" | "feedback" | "results";
 type Result = { error: number | null; score: number };
 type BarStyle = CSSProperties & { "--height": string; "--delay": string };
 
 const ROUNDS = 3;
 const GROOVE_BEATS = 8;
+const RESPONSE_MS = 1500;
 const DIFFS: DiffDef[] = [
   { key: "easy", label: "Easy", sub: "1 silent bar", note: 523 },
   { key: "hard", label: "Hard", sub: "2 silent bars", note: 659 },
   { key: "brutal", label: "Brutal", sub: "3 silent bars", note: 784 },
 ];
 const CONFIG: Record<string, { bpm: number; gap: number; window: number }> = {
-  easy: { bpm: 100, gap: 4, window: 360 },
-  hard: { bpm: 118, gap: 8, window: 270 },
-  brutal: { bpm: 136, gap: 12, window: 190 },
+  easy: { bpm: 100, gap: 4, window: 900 },
+  hard: { bpm: 118, gap: 8, window: 700 },
+  brutal: { bpm: 136, gap: 12, window: 500 },
 };
 const BAR_HEIGHTS = [22, 48, 78, 42, 112, 64, 34, 92, 54, 126, 70, 38, 84, 50, 108, 58, 30, 74, 46, 98, 62, 28, 82, 44];
 
@@ -43,6 +44,7 @@ export default function PhantomGame() {
   const timers = useRef<number[]>([]);
   const targetAt = useRef(0);
   const settled = useRef(false);
+  const dropPlayed = useRef(false);
 
   const clear = () => {
     timers.current.forEach(window.clearTimeout);
@@ -52,6 +54,8 @@ export default function PhantomGame() {
   useEffect(() => clear, []);
 
   const hitDrop = () => {
+    if (dropPlayed.current) return;
+    dropPlayed.current = true;
     const context = audio();
     const now = context.currentTime;
     kick(now, 1);
@@ -82,6 +86,7 @@ export default function PhantomGame() {
     const audioStart = context.currentTime + 0.65;
     const visualStart = performance.now() + 650;
     settled.current = false;
+    dropPlayed.current = false;
     setRound(roundIndex);
     setCurrent(null);
     setGrooveBeat(0);
@@ -109,11 +114,17 @@ export default function PhantomGame() {
       () => setPhase("silence"),
       Math.max(0, silenceAt - performance.now()),
     );
-    const missTimer = window.setTimeout(
-      () => completeRound(null),
+    const dropTimer = window.setTimeout(
+      () => {
+        hitDrop();
+        setPulse((value) => value + 1);
+        setPhase("drop");
+        const missTimer = window.setTimeout(() => completeRound(null), RESPONSE_MS);
+        timers.current.push(missTimer);
+      },
       Math.max(0, targetAt.current - performance.now()),
     );
-    timers.current.push(silenceTimer, missTimer);
+    timers.current.push(silenceTimer, dropTimer);
   };
 
   const start = () => {
@@ -123,7 +134,6 @@ export default function PhantomGame() {
   };
 
   const tap = () => {
-    if (phase !== "silence") return;
     completeRound(performance.now());
   };
 
@@ -151,7 +161,7 @@ export default function PhantomGame() {
         setPhase("menu");
         return;
       }
-      if ((event.key === " " || event.key === "Enter") && phase === "silence" && !event.repeat) {
+      if ((event.key === " " || event.key === "Enter") && (phase === "silence" || phase === "drop") && !event.repeat) {
         event.preventDefault();
         tap();
       }
@@ -166,16 +176,16 @@ export default function PhantomGame() {
         <Stagger style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
           <Item><div className={styles.menuMark} aria-hidden><div className={styles.void} /></div></Item>
           <Item><h1 className="wordmark">Phantom Drop</h1></Item>
-          <Item><p className="tagline">The beat cuts out before the drop. Keep dancing to the rhythm that only exists in your head, then bring it back.</p></Item>
+          <Item><p className="tagline">Listen without tapping. When the beat cuts out, count the hidden bar in your head, then tap once on the next 1.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="phantom" diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Phantom Drop",
                 description: "Internalize the groove, carry it through silence, and tap where the next downbeat belongs.",
                 steps: [
-                  "Listen to two full bars, counting 1, 2, 3, 4 with the screen.",
-                  "The track disappears for one or more complete bars, depending on difficulty.",
-                  "Keep counting silently and tap once on the next 1; three drops make your score.",
+                  "Listen to two full bars, counting 1, 2, 3, 4 with the screen. Do not tap yet.",
+                  "When the sound stops, continue counting the hidden bar: 1, 2, 3, 4.",
+                  "After the hidden 4, tap once where the next 1 should land. Three drops make your score.",
                 ],
               }} />
           </Item>
@@ -226,12 +236,21 @@ export default function PhantomGame() {
   const silentBars = CONFIG[diff].gap / 4;
 
   return (
-    <main className={`stage ${styles.stage} ${styles.playStage}`} onPointerDown={tap}>
-      <div className={styles.eyebrow}>
-        {phase === "groove" ? `Bar ${grooveBar} of 2 · count ${count}` : "The beat is gone"}
+    <main className={`stage ${styles.stage} ${styles.playStage}`}>
+      <button
+        className={styles.tapTarget}
+        data-silent
+        disabled={phase === "groove"}
+        aria-label={phase === "groove" ? "Listen only" : phase === "drop" ? "Tap now after the drop" : "Tap on the predicted next downbeat"}
+        onPointerDown={tap}
+      />
+      <div className={`${styles.eyebrow} ${phase === "groove" ? styles.listen : styles.yourTurn}`}>
+        {phase === "groove" ? "Listen only · do not tap" : phase === "drop" ? "Drop · tap now" : "Your turn · sound is off"}
       </div>
-      <div className={styles.round}>Drop {round + 1} of {ROUNDS}</div>
-      <div key={`${pulse}-${phase}`} className={`${styles.scene} ${phase === "groove" ? styles.beat : styles.silence}`} aria-hidden>
+      <div className={styles.round}>
+        {phase === "groove" ? `Bar ${grooveBar} of 2 · count ${count}` : `Drop ${round + 1} of ${ROUNDS}`}
+      </div>
+      <div key={`${pulse}-${phase}`} className={`${styles.scene} ${phase === "groove" ? styles.beat : phase === "drop" ? styles.drop : styles.silence}`} aria-hidden>
         <div className={styles.wave}>
           {BAR_HEIGHTS.map((height, index) => (
             <span
@@ -242,11 +261,11 @@ export default function PhantomGame() {
           ))}
         </div>
         <div className={styles.hole} />
-        <div className={styles.count}>{phase === "groove" ? count : "?"}</div>
+        <div className={styles.count}>{phase === "groove" ? count : phase === "drop" ? "1" : "?"}</div>
       </div>
       <div className={styles.instruction}>
-        {phase === "groove" ? "1 · 2 · 3 · 4" : `Count ${silentBars} silent ${silentBars === 1 ? "bar" : "bars"}`}
-        <small>{phase === "groove" ? "Two bars · lock in the tempo" : "Keep 1 · 2 · 3 · 4 going · tap on the next 1"}</small>
+        {phase === "groove" ? "Follow 1 · 2 · 3 · 4" : phase === "drop" ? "Tap now" : `Count ${silentBars} hidden ${silentBars === 1 ? "bar" : "bars"} in your head`}
+        <small>{phase === "groove" ? "Just listen · tapping is locked" : phase === "drop" ? "Tap now · 1.5 second response window" : "Count 1 · 2 · 3 · 4 · tap on the next 1, or react when it drops"}</small>
       </div>
     </main>
   );
