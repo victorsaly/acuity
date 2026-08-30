@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { audio, uiBlip } from "@/lib/audio";
 
@@ -13,6 +13,21 @@ import { audio, uiBlip } from "@/lib/audio";
  */
 export default function Chrome() {
   const path = usePathname();
+  const router = useRouter();
+
+  /* Esc is hierarchical: a game mid-run handles it (and calls
+     preventDefault) to drop back to its menu; if nothing claimed it,
+     Esc means "previous page" — back to the hub. */
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || path === "/") return;
+      setTimeout(() => {
+        if (!e.defaultPrevented && !document.fullscreenElement) router.push("/");
+      }, 0);
+    };
+    document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
+  }, [path, router]);
 
   useEffect(() => {
     const unlock = () => audio();

@@ -69,46 +69,65 @@ const mixHex = (a: string, b: string, t: number, alpha = 1) => {
   return `rgba(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(",")},${alpha})`;
 };
 
-/** Every note is a little face: mouth opens as it nears the ring,
-    grins the instant you hit it, sulks if you let it pass. */
-function drawFace(
+/** Every note is an asteroid: a lumpy rock (shape seeded by its beat
+    time) tumbling toward the ring. Perfect → white explosion, good →
+    colored burst, late/early → it ricochets off the ring, miss → it
+    sails straight past. */
+function drawAsteroid(
   g2: CanvasRenderingContext2D, x: number, y: number, rad: number,
-  state: "pending" | "hit" | "miss", mouthOpen: number, col: string, dpr: number,
+  seed: number, rot: number, fill: string | null, stroke: string, dpr: number,
 ) {
-  if (rad < 7 * dpr) return;
-  g2.strokeStyle = col;
-  g2.fillStyle = col;
-  g2.lineWidth = Math.max(1, rad * 0.1);
-  g2.lineCap = "round";
-  const ex = rad * 0.34, ey = rad * 0.22, er = Math.max(1, rad * 0.09);
-  if (state === "hit") {
-    for (const s of [-1, 1]) {   // happy closed eyes ^ ^
+  const n = 9;
+  g2.beginPath();
+  for (let i = 0; i < n; i++) {
+    const a = rot + (i / n) * Math.PI * 2;
+    const bump = Math.sin(seed * 13.7 + i * 7.1) * 0.5 + 0.5;
+    const r = rad * (0.72 + bump * 0.36);
+    const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+    if (i) g2.lineTo(px, py); else g2.moveTo(px, py);
+  }
+  g2.closePath();
+  if (fill) { g2.fillStyle = fill; g2.fill(); }
+  g2.strokeStyle = stroke;
+  g2.lineWidth = Math.max(1.2, rad * 0.12);
+  g2.lineJoin = "round";
+  g2.stroke();
+  if (rad > 9 * dpr) {   // a few craters
+    g2.fillStyle = fill ? "rgba(12,13,18,.38)" : stroke;
+    for (let i = 0; i < 3; i++) {
+      const a = seed * 5.3 + i * 2.1 + rot;
+      const d = rad * (0.22 + 0.3 * ((Math.sin(seed * 3.1 + i) + 1) / 2));
       g2.beginPath();
-      g2.arc(x + s * ex, y - ey + er * 1.4, er * 1.7, Math.PI * 1.15, Math.PI * 1.85);
-      g2.stroke();
+      g2.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, rad * (0.09 + 0.05 * i), 0, Math.PI * 2);
+      g2.fill();
     }
-    g2.beginPath();              // big grin
-    g2.arc(x, y + rad * 0.02, rad * 0.44, Math.PI * 0.15, Math.PI * 0.85);
-    g2.stroke();
-  } else if (state === "miss") {
-    for (const s of [-1, 1]) {
-      g2.beginPath(); g2.arc(x + s * ex, y - ey, er, 0, Math.PI * 2); g2.fill();
-    }
-    g2.beginPath();              // frown
-    g2.arc(x, y + rad * 0.66, rad * 0.36, Math.PI * 1.15, Math.PI * 1.85);
-    g2.stroke();
-  } else {
-    for (const s of [-1, 1]) {
-      g2.beginPath(); g2.arc(x + s * ex, y - ey, er, 0, Math.PI * 2); g2.fill();
-    }
-    g2.beginPath();              // "o" mouth, opening with anticipation
-    g2.arc(x, y + rad * 0.3, Math.max(1, rad * (0.08 + mouthOpen * 0.2)), 0, Math.PI * 2);
-    g2.stroke();
   }
 }
 
+function spawnBurst(
+  fx: Fx[], x: number, y: number, now: number, col: string,
+  count: number, speed: number, size: number, flash: boolean,
+) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2, sp = speed * (0.4 + Math.random() * 0.9);
+    fx.push({
+      x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      born: now, life: 0.5 + Math.random() * 0.4, col, size: size * (0.5 + Math.random()), kind: "shard",
+    });
+  }
+  if (flash) fx.push({ x, y, vx: 0, vy: 0, born: now, life: 0.4, col, size, kind: "flash" });
+}
+
 type Ev = { t: number; type: "kick" | "snare" | "hat" | "open" | "click"; f?: number };
-type Note = { t: number; kind: "kick" | "snare"; state: "pending" | "hit" | "miss"; value: number };
+type Note = {
+  t: number; kind: "kick" | "snare"; state: "pending" | "hit" | "miss"; value: number;
+  /* set on the first frame after a hit: where it died, and (if deflected) its ricochet */
+  hx?: number; hy?: number; hitT?: number; dvx?: number; dvy?: number;
+};
+type Fx = {
+  x: number; y: number; vx: number; vy: number;
+  born: number; life: number; col: string; size: number; kind: "shard" | "flash";
+};
 type TrackMark = { from: number; to: number; label: string; bpm: number };
 
 const runScore = (r: Run) =>
@@ -164,6 +183,7 @@ type Run = {
   counts: { perfect: number; good: number; ok: number; miss: number };
   pulse: number; ringPulse: number; flashCol: string;
   ringEase: number;
+  fx: Fx[];
   done: boolean;
 };
 
@@ -231,7 +251,7 @@ export default function TempoGame() {
       events, evIdx: 0, notes, marks, beats: beats.sort((a, b) => a - b), beatIdx: 0,
       startT, endT: t + 0.5, points: 0, strays: 0, combo: 0, maxCombo: 0,
       counts: { perfect: 0, good: 0, ok: 0, miss: 0 },
-      pulse: 0, ringPulse: 0, flashCol: "#ffffff", ringEase: -1, done: false,
+      pulse: 0, ringPulse: 0, flashCol: "#ffffff", ringEase: -1, fx: [], done: false,
     };
     setHud({ track: marks[0].label, bpm: marks[0].bpm, combo: 0, pts: 0 });
     setFinal(null);
@@ -389,54 +409,101 @@ export default function TempoGame() {
       g2.lineWidth = 3 * devicePixelRatio;
       g2.beginPath(); g2.arc(hitX, laneY, ringR, 0, Math.PI * 2); g2.stroke();
 
+      const dpr = devicePixelRatio;
       for (const n of r.notes) {
         const dt = n.t - nowT;
         if (dt > APPROACH) break;
-        if (dt < -0.25) continue;
+        if (dt < -1.0) continue;
         const u = Math.max(0, dt / APPROACH);
         const pp = (u * 1.35) / (u + 0.35);          // perspective curve: fast far away, precise up close
-        let x: number, y: number;
-        if (lane === "curve") {
-          const q = bez!(pp);
-          x = q.x;
-          y = q.y + Math.sin(nowT * 1.8 + n.t * 2.3) * H * 0.03 * pp;
-        } else if (lane === "orbit") {
-          /* spiral in toward the center ring */
-          const th = n.t * 1.7 + nowT * 0.6 + pp * 5;
-          x = hitX + Math.cos(th) * orbitR * pp;
-          y = laneY + Math.sin(th) * orbitR * 0.72 * pp;
-        } else {
-          /* fall straight down its own column, with a light shimmy */
-          x = rainX(n, W) + Math.sin(nowT * 2 + n.t * 3) * 10 * devicePixelRatio * pp;
-          y = laneY - pp * laneY * 0.92;
-        }
+        /* where this rock sits at a given lane position */
+        const posAt = (ppv: number): { x: number; y: number } => {
+          if (lane === "curve") {
+            const q = bez!(ppv);
+            return { x: q.x, y: q.y + Math.sin(nowT * 1.8 + n.t * 2.3) * H * 0.03 * ppv };
+          }
+          if (lane === "orbit") {
+            const th = n.t * 1.7 + nowT * 0.6 + ppv * 5;   // spiral in toward the center ring
+            return { x: hitX + Math.cos(th) * orbitR * ppv, y: laneY + Math.sin(th) * orbitR * 0.72 * ppv };
+          }
+          return {                                        // fall down its own column, light shimmy
+            x: rainX(n, W) + Math.sin(nowT * 2 + n.t * 3) * 10 * dpr * ppv,
+            y: laneY - ppv * laneY * 0.92,
+          };
+        };
+        const { x, y } = posAt(pp);
         const depth = 1 - pp * (lane === "curve" ? 0.7 : 0.5);
-        const rad = (n.kind === "kick" ? 22 : 17) * devicePixelRatio * depth;
+        const rad = (n.kind === "kick" ? 22 : 17) * dpr * depth;
         const fade = 0.35 + 0.65 * (1 - pp);
         const col = n.kind === "kick" ? KICK_COL : SNARE_COL;
+        const seed = (n.t * 7.13) % 1;
+        const rot = nowT * (0.6 + seed) * (seed > 0.5 ? 1 : -1);
+
         if (n.state === "hit") {
-          g2.strokeStyle = rgbaHex(col, 0.55 * fade);
-          g2.lineWidth = 2 * devicePixelRatio;
-          g2.beginPath(); g2.arc(x, y, rad * 1.35, 0, Math.PI * 2); g2.stroke();
-          drawFace(g2, x, y, rad * 1.15, "hit", 0, rgbaHex(col, 0.85 * fade), devicePixelRatio);
-        } else if (n.state === "miss") {
-          g2.fillStyle = "rgba(110,110,118,.3)";
-          g2.beginPath(); g2.arc(x, y, rad, 0, Math.PI * 2); g2.fill();
-          drawFace(g2, x, y, rad, "miss", 0, "rgba(160,160,168,.55)", devicePixelRatio);
-        } else {
-          /* far away: grey; blooms into its own color as it approaches */
-          const near = Math.max(0, 1 - Math.abs(dt) / 0.5);
-          const body = mixHex("#8f8f97", col, Math.min(1, (1 - pp) * 0.6 + near * 0.5), 0.95 * fade);
-          if (n.kind === "kick") {
-            g2.fillStyle = body;
-            g2.beginPath(); g2.arc(x, y, rad, 0, Math.PI * 2); g2.fill();
-            drawFace(g2, x, y, rad, "pending", near, "rgba(12,13,18,.85)", devicePixelRatio);
-          } else {
-            g2.strokeStyle = body;
-            g2.lineWidth = 3 * devicePixelRatio * Math.max(0.5, depth);
-            g2.beginPath(); g2.arc(x, y, rad, 0, Math.PI * 2); g2.stroke();
-            drawFace(g2, x, y, rad, "pending", near, body, devicePixelRatio);
+          if (n.hx === undefined) {   // first frame after the tap: decide how it dies
+            n.hx = x; n.hy = y; n.hitT = nowT;
+            if (n.value >= 1) spawnBurst(r.fx, x, y, nowT, "#ffffff", 36, W * 0.38, 6 * dpr, true);
+            else if (n.value >= 0.6) spawnBurst(r.fx, x, y, nowT, col, 18, W * 0.26, 4.5 * dpr, false);
+            else {                    // sloppy: ricochet off the ring
+              const ang = Math.atan2(y - laneY, x - hitX) + (seed - 0.5) * 1.2;
+              n.dvx = Math.cos(ang) * W * 0.45;
+              n.dvy = Math.sin(ang) * W * 0.45 - H * 0.25;
+              spawnBurst(r.fx, x, y, nowT, col, 6, W * 0.14, 3 * dpr, false);
+            }
           }
+          if (n.dvx !== undefined) {  // deflected rock tumbling away under gravity
+            const age = nowT - (n.hitT ?? nowT);
+            const al = Math.max(0, 1 - age / 0.9);
+            if (al > 0) {
+              const dx = n.hx! + n.dvx * age;
+              const dy = n.hy! + n.dvy! * age + H * 0.55 * age * age;
+              drawAsteroid(g2, dx, dy, rad, seed, rot * 4,
+                n.kind === "kick" ? rgbaHex(col, al * 0.9) : null, rgbaHex(col, al), dpr);
+            }
+          }
+          continue;
+        }
+
+        if (n.state === "miss") {
+          /* sails straight through the ring and off along its heading */
+          let mx = x, my = y;
+          if (dt < 0) {
+            const p0 = posAt(0), p1 = posAt(0.08);
+            const len = Math.hypot(p0.x - p1.x, p0.y - p1.y) || 1;
+            mx = p0.x + ((p0.x - p1.x) / len) * -dt * W * 0.35;
+            my = p0.y + ((p0.y - p1.y) / len) * -dt * W * 0.35;
+          }
+          const al = fade * (dt < 0 ? Math.max(0, 1 + dt / 0.9) : 1);
+          drawAsteroid(g2, mx, my, rad, seed, rot,
+            n.kind === "kick" ? `rgba(120,120,128,${al * 0.6})` : null, `rgba(150,150,158,${al})`, dpr);
+          continue;
+        }
+
+        /* pending: grey in the distance, blooming into its color as it nears */
+        const near = Math.max(0, 1 - Math.abs(dt) / 0.5);
+        const body = mixHex("#8f8f97", col, Math.min(1, (1 - pp) * 0.6 + near * 0.5), 0.95 * fade);
+        const edge = mixHex("#d8d8de", col, Math.min(1, (1 - pp) * 0.6 + near * 0.5), 0.95 * fade);
+        drawAsteroid(g2, x, y, rad, seed, rot, n.kind === "kick" ? body : null, n.kind === "kick" ? edge : body, dpr);
+      }
+
+      /* explosions, sparks, and the white flash of a perfect */
+      r.fx = r.fx.filter((p) => nowT - p.born < p.life);
+      for (const p of r.fx) {
+        const age = nowT - p.born, k = age / p.life;
+        if (p.kind === "flash") {
+          g2.fillStyle = `rgba(255,255,255,${(1 - k) * 0.16})`;
+          g2.fillRect(0, 0, W, H);
+          const rr = p.size * 3 + k * W * 0.14;
+          g2.strokeStyle = `rgba(255,255,255,${(1 - k) * 0.9})`;
+          g2.lineWidth = 5 * dpr * (1 - k) + 0.5;
+          g2.beginPath(); g2.arc(p.x, p.y, rr, 0, Math.PI * 2); g2.stroke();
+          g2.fillStyle = `rgba(255,255,255,${(1 - k) * 0.4})`;
+          g2.beginPath(); g2.arc(p.x, p.y, rr * 0.55, 0, Math.PI * 2); g2.fill();
+        } else {
+          const px = p.x + p.vx * age, py = p.y + p.vy * age + H * 0.35 * age * age;
+          const s = p.size * (1 - k * 0.5);
+          g2.fillStyle = rgbaHex(p.col, 1 - k);
+          g2.fillRect(px - s / 2, py - s / 2, s, s);
         }
       }
 
@@ -497,7 +564,7 @@ export default function TempoGame() {
     if (phase !== "play") return;
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space" || e.key === "Enter") { e.preventDefault(); tap(); }
-      if (e.key === "Escape" && !document.fullscreenElement) setPhase("menu");
+      if (e.key === "Escape" && !document.fullscreenElement) { e.preventDefault(); setPhase("menu"); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -506,7 +573,7 @@ export default function TempoGame() {
   useEffect(() => {
     if (phase !== "results") return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !document.fullscreenElement) setPhase("menu");
+      if (e.key === "Escape" && !document.fullscreenElement) { e.preventDefault(); setPhase("menu"); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -523,8 +590,9 @@ export default function TempoGame() {
             <Item><h1 className="wordmark">Downbeat</h1></Item>
             <Item>
               <p className="tagline">
-                A beat rolls and notes ride a living curve out of the deep. Tap them dead on time —
-                filled cyan notes are kicks, hollow magenta ones are snares.
+                A beat rolls and asteroids tumble out of the deep toward the ring. Tap dead on time
+                to blow them up — cyan rocks are kicks, hollow magenta ones are snares. Perfect
+                hits explode white; sloppy ones ricochet; misses sail right past.
               </p>
             </Item>
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>

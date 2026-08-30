@@ -168,7 +168,7 @@ export default function ColorGame() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Enter" && phase === "recall") lock();
-      if (e.key === "Escape" && phase !== "menu" && !document.fullscreenElement) { clear(); setPhase("menu"); }
+      if (e.key === "Escape" && phase !== "menu" && !document.fullscreenElement) { e.preventDefault(); clear(); setPhase("menu"); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);

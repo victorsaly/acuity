@@ -172,7 +172,7 @@ export default function SoundGame() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Enter" && phase === "recall") lock();
-      if (e.key === "Escape" && phase !== "menu" && !document.fullscreenElement) { clear(); hush(); setPhase("menu"); }
+      if (e.key === "Escape" && phase !== "menu" && !document.fullscreenElement) { e.preventDefault(); clear(); hush(); setPhase("menu"); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
