@@ -44,7 +44,7 @@
   border-color: var(--amber);
   background: rgba(255, 176, 46, 0.24);
   box-shadow: 0 0 26px rgba(255, 176, 46, 0.4);
-  transform: translateX(clamp(7px, 1.8vw, 13px));
+  transform: translateX(clamp(4px, 1vw, 8px));
 }
 
 .playStage { isolation: isolate; }
@@ -71,7 +71,10 @@
   top: clamp(100px, 13.5vh, 134px);
   left: 50%;
   transform: translateX(-50%);
+  width: max-content;
+  max-width: 90vw;
   color: var(--muted);
+  text-align: center;
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
