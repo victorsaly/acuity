@@ -166,7 +166,7 @@ function applyTap(r: Run, nowT: number): Judgement {
     j = { text: bestDt < 0 ? "good · early" : "good · late", color: "#cfcfd6", blip: 784 };
   } else {
     best.value = 0.3; r.counts.ok++; r.combo = 0;
-    j = { text: bestDt < 0 ? "early" : "late", color: "#8a8a92", blip: 523 };
+    j = { text: bestDt < 0 ? "almost · early" : "almost · late", color: "#8a8a92", blip: 523 };
   }
   r.points += best.value;
   r.maxCombo = Math.max(r.maxCombo, r.combo);
@@ -400,6 +400,35 @@ export default function TempoGame() {
         g2.lineWidth = (1.5 + r.pulse * 1.2) * devicePixelRatio;
         g2.beginPath(); g2.moveTo(0, laneY); g2.lineTo(W, laneY); g2.stroke();
       }
+
+      /* timing zones drawn to scale: a rock inside a ring is inside that
+         window. inner = perfect, middle = good, dashed outer = almost */
+      const ppOf = (dtv: number) => { const uu = dtv / APPROACH; return (uu * 1.35) / (uu + 0.35); };
+      const laneDist = (ppv: number) => {
+        if (lane === "curve") { const q = bez!(ppv); return Math.hypot(q.x - hitX, q.y - laneY); }
+        if (lane === "orbit") return orbitR * 0.86 * ppv;
+        return laneY * 0.92 * ppv;
+      };
+      const zones: { rz: number; col: string; dash: number[]; label: string }[] = [
+        { rz: laneDist(ppOf(W_OK)), col: "rgba(239,240,244,.22)", dash: [6 * devicePixelRatio, 8 * devicePixelRatio], label: "almost" },
+        { rz: laneDist(ppOf(W_GOOD)), col: "rgba(239,240,244,.34)", dash: [], label: "good" },
+        { rz: laneDist(ppOf(W_PERFECT)), col: "rgba(255,255,255,.75)", dash: [], label: "perfect" },
+      ];
+      g2.fillStyle = "rgba(255,255,255,.03)";
+      g2.beginPath(); g2.arc(hitX, laneY, zones[0].rz, 0, Math.PI * 2); g2.fill();
+      g2.fillStyle = "rgba(255,255,255,.05)";
+      g2.beginPath(); g2.arc(hitX, laneY, zones[2].rz, 0, Math.PI * 2); g2.fill();
+      g2.font = `${10 * devicePixelRatio}px ui-monospace, monospace`;
+      g2.textAlign = "center";
+      for (const z of zones) {
+        g2.setLineDash(z.dash);
+        g2.strokeStyle = z.col;
+        g2.lineWidth = 1.5 * devicePixelRatio;
+        g2.beginPath(); g2.arc(hitX, laneY, z.rz, 0, Math.PI * 2); g2.stroke();
+        g2.fillStyle = "rgba(239,240,244,.4)";
+        g2.fillText(z.label, hitX, laneY - z.rz - 5 * devicePixelRatio);
+      }
+      g2.setLineDash([]);
 
       /* hit ring flashes the color of whatever you just hit */
       const ringR = (42 + r.ringPulse * 14) * devicePixelRatio;
