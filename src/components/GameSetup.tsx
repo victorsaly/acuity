@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Mode } from "@/lib/store";
 import { getBest, scoreKey } from "@/lib/store";
 
@@ -15,6 +15,7 @@ const noopSubscribe = () => () => {};
 export default function GameSetup({
   game, diffs, diff, mode, onDiff, onMode, onStart, refreshToken,
   sounds, sound, onSound, formats, format, onFormat, beats, beat, onBeat,
+  helpContent,
 }: {
   game: string;
   diffs: DiffDef[];
@@ -33,7 +34,10 @@ export default function GameSetup({
   beats?: { key: string; label: string; sub?: string }[];
   beat?: string;
   onBeat?: (k: string) => void;
+  helpContent?: { title: string; description: string; steps: string[] };
 }) {
+  const [showHelp, setShowHelp] = useState(false);
+
   /* localStorage read that is SSR-safe and refreshes whenever props change */
   const best = useSyncExternalStore(
     noopSubscribe,
@@ -143,9 +147,34 @@ export default function GameSetup({
           Daily
         </button>
       </div>
-      <button className="cta" data-note="440" onClick={onStart}>
-        Start
-      </button>
+      <div className="menuActions">
+        {helpContent && (
+          <button className="ghost helpToggle" data-note="349" onClick={() => setShowHelp(true)}>
+            How to play
+          </button>
+        )}
+        <button className="cta" data-note="440" onClick={onStart}>
+          Start
+        </button>
+      </div>
+      {showHelp && helpContent && (
+        <div className="helpOverlay" role="dialog" aria-modal="true" aria-label={helpContent.title} onClick={() => setShowHelp(false)}>
+          <div className="helpPanel" onClick={(e) => e.stopPropagation()}>
+            <div className="helpHeader">
+              <h2>{helpContent.title}</h2>
+              <button className="ghost helpClose" data-note="349" onClick={() => setShowHelp(false)}>
+                Close
+              </button>
+            </div>
+            <p>{helpContent.description}</p>
+            <ol className="helpSteps">
+              {helpContent.steps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      )}
       <div className="best">
         {best > 0
           ? `Best · ${mode} · ${diff} · ${best.toFixed(1)}`

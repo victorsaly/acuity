@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { uiBlip, unlockAudio } from "@/lib/audio";
@@ -14,6 +14,15 @@ import { uiBlip, unlockAudio } from "@/lib/audio";
 export default function Chrome() {
   const path = usePathname();
   const router = useRouter();
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(hover: none) or (pointer: coarse)");
+    const update = () => setIsTouchDevice(query.matches);
+    update();
+    query.addEventListener?.("change", update);
+    return () => query.removeEventListener?.("change", update);
+  }, []);
 
   /* Esc is hierarchical: a game mid-run handles it (and calls
      preventDefault) to drop back to its menu; if nothing claimed it,
@@ -82,21 +91,24 @@ export default function Chrome() {
   return (
     <>
       {path !== "/" && (
-        <Link href="/" className="corner homeLink" data-note="349">
-          ◂ Games
+        <Link href="/" className="corner homeLink" data-note="349" aria-label="Back to games menu">
+          <span className="homeLinkInner homeLinkLong">◂ Back to games</span>
+          <span className="homeLinkInner homeLinkShort">◂ Menu</span>
         </Link>
       )}
-      <button
-        className="corner fsBtn"
-        onClick={toggleFs}
-        title="Toggle fullscreen"
-        aria-label="Toggle fullscreen"
-        data-note="523"
-      >
-        <svg viewBox="0 0 24 24">
-          <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
-        </svg>
-      </button>
+      {!isTouchDevice && (
+        <button
+          className="corner fsBtn"
+          onClick={toggleFs}
+          title="Toggle fullscreen"
+          aria-label="Toggle fullscreen"
+          data-note="523"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          </svg>
+        </button>
+      )}
     </>
   );
 }

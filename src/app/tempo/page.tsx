@@ -8,6 +8,7 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, kick, snare, hat, click, uiBlip, setDrumKit, preloadAllKits, type DrumKitName } from "@/lib/audio";
 import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
 import { scoreCard, barEmoji } from "@/lib/share";
+import { speakCue, setVoiceCuesEnabled, voiceCuesAvailable } from "@/lib/voice";
 
 type Phase = "menu" | "play" | "results";
 
@@ -26,12 +27,27 @@ const PATTERNS: Record<string, Pattern> = {
   gFunk: { kick: [0, 6, 8, 14], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14], open: [10] },
   club: { kick: [0, 4, 8, 12], snare: [4, 12], hat: [2, 6, 10, 14] },
   breaks: { kick: [0, 3, 6, 10], snare: [4, 12, 15], hat: [0, 2, 4, 6, 8, 10, 12, 14], open: [7] },
+  stillDre: { kick: [0, 3, 8, 10, 14], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14], open: [7, 15] },
+  crankThat: { kick: [0, 6, 7, 10, 11, 14], snare: [4, 12], hat: [0, 2, 3, 6, 8, 10, 11, 14], open: [15] },
 };
-const DIFF_CFG: Record<string, { tracks: { p: string; bars: number }[]; bpm: [number, number] }> = {
+const DIFF_CFG: Record<string, { tracks: { p: string; bars: number; label?: string }[]; bpm: [number, number] }> = {
   easy: { tracks: [{ p: "basic", bars: 8 }], bpm: [76, 96] },
   medium: { tracks: [{ p: "boomBap", bars: 10 }], bpm: [88, 108] },
-  hard: { tracks: [{ p: "gFunk", bars: 8 }, { p: "club", bars: 8 }], bpm: [96, 126] },
-  brutal: { tracks: [{ p: "boomBap", bars: 8 }, { p: "breaks", bars: 8 }, { p: "club", bars: 8 }], bpm: [108, 140] },
+  hard: {
+    tracks: [
+      { p: "stillDre", bars: 8, label: "Still D.R.E." },
+      { p: "crankThat", bars: 8, label: "Crank That" },
+    ],
+    bpm: [96, 126],
+  },
+  brutal: {
+    tracks: [
+      { p: "stillDre", bars: 8, label: "Still D.R.E." },
+      { p: "breaks", bars: 8 },
+      { p: "crankThat", bars: 8, label: "Crank That" },
+    ],
+    bpm: [108, 140],
+  },
 };
 
 const APPROACH = 1.8;               // seconds a note is on screen before the ring
@@ -48,6 +64,16 @@ const KITS_UI = [
   { key: "club", label: "Club" },
   { key: "wood", label: "Wood" },
 ];
+
+const TRACKS_UI = [
+  { key: "auto", label: "Track", sub: "Auto" },
+  { key: "stillDre", label: "Track", sub: "Still D.R.E." },
+  { key: "crankThat", label: "Track", sub: "Crank That" },
+];
+const TRACK_LABELS: Record<string, string> = {
+  stillDre: "Still D.R.E.",
+  crankThat: "Crank That",
+};
 
 type LaneStyle = "curve" | "orbit" | "rain";
 const LANES_UI = [
@@ -194,8 +220,10 @@ export default function TempoGame() {
   const mode = modeStr as Mode;
   const [kitStr, setKit] = usePref("tempo-kit", "punch");
   const kit = kitStr as DrumKitName;
+  const [trackPick, setTrackPick] = usePref("tempo-track", "auto");
   const [laneStr, setLane] = usePref("tempo-lane", "curve");
   const lane = laneStr as LaneStyle;
+  const [voiceCues, setVoiceCues] = usePref("voice-cues", "on");
   const [runStamp, setRunStamp] = useState(0);
   const [hud, setHud] = useState({ track: "", bpm: 0, combo: 0, pts: 0 });
   const [judge, setJudge] = useState<{ text: string; id: number; color: string } | null>(null);
@@ -206,13 +234,18 @@ export default function TempoGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => { preloadAllKits(); }, []);   // sampled kits fetch in the background; synth covers until then
+  useEffect(() => { setVoiceCuesEnabled(voiceCues === "on"); }, [voiceCues]);
 
   /* ---------- build the whole timeline up front ---------- */
   const start = () => {
     const c = audio();
     setDrumKit(kit);   // remembered preference may not have touched the engine yet
     const rng = rngFor(mode, "tempo", diff);
-    const cfg = DIFF_CFG[diff];
+    const baseCfg = DIFF_CFG[diff];
+    const cfg = trackPick === "auto" ? baseCfg : {
+      ...baseCfg,
+      tracks: [{ p: trackPick, bars: baseCfg.tracks[0]?.bars ?? 8, label: TRACK_LABELS[trackPick] }],
+    };
     const events: Ev[] = [];
     const notes: Note[] = [];
     const marks: TrackMark[] = [];
@@ -240,7 +273,8 @@ export default function TempoGame() {
         pat.open?.forEach((s) => events.push({ t: t + s * step, type: "open" }));
         t += 16 * step;
       }
-      marks.push({ from, to: t, label: `Track ${ti + 1}/${cfg.tracks.length}`, bpm });
+      const title = tr.label ? `${tr.label} · Track ${ti + 1}/${cfg.tracks.length}` : `Track ${ti + 1}/${cfg.tracks.length}`;
+      marks.push({ from, to: t, label: title, bpm });
       t += 1.1; // breather between tracks
     });
 
@@ -272,7 +306,13 @@ export default function TempoGame() {
         else if (ev.type === "snare") snare(ev.t);
         else if (ev.type === "hat") hat(ev.t);
         else if (ev.type === "open") hat(ev.t, true);
-        else click(ev.t, true, ev.f);
+        else {
+          click(ev.t, true, ev.f);
+          if (ev.f === 523) speakCue("three");
+          else if (ev.f === 659) speakCue("two");
+          else if (ev.f === 784) speakCue("one");
+          else if (ev.f === 1046) speakCue("go");
+        }
       }
     }, 25);
 
@@ -572,6 +612,8 @@ export default function TempoGame() {
     const latency = c.outputLatency || c.baseLatency || 0;
     const j = applyTap(run.current, c.currentTime - latency);
     uiBlip(j.blip, 0.055, 0.09);
+    if (j.text === "perfect") speakCue("perfect");
+    else if (j.text === "early") speakCue("miss");
     setJudge({ text: j.text, id: ++judgeId.current, color: j.color });
   };
 
@@ -613,6 +655,7 @@ export default function TempoGame() {
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
               <GameSetup game="tempo" diffs={DIFFS} diff={diff} mode={mode}
                 onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
+                beats={TRACKS_UI} beat={trackPick} onBeat={setTrackPick}
                 formats={LANES_UI} format={lane}
                 onFormat={(k) => setLane(k as LaneStyle)}
                 sounds={KITS_UI} sound={kit}
@@ -622,7 +665,29 @@ export default function TempoGame() {
                   setDrumKit(name);
                   const t = audio().currentTime + 0.02;   // quick kit preview
                   kick(t); hat(t + 0.13); snare(t + 0.26);
+                }}
+                helpContent={{
+                  title: "Downbeat",
+                  description: "A beat rolls in while shapes drift toward the center. Hit exactly on time to detonate the target before it passes.",
+                  steps: [
+                    "Watch the rhythm and learn the pulse of the current track.",
+                    "Tap when the target reaches the center line for a clean hit.",
+                    "White explosions are perfect; misses and mistimed taps lose points fast.",
+                  ],
                 }} />
+              <div className="modes" role="group" aria-label="Voice cues">
+                <button className="mode" aria-pressed={voiceCues === "off"} data-note={330} onClick={() => setVoiceCues("off")}>
+                  Voice cues off
+                </button>
+                <button
+                  className="mode"
+                  aria-pressed={voiceCues === "on"}
+                  data-note={392}
+                  onClick={() => setVoiceCues("on")}
+                >
+                  Voice cues on{voiceCuesAvailable() ? "" : " (no endpoint)"}
+                </button>
+              </div>
             </Item>
           </Stagger>
           <div className="hint">Tap · click · or spacebar</div>

@@ -236,7 +236,16 @@ export default function MemoryGame() {
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="memory" diffs={DIFFS} diff={diff} mode={mode}
               onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
-              formats={FORMATS} format={fmt} onFormat={setFmt} />
+              formats={FORMATS} format={fmt} onFormat={setFmt}
+              helpContent={{
+                title: "Echo",
+                description: "The board lights up, then wipes clean. You must tap the tiles back in the same order before time or lives run out.",
+                steps: [
+                  "Watch the highlighted tiles as the pattern appears.",
+                  "Replay the pattern in order by tapping each tile as it lights up.",
+                  "Each level grows longer, and three misses end the run.",
+                ],
+              }} />
           </Item>
         </Stagger>
       </main>

@@ -235,6 +235,15 @@ export default function SoundGame() {
                   setToneVoice(v);
                   audio();
                   tapTone(330);      // hear the new voice right away
+                }}
+                helpContent={{
+                  title: "Sine Language",
+                  description: "Each round plays five tones in sequence. Your job is to recall and recreate the exact pitches from memory.",
+                  steps: [
+                    "Listen to the full tone sequence as it plays once.",
+                    "Use the frequency slider to match each remembered pitch as closely as possible.",
+                    "Lock each answer in and keep the pattern going until all five tones are rebuilt.",
+                  ],
                 }} />
             </Item>
           </Stagger>

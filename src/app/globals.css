@@ -50,10 +50,29 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .fsBtn:hover { border-color: var(--bone); color: var(--bone); }
 .fsBtn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
 .homeLink {
-  top: 28px; left: 24px;
-  padding: 4px 0;
+  top: 18px; left: 18px;
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(12, 13, 18, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.homeLink:hover { color: var(--bone); }
+.homeLink:hover {
+  color: var(--bone);
+  border-color: rgba(239, 240, 244, 0.4);
+  background: rgba(12, 13, 18, 0.75);
+}
+.homeLinkInner {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.homeLinkShort { display: none; }
 .hud { position: fixed; top: 58px; left: 24px; z-index: 40; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .hud b { color: var(--bone); font-weight: 600; }
 
@@ -84,6 +103,13 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .diff[aria-pressed="true"], .mode[aria-pressed="true"] {
   color: var(--ink); background: var(--bone); border-color: var(--bone);
 }
+.menuActions {
+  display: flex; align-items: stretch; justify-content: center; gap: 12px; flex-wrap: wrap;
+}
+.menuActions > * {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 52px;
+}
 .cta {
   font-family: var(--font-display), system-ui, sans-serif;
   font-weight: 700; font-size: 16px;
@@ -100,6 +126,42 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   background: rgba(12, 13, 18, 0.6);
 }
 .ghost:hover { border-color: var(--bone); }
+.helpToggle {
+  min-width: 148px;
+  padding-inline: 20px;
+}
+.helpOverlay {
+  position: fixed; inset: 0; z-index: 70;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(12, 13, 18, 0.72);
+  padding: 20px;
+}
+.helpPanel {
+  width: min(520px, 100%);
+  max-height: min(80vh, 640px);
+  overflow: auto;
+  background: rgba(12, 13, 18, 0.96);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 18px 58px rgba(0, 0, 0, 0.42);
+}
+.helpHeader {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 12px;
+}
+.helpHeader h2 {
+  margin: 0; font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(20px, 4vw, 28px); letter-spacing: 0.08em; text-transform: uppercase;
+}
+.helpPanel p {
+  margin: 0 0 14px; color: var(--muted); line-height: 1.6;
+}
+.helpSteps {
+  margin: 0; padding-left: 1.2rem; display: grid; gap: 10px;
+  color: var(--bone); line-height: 1.55;
+}
+.helpSteps li::marker { color: var(--muted); }
 .best { margin-top: 3vh; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .dailyNote { margin-top: 10px; font-size: 11px; color: var(--muted); opacity: 0.85; }
 .hint {
@@ -109,9 +171,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 }
 
 /* ---------- hub ---------- */
-.hubCards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; max-width: 1200px; }
+.hubCards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; max-width: 1200px; align-items: stretch; }
 .hubCard {
-  flex: 1 1 240px; max-width: 280px;
+  flex: 1 1 240px; max-width: 280px; height: 100%;
   border: 1px solid var(--line); border-radius: 20px;
   padding: 26px 24px 22px;
   background: var(--ink-2);
@@ -455,13 +517,54 @@ input[type="range"]::-moz-range-thumb {
 .stage:not(.menuStage) { overflow: hidden; }
 
 .touchNote { display: none; }
-@media (hover: none) and (pointer: coarse) {
+@media (hover: none) and (pointer: coarse), (max-width: 640px) {
   .kbd, .deskHint { display: none; }   /* keyboard hints mean nothing to thumbs */
   .touchNote { display: block; }
+  .fsBtn { display: none !important; }
   .hubCard:hover { transform: none; }  /* no hover states to get stuck on */
 }
 @media (max-width: 640px) {
+  .stage { padding: 18px 14px 22px; }
+  .menuStage {
+    padding-top: 18px;
+    padding-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .homeLink {
+    top: 14px; left: 14px;
+    padding: 8px 10px;
+  }
+  .homeLinkLong { display: none; }
+  .homeLinkShort { display: inline-flex; }
+  .homeLinkInner {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+  }
+  .menuActions { width: 100%; }
+  .menuActions .cta, .menuActions .helpToggle { flex: 1 1 150px; }
+  .menuActions > * { min-height: 50px; }
+  .helpPanel { padding: 18px 16px 16px; }
   .wordmark { margin-top: 52px; }      /* clear the fixed chrome */
+  .tagline { max-width: 30ch; font-size: 14px; margin-bottom: 18px; }
+  .hubCards { gap: 12px; width: 100%; }
+  .hubCard {
+    flex-basis: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 18px 16px 16px;
+  }
+  .hubCard h2 { font-size: 15px; }
+  .hubCard p { font-size: 12px; }
+  .hubCard .art { height: 62px; }
+  .hubCard .go { padding-top: 10px; }
+  .hint {
+    position: static;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 12px;
+  }
   .diffs, .modes { padding: 0 6px; }
   .tempoHud { flex-wrap: wrap; gap: 10px 22px; padding: 0 60px; }
   .memHud { top: 52px; font-size: 11px; gap: 8px 16px; }
@@ -546,9 +649,9 @@ input[type="range"]::-moz-range-thumb {
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 .memGrid.live .tile:not(.hit):hover { background: rgba(239, 240, 244, 0.12); border-color: rgba(239, 240, 244, 0.4); }
-.memGrid.live .tile:active { transform: scale(0.94); }
+.memGrid.live .tile:active { filter: brightness(1.04); }
 .tile.lit {
-  background: #ffffff; border-color: #ffffff; transform: scale(1.05);
+  background: #ffffff; border-color: #ffffff;
   box-shadow: 0 0 28px rgba(255, 255, 255, 0.45);
 }
 .tile.hit { background: rgba(255, 255, 255, 0.88); border-color: #ffffff; }

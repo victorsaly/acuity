@@ -192,7 +192,16 @@ export default function ColorGame() {
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="color" diffs={DIFFS} diff={diff} mode={mode}
               onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
-              formats={FLOWS} format={flow} onFormat={setFlow} />
+              formats={FLOWS} format={flow} onFormat={setFlow}
+              helpContent={{
+                title: "Afterimage",
+                description: "Five colors flood the screen, then vanish. You rebuild each one from memory by matching hue, saturation, and lightness.",
+                steps: [
+                  "Memorize the five color swatches during the reveal phase.",
+                  "When the board resets, tune the sliders until each color matches the original.",
+                  "Lock in each guess and keep going until all five are reconstructed.",
+                ],
+              }} />
           </Item>
         </Stagger>
       </main>

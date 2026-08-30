@@ -8,6 +8,7 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, recordPlay, type Mode } from "@/lib/store";
 import { scoreCard } from "@/lib/share";
 import { uiBlip, pianoKey, buzz } from "@/lib/audio";
+import { speakCue, setVoiceCuesEnabled, voiceCuesAvailable } from "@/lib/voice";
 
 /*
  * Refrain — a piano melody grows one note every level. Play the same
@@ -17,6 +18,7 @@ import { uiBlip, pianoKey, buzz } from "@/lib/audio";
 type Phase = "menu" | "show" | "recall" | "results";
 type Fmt = "watch" | "ear";
 type Mark = "" | "lit" | "hit" | "miss" | "reveal";
+type PhrasePreset = "auto" | "west" | "snap";
 
 const DIFFS: DiffDef[] = [
   { key: "easy", label: "Easy", sub: "8 keys · white only", note: 523 },
@@ -33,6 +35,11 @@ const LIVES = 3;
 const FORMATS = [
   { key: "watch", label: "Watch · keys light up" },
   { key: "ear", label: "By ear · sound only" },
+];
+const PHRASES = [
+  { key: "auto", label: "Phrase", sub: "Auto" },
+  { key: "west", label: "Phrase", sub: "West Coast · inspired" },
+  { key: "snap", label: "Phrase", sub: "Snap Bounce · inspired" },
 ];
 
 const NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
@@ -81,12 +88,34 @@ type Run = {
   marks: Mark[];
   head: string;
   limit: number;       // recall time allowed, ms
+  phrase: PhrasePreset;
+  phraseBank: number[];
 };
 type View = Omit<Run, "rng">;
 const EMPTY: View = {
   level: 1, lives: LIVES, cleared: 0, notes: 0, taps: 0,
   melody: [], picked: 0, marks: [], head: "", limit: 0,
+  phrase: "auto", phraseBank: [],
 };
+
+function buildInspiredPhrase(preset: Exclude<PhrasePreset, "auto">, n: number): number[] {
+  const center = Math.floor(n / 2);
+  const motif = preset === "west"
+    // Sparse minor-pentatonic bounce with low-return turns.
+    ? [0, -3, -5, -3, 0, 2, 4, 2, -1, -3, -6, -3, 0, 2, -1, -3]
+    // Brighter, more repetitive call/response for snap-style hooks.
+    : [0, 0, 3, 5, 3, 0, -2, 0, 0, 2, 3, 2, 0, -2, 0, -2];
+  const seq: number[] = [];
+  for (let i = 0; i < 64; i++) {
+    const cycle = Math.floor(i / motif.length);
+    const drift = preset === "west"
+      ? (cycle % 4 === 3 ? -1 : 0) // occasional drop for that cruising low-end pull
+      : ((cycle % 3) - 1);
+    const idx = Math.max(0, Math.min(n - 1, center + motif[i % motif.length] + drift));
+    seq.push(idx);
+  }
+  return seq;
+}
 
 export default function PianoGame() {
   const [phase, setPhase] = useState<Phase>("menu");
@@ -95,6 +124,9 @@ export default function PianoGame() {
   const mode = modeStr as Mode;
   const [fmtStr, setFmt] = usePref("piano-fmt", "watch");
   const fmt = fmtStr as Fmt;
+  const [phraseStr, setPhrase] = usePref("piano-phrase", "auto");
+  const phrase = phraseStr as PhrasePreset;
+  const [voiceCues, setVoiceCues] = usePref("voice-cues", "on");
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
   const [view, setView] = useState<View>(EMPTY);   // render-side snapshot; logic mutates the ref
@@ -107,6 +139,7 @@ export default function PianoGame() {
   const timeRef = useRef<HTMLSpanElement>(null);
   const clear = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => clear, []);
+  useEffect(() => { setVoiceCuesEnabled(voiceCues === "on"); }, [voiceCues]);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
 
   const publish = () => { const { rng: _rng, ...rest } = R.current; void _rng; setView({ ...rest }); };
@@ -122,6 +155,13 @@ export default function PianoGame() {
     const g = R.current;
     const n = keys.length;
     const add = g.melody.length === 0 ? START_NOTES : 1;
+    if (g.phrase !== "auto") {
+      for (let k = 0; k < add; k++) {
+        const i = g.melody.length;
+        g.melody.push(g.phraseBank[i % g.phraseBank.length]);
+      }
+      return;
+    }
     for (let k = 0; k < add; k++) {
       const prev = g.melody[g.melody.length - 1];
       let next: number;
@@ -145,6 +185,7 @@ export default function PianoGame() {
     g.limit = Math.max(RECALL_MIN, g.melody.length * RECALL_PER_NOTE[diff]);
     setPhase("show");
     setMarks(blank(), "Listen");
+    speakCue("listen");
     const step = STEP_MS[diff];
     g.melody.forEach((ki, k) => {
       later(() => {
@@ -157,12 +198,15 @@ export default function PianoGame() {
       clock.current = { deadline: performance.now() + g.limit, total: g.limit, nextTick: 0 };
       setMarks(blank(), "Your turn");
       setPhase("recall");
+      speakCue("your turn");
     }, 500 + g.melody.length * step + 260);
   };
 
   const start = () => {
     clear();
-    R.current = { rng: rngFor(mode, "piano", diff), ...EMPTY, melody: [], marks: [] };
+    const rng = rngFor(mode, "piano", diff);
+    const phraseBank = phrase === "auto" ? [] : buildInspiredPhrase(phrase, keys.length);
+    R.current = { rng, ...EMPTY, melody: [], marks: [], phrase, phraseBank };
     extend();
     playLevel();
   };
@@ -186,6 +230,7 @@ export default function PianoGame() {
     if (wrongKey !== null) m[wrongKey] = "miss";
     m[g.melody[g.picked]] = "reveal";
     buzz();
+    speakCue(wrongKey === null ? "time" : "wrong note");
     setPhase("show");
     setMarks(m, g.lives > 0 ? head : "Out of lives");
     later(g.lives > 0 ? playLevel : finish, 1500);
@@ -222,6 +267,7 @@ export default function PianoGame() {
     g.level++;
     setPhase("show");
     setMarks(g.marks, "Clear");
+    speakCue("clear");
     [0, 1, 2].forEach((k) => later(() => uiBlip(523 * Math.pow(2, k / 3), 0.05, 0.14), 60 + k * 70));
     later(() => { extend(); playLevel(); }, 860);
   };
@@ -293,7 +339,30 @@ export default function PianoGame() {
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="piano" diffs={DIFFS} diff={diff} mode={mode}
               onDiff={setDiff} onMode={setMode} onStart={start} refreshToken={runStamp}
-              formats={FORMATS} format={fmtStr} onFormat={setFmt} />
+              formats={FORMATS} format={fmtStr} onFormat={setFmt}
+              beats={PHRASES} beat={phraseStr} onBeat={setPhrase}
+              helpContent={{
+                title: "Refrain",
+                description: "A melody plays one note at a time, then you must repeat that exact phrase back on the piano in the same order.",
+                steps: [
+                  "Listen to the phrase as it plays.",
+                  "Press the same white and black keys in sequence.",
+                  "Every level adds another note, and mistakes cost lives.",
+                ],
+              }} />
+            <div className="modes" role="group" aria-label="Voice cues">
+              <button className="mode" aria-pressed={voiceCues === "off"} data-note={330} onClick={() => setVoiceCues("off")}>
+                Voice cues off
+              </button>
+              <button
+                className="mode"
+                aria-pressed={voiceCues === "on"}
+                data-note={392}
+                onClick={() => setVoiceCues("on")}
+              >
+                Voice cues on{voiceCuesAvailable() ? "" : " (no endpoint)"}
+              </button>
+            </div>
           </Item>
         </Stagger>
       </main>
@@ -365,6 +434,7 @@ export default function PianoGame() {
         <h2 className="resVerdict">{verdict}</h2>
         <div className="resTotal">
           <b>Level {g.cleared}</b> · {mode} · {diff} · {fmt === "watch" ? "watch" : "by ear"}
+          {g.phrase !== "auto" && ` · ${g.phrase === "west" ? "west coast" : "snap bounce"}`}
           {best > 0 && ` · best ${best}`}
         </div>
       </Pop>
