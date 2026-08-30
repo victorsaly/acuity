@@ -524,10 +524,10 @@ input[type="range"]::-moz-range-thumb {
   .hubCard:hover { transform: none; }  /* no hover states to get stuck on */
 }
 @media (max-width: 640px) {
-  .stage { padding: 18px 14px 22px; }
+  .stage { padding: 14px 12px 18px; }
   .menuStage {
-    padding-top: 18px;
-    padding-bottom: 18px;
+    padding-top: 12px;
+    padding-bottom: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -542,9 +542,28 @@ input[type="range"]::-moz-range-thumb {
     font-size: 10px;
     letter-spacing: 0.12em;
   }
+  .wordmark {
+    font-size: clamp(24px, 7vw, 38px);
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+  .tagline {
+    max-width: 28ch;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .hubCards { gap: 10px; }
+  .hubCard {
+    padding: 16px 14px 14px;
+  }
+  .hubCard .art { height: 58px; }
+  .hubCard h2 { font-size: 14px; }
+  .hubCard p { font-size: 12px; line-height: 1.45; }
+  .hubCard .go { padding-top: 8px; font-size: 10px; }
   .menuActions { width: 100%; }
   .menuActions .cta, .menuActions .helpToggle { flex: 1 1 150px; }
-  .menuActions > * { min-height: 50px; }
+  .menuActions > * { min-height: 48px; }
   .helpPanel { padding: 18px 16px 16px; }
   .wordmark { margin-top: 52px; }      /* clear the fixed chrome */
   .tagline { max-width: 30ch; font-size: 14px; margin-bottom: 18px; }
@@ -645,7 +664,7 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(239, 240, 244, 0.05);
   font-family: var(--font-display), system-ui, sans-serif; font-weight: 700;
   font-size: calc(var(--size) / var(--n) * 0.42); color: var(--ink); padding: 0;
-  transition: background 0.1s, transform 0.08s, box-shadow 0.12s, border-color 0.1s;
+  transition: background 0.1s, box-shadow 0.12s, border-color 0.1s, filter 0.08s;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 .memGrid.live .tile:not(.hit):hover { background: rgba(239, 240, 244, 0.12); border-color: rgba(239, 240, 244, 0.4); }
