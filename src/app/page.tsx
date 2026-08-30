@@ -71,7 +71,8 @@ export default function Hub() {
           </Item>
         </Stagger>
       </Stagger>
-      <div className="hint">Sound on · headphones recommended · F fullscreen · B changes the background</div>
+      <div className="hint deskHint">Sound on · headphones recommended · F fullscreen · B changes the background</div>
+      <div className="hint touchNote">Works on touch — tap to play · sound on, headphones recommended</div>
     </main>
   );
 }

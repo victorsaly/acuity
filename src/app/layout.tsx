@@ -17,8 +17,17 @@ const mono = Spline_Sans_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Acuity",
-  description: "Full-screen perception games: color, pitch, and tempo memory.",
+  metadataBase: new URL("https://victorsaly.github.io/acuity/"),
+  title: { default: "Acuity", template: "%s · Acuity" },
+  description:
+    "Three full-screen perception games. Your memory for color, pitch, and time is worse than you think — prove otherwise.",
+  openGraph: {
+    title: "Acuity",
+    description: "Full-screen perception games: color, pitch, and tempo memory.",
+    url: "https://victorsaly.github.io/acuity/",
+    siteName: "Acuity",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import ShareScore from "@/components/ShareScore";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { getBest, setBest, scoreKey, rngFor, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, type Mode } from "@/lib/store";
+import { scoreCard, slotEmoji } from "@/lib/share";
 
 type HSL = { h: number; s: number; l: number };
 type Phase = "menu" | "reveal" | "recall" | "results";
@@ -47,8 +49,9 @@ const RING_C = 2 * Math.PI * 25;
 
 export default function ColorGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = useState("easy");
-  const [mode, setMode] = useState<Mode>("free");
+  const [diff, setDiff] = usePref("color-diff", "easy");
+  const [modeStr, setMode] = usePref("color-mode", "free");
+  const mode = modeStr as Mode;
   const [slot, setSlot] = useState(0);
   const [targets, setTargets] = useState<HSL[]>([]);
   const [guesses, setGuesses] = useState<HSL[]>([]);
@@ -229,6 +232,11 @@ export default function ColorGame() {
       </Stagger>
       <div className="resActions">
         <button className="cta" data-note={440} onClick={start}>Play again</button>
+        <ShareScore text={scoreCard(
+          "Afterimage",
+          `${diff}${mode === "daily" ? ` · daily ${todayStamp()}` : ""}`,
+          `${total.toFixed(1)}/50 ${scores.map(slotEmoji).join("")}`,
+        )} />
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
       </div>
     </main>

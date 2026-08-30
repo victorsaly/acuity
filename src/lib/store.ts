@@ -1,6 +1,25 @@
 "use client";
 
-/* Best scores + seeded randomness for daily mode. */
+import { useCallback, useSyncExternalStore } from "react";
+
+/* Best scores, remembered preferences, seeded randomness for daily mode. */
+
+/** A localStorage-backed preference that survives refreshes. SSR-safe. */
+export function usePref(key: string, def: string): [string, (v: string) => void] {
+  const subscribe = useCallback((cb: () => void) => {
+    window.addEventListener("acuity-pref", cb);
+    return () => window.removeEventListener("acuity-pref", cb);
+  }, []);
+  const get = useCallback(() => {
+    try { return localStorage.getItem(`dialed-pref-${key}`) ?? def; } catch { return def; }
+  }, [key, def]);
+  const value = useSyncExternalStore(subscribe, get, () => def);
+  const set = useCallback((v: string) => {
+    try { localStorage.setItem(`dialed-pref-${key}`, v); } catch { /* no persistence */ }
+    window.dispatchEvent(new Event("acuity-pref"));
+  }, [key]);
+  return [value, set];
+}
 
 export function getBest(key: string): number {
   try {

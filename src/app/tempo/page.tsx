@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import ShareScore from "@/components/ShareScore";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, kick, snare, hat, click, uiBlip, setDrumKit, type DrumKitName } from "@/lib/audio";
-import { getBest, setBest, scoreKey, rngFor, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, type Mode } from "@/lib/store";
+import { scoreCard, barEmoji } from "@/lib/share";
 
 type Phase = "menu" | "play" | "results";
 
@@ -160,15 +162,19 @@ type Run = {
   points: number; strays: number; combo: number; maxCombo: number;
   counts: { perfect: number; good: number; ok: number; miss: number };
   pulse: number; ringPulse: number; flashCol: string;
+  ringEase: number;
   done: boolean;
 };
 
 export default function TempoGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = useState("medium");
-  const [mode, setMode] = useState<Mode>("free");
-  const [kit, setKit] = useState<DrumKitName>("punch");
-  const [lane, setLane] = useState<LaneStyle>("curve");
+  const [diff, setDiff] = usePref("tempo-diff", "medium");
+  const [modeStr, setMode] = usePref("tempo-mode", "free");
+  const mode = modeStr as Mode;
+  const [kitStr, setKit] = usePref("tempo-kit", "punch");
+  const kit = kitStr as DrumKitName;
+  const [laneStr, setLane] = usePref("tempo-lane", "curve");
+  const lane = laneStr as LaneStyle;
   const [runStamp, setRunStamp] = useState(0);
   const [hud, setHud] = useState({ track: "", bpm: 0, combo: 0 });
   const [judge, setJudge] = useState<{ text: string; id: number; color: string } | null>(null);
@@ -180,6 +186,7 @@ export default function TempoGame() {
   /* ---------- build the whole timeline up front ---------- */
   const start = () => {
     const c = audio();
+    setDrumKit(kit);   // remembered preference may not have touched the engine yet
     const rng = rngFor(mode, "tempo", diff);
     const cfg = DIFF_CFG[diff];
     const events: Ev[] = [];
@@ -218,7 +225,7 @@ export default function TempoGame() {
       events, evIdx: 0, notes, marks, beats: beats.sort((a, b) => a - b), beatIdx: 0,
       startT, endT: t + 0.5, points: 0, strays: 0, combo: 0, maxCombo: 0,
       counts: { perfect: 0, good: 0, ok: 0, miss: 0 },
-      pulse: 0, ringPulse: 0, flashCol: "#ffffff", done: false,
+      pulse: 0, ringPulse: 0, flashCol: "#ffffff", ringEase: -1, done: false,
     };
     setHud({ track: marks[0].label, bpm: marks[0].bpm, combo: 0 });
     setFinal(null);
@@ -266,9 +273,11 @@ export default function TempoGame() {
         hitX = W * (0.5 + 0.03 * Math.sin(nowT * 0.15));
         laneY = H * (0.5 + 0.04 * Math.sin(nowT * 0.12 + 1));
       } else {
-        /* rain: the ring slides along the floor to meet the next drop */
+        /* rain: the ring glides along the floor to meet the next drop */
         const nxt = r.notes.find((n) => n.state === "pending" && n.t - nowT > -W_OK);
-        hitX = nxt ? rainX(nxt, W) : W / 2;
+        const targetX = nxt ? rainX(nxt, W) : W / 2;
+        r.ringEase = r.ringEase < 0 ? targetX : r.ringEase + (targetX - r.ringEase) * 0.16;
+        hitX = r.ringEase;
         laneY = H * (0.74 + 0.015 * Math.sin(nowT * 0.2));
       }
       const vpX = W * (0.78 + 0.05 * Math.sin(nowT * 0.11 + 1.2));
@@ -463,7 +472,11 @@ export default function TempoGame() {
   const judgeId = useRef(0);
   const tap = () => {
     if (phase !== "play" || !run.current) return;
-    const j = applyTap(run.current, audio().currentTime);
+    const c = audio();
+    /* players react to what they HEAR — on Bluetooth that lags the
+       clock, so judge against the perceived time, not the raw one */
+    const latency = c.outputLatency || c.baseLatency || 0;
+    const j = applyTap(run.current, c.currentTime - latency);
     uiBlip(j.blip, 0.055, 0.09);
     setJudge({ text: j.text, id: ++judgeId.current, color: j.color });
   };
@@ -472,6 +485,15 @@ export default function TempoGame() {
     if (phase !== "play") return;
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space" || e.key === "Enter") { e.preventDefault(); tap(); }
+      if (e.key === "Escape" && !document.fullscreenElement) setPhase("menu");
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  });
+
+  useEffect(() => {
+    if (phase !== "results") return;
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !document.fullscreenElement) setPhase("menu");
     };
     document.addEventListener("keydown", onKey);
@@ -557,6 +579,11 @@ export default function TempoGame() {
             </Stagger>
             <div className="resActions">
               <button className="cta" data-note={440} onClick={start}>Play again</button>
+              <ShareScore text={scoreCard(
+                "Downbeat",
+                `${diff} · ${kit}/${lane}${mode === "daily" ? ` · daily ${todayStamp()}` : ""}`,
+                `${total.toFixed(1)}/100 ${barEmoji(total)} · ${final.maxCombo} combo`,
+              )} />
               <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
             </div>
           </main>

@@ -75,6 +75,7 @@ export function Tilt({
   const rotateX = useSpring(useTransform(py, [0, 1], [max, -max]), { stiffness: 260, damping: 20 });
 
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return;   // no tilt-jitter while scrolling
     const r = e.currentTarget.getBoundingClientRect();
     px.set((e.clientX - r.left) / r.width);
     py.set((e.clientY - r.top) / r.height);

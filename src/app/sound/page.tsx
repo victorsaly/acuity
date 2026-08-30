@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import ShareScore from "@/components/ShareScore";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { audio, toneOn, toneGlide, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
-import { getBest, setBest, scoreKey, rngFor, type Mode } from "@/lib/store";
+import { getBest, setBest, scoreKey, rngFor, usePref, todayStamp, type Mode } from "@/lib/store";
+import { scoreCard, slotEmoji } from "@/lib/share";
 
 type Phase = "menu" | "reveal" | "recall" | "results";
 
@@ -37,13 +39,15 @@ const resVerdict = (total: number) =>
 
 export default function SoundGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = useState("easy");
-  const [mode, setMode] = useState<Mode>("free");
+  const [diff, setDiff] = usePref("sound-diff", "easy");
+  const [modeStr, setMode] = usePref("sound-mode", "free");
+  const mode = modeStr as Mode;
   const [slot, setSlot] = useState(0);
   const [targets, setTargets] = useState<number[]>([]);
   const [guesses, setGuesses] = useState<number[]>([]);
   const [pos, setPos] = useState(500);
-  const [voice, setVoice] = useState<ToneVoice>("warm");
+  const [voiceStr, setVoice] = usePref("sound-voice", "warm");
+  const voice = voiceStr as ToneVoice;
   const [revealOn, setRevealOn] = useState(false);
   const [runStamp, setRunStamp] = useState(0);
 
@@ -122,6 +126,7 @@ export default function SoundGame() {
   const start = () => {
     clear();
     audio();
+    setToneVoice(voice);   // remembered preference may not have touched the engine yet
     const rng = rngFor(mode, "sound", diff);
     const tones = Array.from({ length: SLOTS }, () => posToFreq(40 + rng() * 920));
     setTargets(tones);
@@ -295,6 +300,11 @@ export default function SoundGame() {
           </Stagger>
           <div className="resActions">
             <button className="cta" data-note={440} onClick={start}>Play again</button>
+            <ShareScore text={scoreCard(
+              "Sine Language",
+              `${diff}${mode === "daily" ? ` · daily ${todayStamp()}` : ""}`,
+              `${resTotal.toFixed(1)}/50 ${resScores.map(slotEmoji).join("")}`,
+            )} />
             <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
           </div>
         </main>

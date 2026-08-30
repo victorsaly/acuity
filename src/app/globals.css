@@ -447,3 +447,20 @@ input[type="range"]::-moz-range-thumb {
 }
 @keyframes hueSpin { to { filter: hue-rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .swatch { animation: none; } }
+
+/* ================= mobile ================= */
+/* short/narrow screens: menus may exceed the viewport — let them
+   scroll, and keep centering only when it fits ("safe center") */
+.stage { overflow-y: auto; justify-content: safe center; }
+
+.touchNote { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .kbd, .deskHint { display: none; }   /* keyboard hints mean nothing to thumbs */
+  .touchNote { display: block; }
+  .hubCard:hover { transform: none; }  /* no hover states to get stuck on */
+}
+@media (max-width: 640px) {
+  .wordmark { margin-top: 52px; }      /* clear the fixed chrome */
+  .diffs, .modes { padding: 0 6px; }
+  .tempoHud { flex-wrap: wrap; gap: 10px 22px; padding: 0 60px; }
+}
