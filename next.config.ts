@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   basePath,
   images: { unoptimized: true },
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
   turbopack: {
     root: path.join(__dirname),
   },

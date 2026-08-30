@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 out/
+
+# local secrets (ElevenLabs key etc.)
+.env*.local
