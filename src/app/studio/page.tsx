@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   audio, unlockAudio, bass, clap, hat, kick, perc, rim, snare, stab, uiBlip,
-  setDrumKit, preloadAllKits, loadLabSamples, labPlay, outputStream, encodeWav, setTurntableRate,
+  setDrumKit, loadKitSamples, loadLabSamples, labPlay, outputStream, encodeWav, setTurntableRate,
   type DrumKitName, type LeadVoice, type LabSound,
 } from "@/lib/audio";
 import styles from "./page.module.css";
@@ -226,7 +226,7 @@ export default function BeatLab() {
 
   /* hydrate the saved beat; persist every change */
   useEffect(() => {
-    preloadAllKits();
+    loadKitSamples(cfgRef.current.kit);   // other kits decode on demand when picked
     loadLabSamples();
     try {
       const raw = localStorage.getItem(LS_KEY);

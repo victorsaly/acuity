@@ -5,7 +5,7 @@ import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { audio, kick, snare, hat, click, uiBlip, setDrumKit, preloadAllKits, type DrumKitName } from "@/lib/audio";
+import { audio, kick, snare, hat, click, uiBlip, setDrumKit, loadKitSamples, type DrumKitName } from "@/lib/audio";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
 import { scoreCard, barEmoji } from "@/lib/share";
 
@@ -233,7 +233,7 @@ export default function TempoGame() {
   const run = useRef<Run | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => { preloadAllKits(); }, []);   // sampled kits fetch in the background; synth covers until then
+  useEffect(() => { loadKitSamples(kit); }, [kit]);   // the chosen kit fetches in the background; synth covers until then
 
   /* ---------- build the whole timeline up front ---------- */
   const start = () => {
