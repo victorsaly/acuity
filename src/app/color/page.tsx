@@ -6,7 +6,7 @@ import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
-import { scoreCard, slotEmoji } from "@/lib/share";
+import { slotEmoji } from "@/lib/share";
 import { uiBlip } from "@/lib/audio";
 
 type HSL = { h: number; s: number; l: number };
@@ -299,13 +299,13 @@ export default function ColorGame() {
       </Stagger>
       <div className="resActions">
         <button className="cta" data-note={440} onClick={start}>Play again</button>
-        <ShareScore text={scoreCard(
-          "Afterimage",
-          diff,
-          `${total.toFixed(1)} / 50 | Grades: ${scores.map(slotEmoji).join(" ")}`,
-          "color",
-          diff,
-        )} />
+        <ShareScore
+          game="Afterimage"
+          route="color"
+          detail={diff}
+          line={`${total.toFixed(1)} / 50 | Grades: ${scores.map(slotEmoji).join(" ")}`}
+          level={diff}
+        />
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
       </div>
     </main>

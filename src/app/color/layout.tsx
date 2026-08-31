@@ -7,5 +7,6 @@ export const metadata = routeMetadata(
 );
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return children;
+  /* data-game hands the whole route its accent (see globals.css). */
+  return <div className="gameRoot" data-game="color">{children}</div>;
 }

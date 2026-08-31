@@ -12,37 +12,53 @@ export const barEmoji = (pct: number) => {
   return `[${"#".repeat(filled)}${"-".repeat(10 - filled)}]`;
 };
 
-export function scoreCard(
-  game: string,
-  detail: string,
-  scoreLine: string,
-  route?: string,
-  level?: string,
-): string {
-  const challengeUrl = route && level
+/** One finished run, in the shape every game's results screen can describe. */
+export type Score = {
+  /** Display name, e.g. "Afterimage". */
+  game: string;
+  /** Route slug, e.g. "color" — also picks the social image the link previews. */
+  route: string;
+  /** How it was played, e.g. "hard · flash". */
+  detail: string;
+  /** The result itself, e.g. "42.1 / 50 | Grades: A B C A B". */
+  line: string;
+  /** Difficulty, replayed by GameSetup so the challenge starts on the same one. */
+  level?: string;
+};
+
+/** The same run, on the same settings — what the recipient is being dared into. */
+export function challengeUrl({ route, level }: Score): string {
+  return level
     ? `${SITE_URL}/${route}/?level=${encodeURIComponent(level)}`
-    : `${SITE_URL}/`;
-  return `DELULU BEATS · ${game.toUpperCase()} · ${detail.toUpperCase()}\n\n${scoreLine}\n\nThink you can beat it?\n${challengeUrl}`;
+    : `${SITE_URL}/${route}/`;
 }
 
-/** Open the native share sheet (mobile, includes WhatsApp); fall back to clipboard. */
-export async function shareText(text: string): Promise<boolean> {
+export function scoreCard({ game, detail, line }: Score): string {
+  return `DELULU BEATS · ${game.toUpperCase()} · ${detail.toUpperCase()}\n\n${line}\n\nThink you can beat it?`;
+}
+
+export type ShareOutcome = "shared" | "copied" | "cancelled";
+
+/**
+ * Hand the score to whatever the device shares with — WhatsApp, Messages,
+ * anything else in the sheet. The challenge link goes in `url` rather than
+ * buried in the text so the target renders the game's own preview card.
+ * Desktop browsers without a share sheet fall back to the clipboard.
+ */
+export async function shareScore(score: Score): Promise<ShareOutcome> {
+  const text = scoreCard(score);
+  const url = challengeUrl(score);
   if (navigator.share) {
     try {
-      await navigator.share({ text });
-      return true;
+      await navigator.share({ title: `${score.game} · Delulu Beats`, text, url });
+      return "shared";
     } catch {
-      return false; // user cancelled the sheet - don't silently copy instead
+      return "cancelled"; // user dismissed the sheet — don't silently copy instead
     }
   }
   try {
-    await navigator.clipboard.writeText(text);
-    return true;
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+    return "copied";
   } catch { /* clipboard unavailable */ }
-  return false;
-}
-
-/** wa.me deep link so the same score card opens straight into WhatsApp on any device. */
-export function whatsappShareUrl(text: string): string {
-  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+  return "cancelled";
 }

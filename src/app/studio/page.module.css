@@ -394,3 +394,60 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* melody grid: 64 compact steps, 10 pentatonic rows */
+.mgrid { display: flex; flex-direction: column; gap: 3px; min-width: 1120px; }
+
+.mcell {
+  width: 12px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid rgba(239, 240, 244, 0.16);
+  border-radius: 3px;
+  background: rgba(239, 240, 244, 0.04);
+  cursor: pointer;
+  flex: none;
+}
+
+.mcell:hover { border-color: rgba(239, 240, 244, 0.55); }
+
+.bar { margin-left: 12px; }
+
+.gridHint {
+  margin: 2px 0 0;
+  padding-left: 76px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* bar ruler + guidance for the note grids */
+.rulerRow { margin-bottom: 3px; }
+
+.ruler {
+  flex: none;
+  /* one bar: 16 cells x 12px + 15 gaps x 4px + 3 beat margins x 7px */
+  width: 273px;
+  margin-left: 12px; /* matches .bar */
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  border-bottom: 1px solid rgba(239, 240, 244, 0.18);
+  padding-bottom: 3px;
+}
+
+.gridEmpty {
+  margin: 6px 0 0;
+  padding-left: 64px;
+  color: var(--acc);
+  font-size: 12px;
+}
+
+/* .mcell is declared after .cellOn, so restate the active fill at higher specificity */
+.mcell.cellOn {
+  background: var(--acc);
+  border-color: var(--acc);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--acc) 55%, transparent);
+}

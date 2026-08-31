@@ -4,12 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/gen-social.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "samples": "node scripts/gen-samples.mjs",
     "samples:lab": "node scripts/gen-lab.mjs",
-    "test:audio": "node scripts/audio-invariants.mjs"
+    "test:audio": "node scripts/audio-invariants.mjs",
+    "social": "node scripts/gen-social.mjs"
   },
   "dependencies": {
     "motion": "^13.1.1",

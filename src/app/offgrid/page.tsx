@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import { Item, Pop, Stagger } from "@/components/Fx";
 import { audio, buzz, clap, hat, heardNow, kick, uiBlip } from "@/lib/audio";
+import ShareScore from "@/components/ShareScore";
 import { getBest, recordPlay, runRng, scoreKey, setBest, usePref } from "@/lib/store";
+import { barEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
 type Phase = "menu" | "listen" | "pick" | "feedback" | "results";
@@ -236,6 +238,13 @@ export default function OffGridGame() {
           {record && <div className="record">New best</div>}
           <div className="resActions">
             <button className="cta" data-note={523} onClick={start}>Again</button>
+            <ShareScore
+              game="Off-Grid"
+              route="offgrid"
+              detail={diff}
+              line={`${total} / 50 ${barEmoji(total * 2)} · ${results.filter((r) => r.score === 10).length}/${ROUNDS} nailed`}
+              level={diff}
+            />
             <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Menu</button>
           </div>
         </Pop>

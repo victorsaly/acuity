@@ -4,9 +4,10 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import { Stagger, Item, Pop } from "@/components/Fx";
+import GameMark from "@/components/GameMark";
 import { audio, click, uiBlip } from "@/lib/audio";
 import { getBest, recordPlay, runRng, scoreKey, setBest, todayStamp, usePref } from "@/lib/store";
-import { scoreCard, slotEmoji } from "@/lib/share";
+import { slotEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
 type Phase = "menu" | "reveal" | "ready" | "timing" | "feedback" | "results";
@@ -176,6 +177,7 @@ export default function TimeGame() {
       <main className="stage menuStage">
         <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
           <Item><h1 className="wordmark">Second Sense</h1></Item>
+        <Item><GameMark game="time" className="gameMark" /></Item>
           <Item><p className="tagline">Something lasts a while. Then you make it last exactly that long again, holding a button, with nothing to count against.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="time" diffs={DIFFS} diff={diff}
@@ -284,9 +286,13 @@ export default function TimeGame() {
       <div className="resActions">
         <button className="cta" data-note={523} onClick={start}>Again</button>
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Menu</button>
-        <ShareScore text={scoreCard("Second Sense", `${diff} · ${todayStamp()}`,
-          `${total.toFixed(1)} / 50 | Grades: ${scores.map(slotEmoji).join(" ")}`,
-          "time", diff)} />
+        <ShareScore
+          game="Second Sense"
+          route="time"
+          detail={`${diff} · ${todayStamp()}`}
+          line={`${total.toFixed(1)} / 50 | Grades: ${scores.map(slotEmoji).join(" ")}`}
+          level={diff}
+        />
       </div>
     </main>
   );

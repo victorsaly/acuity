@@ -5,9 +5,10 @@ import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
+import GameMark from "@/components/GameMark";
 import { audio, toneOn, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
-import { scoreCard, slotEmoji } from "@/lib/share";
+import { slotEmoji } from "@/lib/share";
 
 type Phase = "menu" | "reveal" | "recall" | "results";
 
@@ -225,6 +226,7 @@ export default function SoundGame() {
         <main className="stage menuStage">
           <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <Item><h1 className="wordmark">Sine Language</h1></Item>
+            <Item><GameMark game="sound" className="gameMark" /></Item>
             <Item><p className="tagline">Five tones, one play each, then silence. Your job is to find them again on a slider.</p></Item>
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
               <GameSetup game="sound" diffs={DIFFS} diff={diff}
@@ -323,13 +325,13 @@ export default function SoundGame() {
           </Stagger>
           <div className="resActions">
             <button className="cta" data-note={440} onClick={start}>Play again</button>
-            <ShareScore text={scoreCard(
-              "Sine Language",
-              diff,
-              `${resTotal.toFixed(1)} / 50 | Grades: ${resScores.map(slotEmoji).join(" ")}`,
-              "sound",
-              diff,
-            )} />
+            <ShareScore
+              game="Sine Language"
+              route="sound"
+              detail={diff}
+              line={`${resTotal.toFixed(1)} / 50 | Grades: ${resScores.map(slotEmoji).join(" ")}`}
+              level={diff}
+            />
             <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
           </div>
         </main>

@@ -416,14 +416,16 @@ input[type="range"]::-moz-range-thumb {
   flex: none; display: flex; gap: 12px; justify-content: center;
   padding: 2.5vh 24px max(20px, 3vh); flex-wrap: wrap;
 }
-.shareRow {
-  display: flex; align-items: stretch; justify-content: center; gap: 10px;
-  flex-wrap: wrap;
-}
+/* One share button per results screen, sitting in .resActions next to Again
+   and Menu. The device's share sheet covers WhatsApp and the rest, so this is
+   the only social control anywhere. */
 .shareAction {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 48px; min-width: 0; flex: 1 1 148px;
-  text-align: center;
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  min-height: 48px; min-width: 0;
+  border-color: rgba(239, 240, 244, 0.32);
+}
+.shareAction .shareIcon {
+  width: 16px; height: 16px; flex: none;
 }
 
 /* color results: full-bleed split panels */
@@ -865,20 +867,24 @@ input[type="range"]::-moz-range-thumb {
 .memGrid {
   --size: min(72vmin, 520px);
   width: var(--size); height: var(--size);
-  display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: calc(var(--size) * 0.025);
-  transform-style: preserve-3d;
+  display: grid; gap: calc(var(--size) * 0.025);
+  /* rows are pinned too: implicit auto rows resize as numbers appear and vanish */
+  grid-template-columns: repeat(var(--n), 1fr);
+  grid-template-rows: repeat(var(--n), 1fr);
 }
 .memGrid.clear { animation: gridClear 0.6s ease-out; }
-@keyframes gridClear {
-  0% { transform: rotateX(0) scale(1); }
-  35% { transform: rotateX(14deg) scale(1.03); }
-  100% { transform: rotateX(0) scale(1); }
+@keyframes gridClear {                                    /* glow only — the board never moves or resizes */
+  0% { filter: brightness(1); }
+  35% { filter: brightness(1.35); }
+  100% { filter: brightness(1); }
 }
 .tile {
   border-radius: 12px; border: 1px solid var(--line);
   background: rgba(239, 240, 244, 0.05);
   font-family: var(--font-display), system-ui, sans-serif; font-weight: 700;
   font-size: calc(var(--size) / var(--n) * 0.42); color: var(--ink); padding: 0;
+  display: flex; align-items: center; justify-content: center;   /* text never grows the cell */
+  min-width: 0; min-height: 0; line-height: 1; overflow: hidden;
   transition: background 0.1s, box-shadow 0.12s, border-color 0.1s, filter 0.08s;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
@@ -1102,3 +1108,99 @@ input[type="range"]::-moz-range-thumb {
   .menuStage .type { padding: 9px 6px 8px; }
 }
 @media (prefers-reduced-motion: reduce) { .type:hover { transform: none; } }
+
+/* ================= hub card accents ================= */
+/* Each card carries the accent its social image uses (scripts/social-art.mjs),
+   so the tile you hover here and the preview that turns up in a chat are
+   recognisably the same game. The colour only shows on hover, focus or tap —
+   the hub at rest stays as monochrome as the rest of the site. */
+[data-game] { --accent: var(--bone); --rest: #ffffff; }
+[data-game="color"]   { --accent: #ff5959; }
+[data-game="sound"]   { --accent: #4be1ff; }
+[data-game="time"]    { --accent: #ffe93d; }
+[data-game="tempo"]   { --accent: #c48bff; }
+[data-game="memory"]  { --accent: #6fe06f; }
+[data-game="piano"]   { --accent: #8b5cf6; --rest: #b9b9c2; }
+[data-game="fever"]   { --accent: #ffb13d; }
+[data-game="phantom"] { --accent: #7a6bff; }
+[data-game="offgrid"] { --accent: #e05fd0; }
+[data-game="studio"]  { --accent: #4be1ff; }
+
+.hubCard { position: relative; isolation: isolate; }
+.hubCard .art svg { display: block; width: 100%; height: 100%; }
+
+/* The same wash the social image puts behind its art, sized to the card. */
+.hubCard::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit; pointer-events: none;
+  background: radial-gradient(150% 120% at 84% 4%,
+    color-mix(in srgb, var(--accent) 20%, transparent), transparent 62%);
+  opacity: 0; transition: opacity 0.18s;
+}
+.hubCard .art { color: var(--rest); transition: color 0.18s, filter 0.28s; }
+
+/* Afterimage has no line art to tint — its whole tile is the spectrum. It
+   rests drained of colour like every other card and floods back on hover,
+   which is more or less what the game does to you. */
+.hubCard[data-game="color"] .art {
+  background: conic-gradient(from 0deg,
+    #ff5959, #ffb13d, #ffe93d, #6fe06f, #3dc9ff, #7a6bff, #e05fd0, #ff5959);
+  filter: blur(1px) grayscale(1) contrast(0.92);
+}
+.hubCard[data-game="color"]:hover .art,
+.hubCard[data-game="color"]:focus-visible .art,
+.hubCard[data-game="color"]:active .art { filter: blur(1px) saturate(1.1); }
+
+.hubCard:hover, .hubCard:focus-visible, .hubCard:active {
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  box-shadow: 0 14px 48px color-mix(in srgb, var(--accent) 16%, transparent),
+              0 2px 16px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.hubCard:hover::before, .hubCard:focus-visible::before, .hubCard:active::before { opacity: 1; }
+.hubCard:hover .art, .hubCard:focus-visible .art, .hubCard:active .art { color: var(--accent); }
+.hubCard:hover .go, .hubCard:focus-visible .go, .hubCard:active .go { color: var(--accent); }
+.hubCard:focus-visible { outline-color: var(--accent); }
+
+/* ================= in-game accent ================= */
+/* Each route roots at .gameRoot[data-game], so the colour you picked out on
+   the hub — and saw in the link preview — is the colour you are playing in.
+   It sits on identity only: the mark, the level you chose, your best. The
+   colours a game uses to say hit or miss are meaning, not decoration, and
+   are deliberately left alone. */
+.gameRoot { display: contents; }
+
+/* The game's own mark on its menu, for the games with no bespoke one. */
+.gameMark {
+  display: block;
+  width: min(240px, 58vw); height: auto;
+  margin: 2px 0 2.5vh;
+  color: var(--accent);
+}
+
+/* A wash of the accent behind the stage, the same corner the social card
+   puts it in. Sits under everything: .stage is z-index 10. */
+.gameRoot .menuStage::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(70% 55% at 84% 6%,
+    color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%);
+}
+
+.gameRoot .diff[aria-pressed="true"], .gameRoot .mode[aria-pressed="true"],
+.gameRoot .type[aria-pressed="true"] {
+  box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.gameRoot .diff:hover, .gameRoot .mode:hover, .gameRoot .type:hover,
+.gameRoot .ghost:hover {
+  border-color: color-mix(in srgb, var(--accent) 75%, transparent);
+}
+.gameRoot .cta:hover {
+  box-shadow: 0 6px 36px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+.gameRoot .best b, .gameRoot .record { color: var(--accent); }
+.gameRoot .record { text-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent); }
+.gameRoot .wordmark { text-shadow: 0 0 30px color-mix(in srgb, var(--accent) 30%, transparent); }
+.gameRoot button:focus-visible, .gameRoot a:focus-visible { outline-color: var(--accent); }
+
+@media (max-width: 640px) {
+  .gameMark { width: min(200px, 62vw); margin-bottom: 14px; }
+}

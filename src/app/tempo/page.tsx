@@ -5,9 +5,10 @@ import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
+import GameMark from "@/components/GameMark";
 import { audio, kick, snare, hat, click, uiBlip, setDrumKit, loadKitSamples, type DrumKitName } from "@/lib/audio";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
-import { scoreCard, barEmoji } from "@/lib/share";
+import { barEmoji } from "@/lib/share";
 
 type Phase = "menu" | "play" | "results";
 
@@ -677,6 +678,7 @@ export default function TempoGame() {
         <main className="stage menuStage">
           <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <Item><h1 className="wordmark">Downbeat</h1></Item>
+            <Item><GameMark game="tempo" className="gameMark" /></Item>
             <Item>
               <p className="tagline">
                 A beat rolls and asteroids tumble in toward the ring. Tap when one touches it.
@@ -760,13 +762,13 @@ export default function TempoGame() {
             </Stagger>
             <div className="resActions">
               <button className="cta" data-note={440} onClick={start}>Play again</button>
-              <ShareScore text={scoreCard(
-                "Downbeat",
-                `${diff} · ${kit}/${lane}`,
-                `${total.toFixed(1)} / 100 ${barEmoji(total)} · ${final.maxCombo} combo`,
-                "tempo",
-                diff,
-              )} />
+              <ShareScore
+                game="Downbeat"
+                route="tempo"
+                detail={`${diff} · ${kit}/${lane}`}
+                line={`${total.toFixed(1)} / 100 ${barEmoji(total)} · ${final.maxCombo} combo`}
+                level={diff}
+              />
               <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
             </div>
           </main>

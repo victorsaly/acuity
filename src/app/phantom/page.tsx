@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import { Item, Pop, Stagger } from "@/components/Fx";
 import { audio, bass, clap, click, hat, heardNow, kick } from "@/lib/audio";
+import ShareScore from "@/components/ShareScore";
 import { getBest, recordPlay, scoreKey, setBest, usePref } from "@/lib/store";
+import { barEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
 type Phase = "menu" | "groove" | "silence" | "feedback" | "results";
@@ -32,6 +34,12 @@ const verdict = (score: number) =>
   score >= 27 ? "You heard the silence." :
   score >= 21 ? "Still in the pocket." :
   score >= 12 ? "The void bent time." : "Drop privileges revoked.";
+
+/* Score namespace. Bumped when a rules change makes old numbers
+   incomparable: before 2026-08-31 the drop sounded at the target, so bests
+   were set by reacting to it rather than counting through the silence.
+   Play counts and streaks still key off "phantom". */
+const SCORE = "phantom-v2";
 
 /** The drop, as one stacked hit. Only ever heard as feedback, never as a cue. */
 function drop(at: number, semis: number) {
@@ -177,7 +185,7 @@ export default function PhantomGame() {
       return;
     }
     const total = results.reduce((sum, result) => sum + result.score, 0);
-    const key = scoreKey("phantom", diff);
+    const key = scoreKey(SCORE, diff);
     const rounded = Math.round(total * 10) / 10;
     const isRecord = rounded > getBest(key) && rounded > 0;
     if (isRecord) setBest(key, rounded);
@@ -213,7 +221,7 @@ export default function PhantomGame() {
           <Item><h1 className="wordmark">Phantom Drop</h1></Item>
           <Item><p className="tagline">Listen, hands off. The beat cuts out and never comes back. Keep counting anyway, then tap once where the next 1 belongs.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="phantom" diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
+            <GameSetup game={SCORE} diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Phantom Drop",
                 description: "You hear the groove, the groove disappears, and you have to keep counting anyway.",
@@ -249,7 +257,7 @@ export default function PhantomGame() {
 
   if (phase === "results") {
     const total = results.reduce((sum, result) => sum + result.score, 0);
-    const best = getBest(scoreKey("phantom", diff));
+    const best = getBest(scoreKey(SCORE, diff));
     return (
       <main className={`stage ${styles.stage}`}>
         <Pop className={styles.feedback}>
@@ -259,6 +267,13 @@ export default function PhantomGame() {
           {record && <div className="record">New best</div>}
           <div className="resActions">
             <button className="cta" data-note={523} onClick={start}>Again</button>
+            <ShareScore
+              game="Phantom Drop"
+              route="phantom"
+              detail={diff}
+              line={`${total.toFixed(1)} / 30 ${barEmoji((total / 30) * 100)} · ${results.filter((r) => r.score >= 9).length}/${ROUNDS} landed`}
+              level={diff}
+            />
             <button className="ghost" data-note={349} onClick={() => goPhase("menu")}>Menu</button>
           </div>
         </Pop>

@@ -17,6 +17,8 @@ export default function GameSetup({
   beats, beat, onBeat,
   helpContent, formatBest,
 }: {
+  /** Score namespace, not the route: a game whose rules changed bumps this
+   *  (e.g. "phantom-v2") to retire bests that are no longer comparable. */
   game: string;
   diffs: DiffDef[];
   diff: string;

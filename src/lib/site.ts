@@ -8,6 +8,14 @@ export const SOCIAL_IMAGE_ALT = "Delulu Beats: nine small games for your eyes, e
 export const OPEN_GRAPH_IMAGE = `${SITE_URL}/social/opengraph.png`;
 export const TWITTER_IMAGE = `${SITE_URL}/social/twitter.png`;
 
+/* Every game has its own card in public/social, drawn from the same art as
+   its tile on the hub (scripts/gen-social.mjs). A shared score previews as
+   the game it came from rather than one generic image for the whole site. */
+export const socialImage = (path: string) => {
+  const slug = path.replace(/\//g, "");
+  return `${SITE_URL}/social/${slug || "opengraph"}.png`;
+};
+
 export const GAME_ROUTES = [
   "/color",
   "/sound",
@@ -22,6 +30,8 @@ export const GAME_ROUTES = [
 
 export function routeMetadata(title: string, description: string, path: string): Metadata {
   const socialTitle = `${title} · ${SITE_NAME}`;
+  const image = socialImage(path);
+  const imageAlt = `${title}: ${description}`;
   return {
     title,
     description,
@@ -34,10 +44,10 @@ export function routeMetadata(title: string, description: string, path: string):
       locale: "en_GB",
       type: "website",
       images: [{
-        url: OPEN_GRAPH_IMAGE,
+        url: image,
         width: 1200,
         height: 630,
-        alt: SOCIAL_IMAGE_ALT,
+        alt: imageAlt,
         type: "image/png",
       }],
     },
@@ -45,7 +55,7 @@ export function routeMetadata(title: string, description: string, path: string):
       card: "summary_large_image",
       title: socialTitle,
       description,
-      images: [{ url: TWITTER_IMAGE, alt: SOCIAL_IMAGE_ALT }],
+      images: [{ url: image, alt: imageAlt }],
     },
   };
 }

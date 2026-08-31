@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import { Pop, Stagger, Item } from "@/components/Fx";
 import { audio, click, hat, heardNow, kick, snare } from "@/lib/audio";
+import ShareScore from "@/components/ShareScore";
 import { getBest, recordPlay, scoreKey, setBest, usePref } from "@/lib/store";
+import { barEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
 type Phase = "menu" | "watch" | "alarm" | "play" | "results";
@@ -31,6 +33,12 @@ const verdict = (score: number) =>
   score >= 72 ? "Microwave whisperer." :
   score >= 58 ? "Breakfast obeys you." :
   score >= 38 ? "Kitchen unstable." : "The appliance won.";
+
+/* Score namespace. Bumped when a rules change makes old numbers
+   incomparable: before 2026-08-31 a click track played under every tap beat,
+   so bests were set by tapping along rather than holding the pulse alone.
+   Play counts and streaks still key off "fever". */
+const SCORE = "fever-v2";
 
 export default function FeverGame() {
   const [phase, setPhase] = useState<Phase>("menu");
@@ -75,7 +83,7 @@ export default function FeverGame() {
       hits.current.get(slot) ?? { slot, score: 0, label: "Miss" });
     const total = complete.reduce((sum, hit) => sum + hit.score, 0);
     const rounded = Math.round(total * 10) / 10;
-    const key = scoreKey("fever", diff);
+    const key = scoreKey(SCORE, diff);
     const isRecord = rounded > getBest(key) && rounded > 0;
     if (isRecord) setBest(key, rounded);
     recordPlay("fever");
@@ -194,7 +202,7 @@ export default function FeverGame() {
           <Item><h1 className="wordmark">Fever Dream</h1></Item>
           <Item><p className="tagline">The microwave keeps time for two bars, then quits on you. Breakfast still wants out, so you hold the pulse alone. No lane, no arrows, no click track.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="fever" diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
+            <GameSetup game={SCORE} diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Fever Dream",
                 description: "The microwave counts you in like a drummer. Then it stops dead and you carry the pulse on your own.",
@@ -212,7 +220,7 @@ export default function FeverGame() {
   }
 
   if (phase === "results") {
-    const best = getBest(scoreKey("fever", diff));
+    const best = getBest(scoreKey(SCORE, diff));
     return (
       <main className={`stage ${styles.stage}`}>
         <Pop className={styles.results}>
@@ -227,6 +235,13 @@ export default function FeverGame() {
           {record && <div className="record">New best</div>}
           <div className="resActions">
             <button className="cta" data-note={523} onClick={start}>Dream again</button>
+            <ShareScore
+              game="Fever Dream"
+              route="fever"
+              detail={diff}
+              line={`${finalScore.toFixed(1)} / 80 ${barEmoji(finalScore / 0.8)} · ${judgements.filter((hit) => hit.score > 0).length}/${PLAY_BEATS} fed`}
+              level={diff}
+            />
             <button className="ghost" data-note={349} onClick={() => goPhase("menu")}>Wake up</button>
           </div>
         </Pop>

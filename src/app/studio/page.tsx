@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import {
   audio, unlockAudio, bass, clap, hat, kick, perc, rim, snare, stab, uiBlip,
   setDrumKit, loadKitSamples, loadLabSamples, labPlay, outputStream, encodeWav, setTurntableRate,
@@ -161,8 +161,10 @@ const GENRES: Record<Genre, {
 type Cfg = {
   genre: Genre; key: number; bpm: number; swing: number; kit: DrumKitName;
   drums: string; grid: boolean[][];
-  bassPat: string; prog: string; style: string; voice: LeadVoice;
-  mel: string; melVoice: LeadVoice; chop: string; tex: string;
+  bassPat: string; bassSteps: [number, number][]; /* [bar step 0-15, semis above chord root] */
+  prog: string; style: string; voice: LeadVoice;
+  mel: string; melNotes: [number, number][]; /* [absolute step 0-63, pentatonic row 0-9] */
+  melVoice: LeadVoice; chop: string; tex: string;
   voiceOn: boolean; voiceFx: VoiceFx;
   mix: { drums: number; bass: number; chords: number; mel: number; fx: number; voice: number };
 };
@@ -170,13 +172,29 @@ type Cfg = {
 const gridOf = (patId: string): boolean[][] =>
   DRUMS[patId].rows.map((row) => Array.from({ length: 16 }, (_, s) => row.includes(s)));
 
+/* preset -> editable note lists (custom notes play a fixed musical length) */
+const melNotesOf = (id: string): [number, number][] =>
+  (MELS[id]?.notes ?? []).map(([st, idx]) => [st, idx] as [number, number]);
+const bassStepsOf = (id: string): [number, number][] =>
+  (BASS[id]?.steps ?? []).map(([st, add]) => [st, add] as [number, number]);
+
+const melPitch = (key: number, idx: number) =>
+  65 + key + PENTA[idx % 5] + 12 * Math.floor(idx / 5);
+const NOTE_NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
+const melRowName = (key: number, idx: number) =>
+  NOTE_NAMES[melPitch(key, idx) % 12] + (idx >= 5 ? "↑" : "");
+const BASS_ROWS: { add: number; label: string }[] = [
+  { add: 12, label: "Oct ↑" }, { add: 7, label: "5th" }, { add: 0, label: "Root" },
+];
+
 const defaults = (genre: Genre, keepKey = 0): Cfg => {
   const G = GENRES[genre];
   return {
     genre, key: keepKey, bpm: G.bpm[2], swing: G.swing, kit: G.kits[0],
     drums: G.drums[0], grid: gridOf(G.drums[0]),
-    bassPat: G.bass[0], prog: G.progs[0], style: G.styles[0], voice: G.voice,
-    mel: G.mels[1], melVoice: G.melVoice, chop: "off", tex: G.tex[1],
+    bassPat: G.bass[0], bassSteps: bassStepsOf(G.bass[0]),
+    prog: G.progs[0], style: G.styles[0], voice: G.voice,
+    mel: G.mels[1], melNotes: melNotesOf(G.mels[1]), melVoice: G.melVoice, chop: "off", tex: G.tex[1],
     voiceOn: false, voiceFx: "dry",
     mix: { drums: 100, bass: 100, chords: 100, mel: 100, fx: 100, voice: 105 },
   };
@@ -218,6 +236,7 @@ const TIPS: Record<string, Record<string, string>> = {
     slowjam: "Late, lazy notes that slide in under the chords.",
     offbeat: "Offbeat octave stabs — instant house energy.",
     rolling: "An eighth-note roller that never stops moving.",
+    custom: "Your own bassline — drawn in the grid below.",
   },
   prog: {
     menace: "i–VI–III–VII — dark and cinematic.",
@@ -249,6 +268,7 @@ const TIPS: Record<string, Record<string, string>> = {
     lazy: "A few long notes with lots of space.",
     sparkle: "High, glittery accents on the offbeats.",
     arp: "A rolling arpeggio that never rests.",
+    custom: "Your own topline — drawn in the grid below.",
   },
   chop: {
     off: "No vocal chops.",
@@ -357,7 +377,8 @@ const previewBass = pv((id) => {
   const C = cur();
   const dur = 60 / C.bpm / 4;
   const t0 = audio().currentTime + 0.02;
-  for (const [bs, add, v] of BASS[id].steps) bass(t0 + bs * dur, C.key + add, v * 0.9);
+  const steps = id === "custom" ? C.bassSteps.map(([st, add]) => [st, add, 0.8] as const) : BASS[id]?.steps ?? [];
+  for (const [bs, add, v] of steps) bass(t0 + bs * dur, C.key + add, v * 0.9);
 });
 const previewProg = pv((id) => {
   const C = cur();
@@ -391,13 +412,14 @@ const previewMel = pv((id) => {
   const C = cur();
   const dur = 60 / C.bpm / 4;
   const t0 = audio().currentTime + 0.02;
-  const notes = MELS[id].notes;
-  if (!notes.length) return;
+  const raw = id === "custom" ? C.melNotes : MELS[id]?.notes ?? [];
+  if (!raw.length) return;
+  const notes = [...raw].sort((a, b) => a[0] - b[0]);
   const start = notes[0][0];
   for (const [ms2, idx, len] of notes) {
     const at = (ms2 - start) * dur;
     if (at > 1.6) break;
-    stab(t0 + at, 65 + C.key + PENTA[idx % 5] + 12 * Math.floor(idx / 5), len * dur * 0.9, C.melVoice, 0.09);
+    stab(t0 + at, melPitch(C.key, idx), (len ?? 2) * dur * 0.9, C.melVoice, 0.09);
   }
 });
 const previewChop = pv((id) => {
@@ -416,6 +438,71 @@ const previewTex = pv((id) => {
         : (tt: number, vv: number) => hat(tt, false, vv))(t0 + ts * dur, v);
     }
   }
+});
+
+/* Note grids are memoized and get NO playhead prop — re-rendering ~700 buttons
+ * every 16th note costs real frames.  The playhead is painted imperatively:
+ * paintPlayhead() toggles the cellNow class through the grid refs. */
+
+const MelodyGrid = memo(function MelodyGrid({ notes, keySemi, onToggle, gridRef }: {
+  notes: [number, number][];
+  keySemi: number;
+  onToggle: (idx: number, step: number) => void;
+  gridRef: RefObject<HTMLDivElement | null>;
+}) {
+  const on = new Set(notes.map(([s2, i2]) => i2 * 64 + s2));
+  return (
+    <div className={styles.gridWrap}>
+      {/* bar ruler lives outside the ref'd grid so the playhead painter never touches it */}
+      <div className={`${styles.drow} ${styles.rulerRow}`} aria-hidden>
+        <span className={styles.dlabel} />
+        {[1, 2, 3, 4].map((b) => <span key={b} className={styles.ruler}>Bar {b}</span>)}
+      </div>
+      <div className={styles.mgrid} ref={gridRef}>
+        {[9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((idx) => (
+          <div key={idx} className={styles.drow}>
+            <span className={styles.dlabel}>{melRowName(keySemi, idx)}</span>
+            {Array.from({ length: 64 }, (_, st) => (
+              <button key={st} aria-label={`Melody ${melRowName(keySemi, idx)} step ${st + 1}`}
+                className={[styles.mcell, on.has(idx * 64 + st) ? styles.cellOn : "",
+                  st % 16 === 0 ? styles.bar : st % 4 === 0 ? styles.q : ""].join(" ")}
+                onClick={() => onToggle(idx, st)} />
+            ))}
+          </div>
+        ))}
+      </div>
+      {notes.length === 0 && (
+        <p className={styles.gridEmpty}>
+          The topline is empty — tap cells to place notes, or load a Melody preset above as a starting point.
+        </p>
+      )}
+    </div>
+  );
+});
+
+const BassGrid = memo(function BassGrid({ steps, onToggle, gridRef }: {
+  steps: [number, number][];
+  onToggle: (add: number, step: number) => void;
+  gridRef: RefObject<HTMLDivElement | null>;
+}) {
+  const on = new Set(steps.map(([s2, a2]) => a2 * 16 + s2));
+  return (
+    <div className={styles.gridWrap}>
+      <div className={styles.dgrid} ref={gridRef}>
+        {BASS_ROWS.map(({ add, label }) => (
+          <div key={add} className={styles.drow}>
+            <span className={styles.dlabel}>{label}</span>
+            {Array.from({ length: 16 }, (_, c2) => (
+              <button key={c2} aria-label={`Bass ${label} step ${c2 + 1}`}
+                className={[styles.cell, on.has(add * 16 + c2) ? styles.cellOn : "",
+                  c2 % 4 === 0 ? styles.q : ""].join(" ")}
+                onClick={() => onToggle(add, c2)} />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 });
 
 /* small chip-row helper — rollover/focus explains the option (info bar) and,
@@ -473,6 +560,9 @@ export default function BeatLab() {
   const [revOn, setRevOn] = useState(false);
   const drag = useRef<{ angle: number; at: number } | null>(null);
   const sched = useRef({ step: 0, nextT: 0 });
+  const melGridRef = useRef<HTMLDivElement>(null);
+  const bassGridRef = useRef<HTMLDivElement>(null);
+  const lastHead = useRef(-1);
   const spin = useRef(0);
   const discRef = useRef<HTMLDivElement>(null);
   const readRef = useRef<HTMLElement>(null);
@@ -490,13 +580,19 @@ export default function BeatLab() {
         const base = defaults("rap");
         const parsed = JSON.parse(raw) as Partial<Cfg>;
         const saved = { ...base, ...parsed, mix: { ...base.mix, ...(parsed.mix ?? {}) } } as Cfg;
+        if (!Array.isArray(parsed.melNotes)) saved.melNotes = melNotesOf(saved.mel);
+        if (!Array.isArray(parsed.bassSteps)) saved.bassSteps = bassStepsOf(saved.bassPat);
         if (GENRES[saved.genre] && Array.isArray(saved.grid) && saved.grid.length === 4) setCfg(saved);
       }
     } catch { /* fresh start */ }
   }, []);
+  const persistReady = useRef(false);
   useEffect(() => {
     cfgRef.current = cfg;
     live.cfg = cfg;
+    /* skip the mount run: writing the defaults here would clobber the saved
+       beat before (or between, under StrictMode) the hydrate effect's reads */
+    if (!persistReady.current) { persistReady.current = true; return; }
     try { localStorage.setItem(LS_KEY, JSON.stringify(cfg)); } catch { /* no persistence */ }
   }, [cfg]);
 
@@ -526,8 +622,14 @@ export default function BeatLab() {
     const bassDeg = chord.deg >= 8 ? chord.deg - 12 : chord.deg; /* VI/VII walk below the root */
 
     /* bass follows the chord root — always in key */
-    for (const [bs, add, v] of BASS[C.bassPat].steps) {
-      if (bs === s) bass(t, C.key + bassDeg + add, v * (C.mix.bass / 100));
+    if (C.bassPat === "custom") {
+      for (const [bs, add] of C.bassSteps) {
+        if (bs === s) bass(t, C.key + bassDeg + add, (add === 0 ? 0.9 : 0.7) * (C.mix.bass / 100));
+      }
+    } else {
+      for (const [bs, add, v] of BASS[C.bassPat].steps) {
+        if (bs === s) bass(t, C.key + bassDeg + add, v * (C.mix.bass / 100));
+      }
     }
 
     /* chords */
@@ -541,8 +643,14 @@ export default function BeatLab() {
     }
 
     /* melody: minor pentatonic of the key */
-    for (const [ms, idx, len] of MELS[C.mel].notes) {
-      if (ms === i) stab(t, 65 + C.key + PENTA[idx % 5] + 12 * Math.floor(idx / 5), len * stepDur * 0.9, C.melVoice, 0.07 * (C.mix.mel / 100));
+    if (C.mel === "custom") {
+      for (const [ms, idx] of C.melNotes) {
+        if (ms === i) stab(t, melPitch(C.key, idx), 2 * stepDur * 0.9, C.melVoice, 0.07 * (C.mix.mel / 100));
+      }
+    } else {
+      for (const [ms, idx, len] of MELS[C.mel].notes) {
+        if (ms === i) stab(t, melPitch(C.key, idx), len * stepDur * 0.9, C.melVoice, 0.07 * (C.mix.mel / 100));
+      }
     }
 
     /* vocal chops & FX */
@@ -568,7 +676,7 @@ export default function BeatLab() {
 
     /* playhead */
     const c = audio();
-    window.setTimeout(() => { if (playingRef.current) setUiStep(i); },
+    window.setTimeout(() => { if (playingRef.current) { setUiStep(i); paintPlayhead(i); } },
       Math.max(0, (t - c.currentTime) * 1000));
   };
 
@@ -647,6 +755,22 @@ export default function BeatLab() {
     requestAnimationFrame(ease);
   };
 
+  /* the memoized note grids don't re-render on uiStep — toggle their column
+     highlight straight in the DOM (same trick as the platter readout) */
+  const paintPlayhead = (i: number) => {
+    const swap = (grid: HTMLDivElement | null, prev: number, next: number) => {
+      if (!grid) return;
+      for (const row of grid.children) {
+        if (prev >= 0) row.children[1 + prev]?.classList.remove(styles.cellNow);
+        if (next >= 0) row.children[1 + next]?.classList.add(styles.cellNow);
+      }
+    };
+    const prev = lastHead.current;
+    swap(melGridRef.current, prev, i);
+    swap(bassGridRef.current, prev >= 0 ? prev & 15 : -1, i >= 0 ? i & 15 : -1);
+    lastHead.current = i;
+  };
+
   const startLoop = () => {
     const c = audio();
     void unlockAudio();
@@ -668,6 +792,7 @@ export default function BeatLab() {
     live.playing = false;
     setPlaying(false);
     setUiStep(-1);
+    paintPlayhead(-1);
   };
 
   useEffect(() => stopLoop, []);
@@ -859,12 +984,15 @@ export default function BeatLab() {
     const GG = GENRES[g];
     const pick = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
     const drums = pick(GG.drums);
+    const bassPat = pick(GG.bass);
+    const mel = pick(GG.mels);
     set({
       bpm: GG.bpm[0] + Math.round(Math.random() * (GG.bpm[1] - GG.bpm[0])),
       kit: pick(GG.kits), drums, grid: gridOf(drums),
-      bassPat: pick(GG.bass), prog: pick(GG.progs), style: pick(GG.styles),
+      bassPat, bassSteps: bassStepsOf(bassPat), prog: pick(GG.progs), style: pick(GG.styles),
       voice: pick([GG.voice, ...VOICES.map((v) => v.id)]),
-      mel: pick(GG.mels), melVoice: pick(VOICES.map((v) => v.id)), chop: pick(GG.chops), tex: pick(GG.tex),
+      mel, melNotes: melNotesOf(mel), melVoice: pick(VOICES.map((v) => v.id)),
+      chop: pick(GG.chops), tex: pick(GG.tex),
     });
     uiBlip(784, 0.06);
   };
@@ -885,6 +1013,32 @@ export default function BeatLab() {
       else perc(t, 0.45);
     }
   };
+
+  /* stable identities so the memoized grids skip playback re-renders */
+  const toggleMel = useCallback((idx: number, step: number) => {
+    const C = cfgRef.current;
+    const has = C.melNotes.some(([s2, i2]) => s2 === step && i2 === idx);
+    const melNotes: [number, number][] = has
+      ? C.melNotes.filter(([s2, i2]) => !(s2 === step && i2 === idx))
+      : [...C.melNotes, [step, idx]];
+    setCfg((c) => ({ ...c, mel: "custom", melNotes }));
+    if (!has && !playingRef.current)
+      stab(audio().currentTime + 0.01, melPitch(C.key, idx), 0.4, C.melVoice, 0.1);
+  }, []);
+
+  const toggleBass = useCallback((add: number, step: number) => {
+    const C = cfgRef.current;
+    const has = C.bassSteps.some(([s2, a2]) => s2 === step && a2 === add);
+    const bassSteps: [number, number][] = has
+      ? C.bassSteps.filter(([s2, a2]) => !(s2 === step && a2 === add))
+      : [...C.bassSteps, [step, add]];
+    setCfg((c) => ({ ...c, bassPat: "custom", bassSteps }));
+    if (!has && !playingRef.current) {
+      const chord = PROGS[C.prog].bars[0];
+      const bd = chord.deg >= 8 ? chord.deg - 12 : chord.deg;
+      bass(audio().currentTime + 0.01, C.key + bd + add, 0.85);
+    }
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -916,6 +1070,15 @@ export default function BeatLab() {
     ...poolAll(G.drums, DRUMS).map((id) => ({ id, label: DRUMS[id].label })),
     ...(cfg.drums === "custom" ? [{ id: "custom", label: "Custom" }] : []),
   ];
+  const bassChips = [
+    ...poolAll(G.bass, BASS).map((id) => ({ id, label: BASS[id].label })),
+    ...(cfg.bassPat === "custom" ? [{ id: "custom", label: "Custom" }] : []),
+  ];
+  const melChips = [
+    ...poolAll(G.mels, MELS).map((id) => ({ id, label: MELS[id].label })),
+    ...(cfg.mel === "custom" ? [{ id: "custom", label: "Custom" }] : []),
+  ];
+
 
   return (
     <>
@@ -1001,9 +1164,14 @@ export default function BeatLab() {
         <StaticBlock>
           <section className={styles.panel}>
             <h2 className={styles.panelTitle}>Harmony</h2>
-            <Chips label="Bass" items={poolAll(G.bass, BASS).map((id) => ({ id, label: BASS[id].label }))}
-              active={cfg.bassPat} onPick={(id) => set({ bassPat: id })}
+            <Chips label="Bass" items={bassChips} active={cfg.bassPat}
+              onPick={(id) => { if (id !== "custom") set({ bassPat: id, bassSteps: bassStepsOf(id) }); }}
               tips={TIPS.bass} onPreview={previewBass} onInfo={announce} />
+            <p className={styles.gridHint}>
+              Or draw your own below — Root, 5th and octave re-tune to each bar&apos;s chord automatically,
+              so the bassline can&apos;t leave the key. Tap a step to hear it.
+            </p>
+            <BassGrid steps={cfg.bassSteps} onToggle={toggleBass} gridRef={bassGridRef} />
             <Chips label="Chorus" items={poolAll(G.progs, PROGS).map((id) => ({ id, label: PROGS[id].label }))}
               active={cfg.prog} onPick={(id) => set({ prog: id })}
               tips={TIPS.prog} onPreview={previewProg} onInfo={announce} />
@@ -1027,12 +1195,17 @@ export default function BeatLab() {
         <StaticBlock>
           <section className={styles.panel}>
             <h2 className={styles.panelTitle}>Flavor</h2>
-            <Chips label="Melody" items={poolAll(G.mels, MELS).map((id) => ({ id, label: MELS[id].label }))}
-              active={cfg.mel} onPick={(id) => set({ mel: id })}
+            <Chips label="Melody" items={melChips} active={cfg.mel}
+              onPick={(id) => { if (id !== "custom") set({ mel: id, melNotes: melNotesOf(id) }); }}
               tips={TIPS.mel} onPreview={previewMel} onInfo={announce} />
             <Chips label="Lead" items={VOICES.map((v) => ({ id: v.id, label: v.label }))}
               active={cfg.melVoice} onPick={(id) => set({ melVoice: id as LeadVoice })}
               tips={TIPS.voice} onPreview={previewLeadVoice} onInfo={announce} />
+            <p className={styles.gridHint}>
+              Or draw your own below — each row is a note of your key (higher rows sit higher),
+              left to right runs through bars 1–4. Presets load in as starting points; tap a cell to hear it.
+            </p>
+            <MelodyGrid notes={cfg.melNotes} keySemi={cfg.key} onToggle={toggleMel} gridRef={melGridRef} />
             <Chips label="Chops" items={poolAll(G.chops, CHOPS).map((id) => ({ id, label: CHOPS[id].label }))}
               active={cfg.chop} onPick={(id) => set({ chop: id })}
               tips={TIPS.chop} onPreview={previewChop} onInfo={announce} />

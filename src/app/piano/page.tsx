@@ -6,7 +6,7 @@ import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
-import { barEmoji, scoreCard } from "@/lib/share";
+import { barEmoji } from "@/lib/share";
 import { uiBlip, pianoKey, buzz } from "@/lib/audio";
 
 /*
@@ -427,13 +427,13 @@ export default function PianoGame() {
       </Stagger>
       <div className="resActions">
         <button className="cta" data-note={440} onClick={start}>Play again</button>
-        <ShareScore text={scoreCard(
-          "Refrain",
-          `${diff} · ${fmt === "watch" ? "watch" : "by ear"}`,
-          `Level ${g.cleared} ${barEmoji(g.cleared * 5)}`,
-          "piano",
-          diff,
-        )} />
+        <ShareScore
+          game="Refrain"
+          route="piano"
+          detail={`${diff} · ${fmt === "watch" ? "watch" : "by ear"}`}
+          line={`Level ${g.cleared} ${barEmoji(g.cleared * 5)}`}
+          level={diff}
+        />
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
       </div>
     </main>
