@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 /**
  * Living background with four looks — a different one greets you on
@@ -16,10 +17,13 @@ const MODES = ["flow", "orbits", "grid", "net"] as const;
 type Mode = (typeof MODES)[number];
 
 export default function Aurora() {
+  const pathname = usePathname();
+  const disabled = pathname.startsWith("/studio");
   const [mode, setMode] = useState<Mode>(() => MODES[Math.floor(Math.random() * MODES.length)]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    if (disabled) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       if (e.key === "b" || e.key === "B") {
@@ -31,9 +35,10 @@ export default function Aurora() {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [disabled]);
 
   useEffect(() => {
+    if (disabled) return;
     const cv = canvasRef.current;
     if (!cv) return;
     const g = cv.getContext("2d")!;
@@ -177,7 +182,9 @@ export default function Aurora() {
       removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerleave", onLeave);
     };
-  }, [mode]);
+  }, [disabled, mode]);
+
+  if (disabled) return null;
 
   return (
     <div className="aurora" aria-hidden>

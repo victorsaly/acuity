@@ -252,21 +252,26 @@ export default function Hub() {
             <Link href="/studio" className="hubCard studioCard" data-note={1397} style={{ width: "100%" }}>
               <div className="art studioArt" aria-hidden>
                 <svg viewBox="0 0 200 72" style={{ width: "100%", height: "100%" }}>
-                  {[0, 1, 2, 3].map((r) => [0, 1, 2, 3, 4, 5, 6, 7].map((c) => {
-                    const on = [[0, 0], [0, 4], [1, 2], [1, 6], [2, 0], [2, 2], [2, 4], [2, 6], [3, 3], [3, 5]]
-                      .some(([rr, cc]) => rr === r && cc === c);
-                    return (
-                      <rect key={`${r}-${c}`} x={6 + c * 17} y={5 + r * 16} width={13} height={12} rx={3}
-                        fill={on ? "#ffffff" : "rgba(239,240,244,.14)"} />
-                    );
-                  }))}
-                  <path d="M152 12v48M170 22v38M188 6v54" stroke="rgba(239,240,244,.35)" strokeWidth="3" strokeLinecap="round" />
-                  <circle cx="152" cy="30" r="6" fill="#ffffff" />
-                  <circle cx="170" cy="48" r="6" fill="#ffffff" />
-                  <circle cx="188" cy="18" r="6" fill="#ffffff" />
+                  {([
+                    [[0, 4], "#ffb02e"],
+                    [[2, 6], "#c48bff"],
+                    [[0, 2, 4, 6], "#4be1ff"],
+                    [[3, 7], "#eff0f4"],
+                  ] as [number[], string][]).map(([on, col], r) =>
+                    [0, 1, 2, 3, 4, 5, 6, 7].map((c) => (
+                      <rect key={`${r}-${c}`} x={5 + c * 17} y={5 + r * 16.5} width={13} height={13} rx={3.5}
+                        fill={on.includes(c) ? col : "rgba(239,240,244,.1)"} />
+                    )))}
+                  <g stroke="rgba(239,240,244,.3)" strokeWidth="3" strokeLinecap="round">
+                    <path d="M156 8v56M175 8v56M194 8v56" />
+                  </g>
+                  <rect className="fk1" x="149" y="22" width="14" height="9" rx="3" fill="#ffb02e" />
+                  <rect className="fk2" x="168" y="42" width="14" height="9" rx="3" fill="#c48bff" />
+                  <rect className="fk3" x="187" y="14" width="14" height="9" rx="3" fill="#4be1ff" />
                 </svg>
               </div>
               <div className="studioCopy">
+                <span className="studioTag">The Studio</span>
                 <h2>Beat Lab</h2>
                 <p>Not a game — a studio. Pick and mix drums, bass, chords, melody and vocal chops in rap, R&amp;B or house; everything stays in key. Play it, then download your track.</p>
                 <span className="go">Create ▸</span>

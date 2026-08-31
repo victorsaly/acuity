@@ -914,11 +914,41 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ---------- Beat Lab banner card ---------- */
-.studioCard { flex-direction: row; align-items: center; gap: 22px; max-width: none; }
-.studioCard .art { flex: 0 0 200px; height: 72px; margin-bottom: 0; }
+.studioCard {
+  flex-direction: row; align-items: center; gap: 26px; max-width: none;
+  padding: 28px 30px;
+  background:
+    linear-gradient(110deg, rgba(255, 176, 46, 0.07), rgba(196, 139, 255, 0.06) 45%, rgba(75, 225, 255, 0.07)),
+    rgba(21, 23, 33, 0.6);
+}
+.studioCard .art { flex: 0 0 220px; height: 84px; margin-bottom: 0; }
+.studioCard:hover {
+  border-color: rgba(196, 139, 255, 0.7);
+  box-shadow:
+    0 14px 48px rgba(196, 139, 255, 0.14),
+    -18px 6px 44px rgba(255, 176, 46, 0.1),
+    18px 6px 44px rgba(75, 225, 255, 0.1);
+}
+.studioArt .fk1, .studioArt .fk2, .studioArt .fk3 { transition: transform 0.4s cubic-bezier(0.3, 1.4, 0.4, 1); }
+.studioCard:hover .fk1 { transform: translateY(14px); }
+.studioCard:hover .fk2 { transform: translateY(-16px); }
+.studioCard:hover .fk3 { transform: translateY(22px); }
 .studioCopy { display: flex; flex-direction: column; gap: 8px; }
 .studioCopy .go { padding-top: 4px; }
+.studioTag {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border: 1px solid rgba(196, 139, 255, 0.5);
+  border-radius: 999px;
+  color: #d9c2ff;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
 @media (max-width: 640px) {
-  .studioCard { flex-direction: column; align-items: stretch; }
+  .studioCard { flex-direction: column; align-items: stretch; gap: 16px; }
   .studioCard .art { flex: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studioCard:hover .fk1, .studioCard:hover .fk2, .studioCard:hover .fk3 { transform: none; }
 }

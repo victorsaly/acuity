@@ -23,6 +23,7 @@
  */
 
 let ctx: AudioContext | null = null;
+let ttRate = 1;
 let masterBus: GainNode | null = null;
 let streamTap: MediaStreamAudioDestinationNode | null = null;
 let dryBus: GainNode;
@@ -42,6 +43,11 @@ function prime(c: AudioContext) {
   } catch {
     /* ignore */
   }
+}
+
+/** Turntable speed multiplier — pitch-shifts every sampled voice (drums, chops). */
+export function setTurntableRate(r: number) {
+  ttRate = Math.max(0.1, Math.min(2.5, Math.abs(r) || 1));
 }
 
 /** Current context state — "none" before the context exists. */
@@ -429,7 +435,7 @@ function playVoice(
   const src = c.createBufferSource();
   src.buffer = bufs[nextVariant(`${kitName}/${voice}`, bufs.length)];
   const cents = humanize ? (Math.random() * 2 - 1) * 6 : 0;
-  src.playbackRate.value = rate * Math.pow(2, cents / 1200);
+  src.playbackRate.value = rate * ttRate * Math.pow(2, cents / 1200);
   const g = c.createGain();
   const trim = humanize ? Math.pow(10, ((Math.random() * 2 - 1) * 0.5) / 20) : 1;
   g.gain.value = def.gain * vol * trim;
@@ -630,7 +636,8 @@ export function pluck(freq: number, vol = 0.06, dur = 0.4) {
 
 /* ---------------- melodic stabs (song hooks) ---------------- */
 
-export type LeadVoice = "piano" | "pluck" | "saw" | "steel" | "brass";
+export type LeadVoice = "piano" | "pluck" | "saw" | "steel" | "brass"
+  | "sax" | "rhodes" | "organ" | "guitar" | "bell";
 
 /**
  * One melodic stab for song-mode hooks — synthesized, so every hook is an
@@ -679,6 +686,56 @@ export function stab(t: number, midi: number, dur = 0.3, voice: LeadVoice = "pia
     lpf.frequency.value = Math.min(12000, f * 12);
     g.gain.setTargetAtTime(vol * 0.25, t + 0.015, Math.max(0.09, dur * 0.5));
     rel = 0.12;
+  } else if (voice === "sax") {
+    /* reedy: saw+square through a moving formant-ish bandpass, with vibrato */
+    mk("sawtooth", 1, 0.55); mk("square", 1, 0.3, 6); mk("sawtooth", 2, 0.12);
+    lpf.type = "bandpass";
+    lpf.Q.value = 1.4;
+    lpf.frequency.setValueAtTime(f * 1.4, t);
+    lpf.frequency.linearRampToValueAtTime(f * 3.2, t + 0.09);
+    lpf.frequency.setTargetAtTime(f * 2.4, t + 0.14, 0.2);
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.045);   // breathy, slower attack
+    const lfo = c.createOscillator();
+    lfo.type = "sine";
+    lfo.frequency.value = 5.4;
+    const lg = c.createGain();
+    lg.gain.setValueAtTime(0, t);
+    lg.gain.linearRampToValueAtTime(f * 0.012, t + 0.18);  // vibrato blooms in
+    lfo.connect(lg);
+    oscs.forEach((o) => lg.connect(o.frequency));
+    oscs.push(lfo);
+    rel = 0.14;
+  } else if (voice === "rhodes") {
+    /* electric piano: sine body + a fast-decaying bell tine on top */
+    mk("sine", 1, 1); mk("sine", 2, 0.3); mk("sine", 4.02, 0.5); mk("triangle", 7, 0.05);
+    lpf.frequency.setValueAtTime(f * 8, t);
+    lpf.frequency.exponentialRampToValueAtTime(f * 2, t + Math.max(0.12, dur * 0.5));
+    g.gain.setTargetAtTime(vol * 0.3, t + 0.02, Math.max(0.12, dur * 0.55));
+    rel = 0.13;
+  } else if (voice === "organ") {
+    /* drawbar organ: pure additive, near-flat sustain — classic house stab */
+    mk("sine", 1, 0.9); mk("sine", 2, 0.55); mk("sine", 3, 0.32);
+    mk("sine", 4, 0.22); mk("sine", 6, 0.12); mk("sine", 8, 0.08);
+    lpf.frequency.value = Math.min(13000, f * 14);
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    rel = 0.05;
+  } else if (voice === "guitar") {
+    /* plucked string: detuned saws through a fast-closing lowpass */
+    mk("sawtooth", 1, 0.6, -5); mk("sawtooth", 1, 0.5, 6); mk("triangle", 2, 0.18);
+    lpf.frequency.setValueAtTime(f * 9, t);
+    lpf.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.22);
+    g.gain.setTargetAtTime(vol * 0.28, t + 0.015, Math.max(0.1, dur * 0.45));
+    rel = 0.1;
+  } else if (voice === "bell") {
+    /* inharmonic partials — glassy trap bell */
+    mk("sine", 1, 1); mk("sine", 2.76, 0.4); mk("sine", 5.4, 0.18); mk("sine", 8.9, 0.07);
+    lpf.frequency.value = Math.min(14000, f * 16);
+    g.gain.setTargetAtTime(vol * 0.2, t + 0.01, Math.max(0.14, dur * 0.5));
+    rel = 0.22;
   } else {                            // brass
     mk("sawtooth", 1, 0.6); mk("square", 1, 0.25, 5); mk("sawtooth", 2, 0.15);
     lpf.frequency.setValueAtTime(f * 2, t);
@@ -811,11 +868,45 @@ export function labPlay(name: LabSound, t: number, vol = 0.5, rate = 1, send = 0
   const c = audio();
   const src = c.createBufferSource();
   src.buffer = buf;
-  src.playbackRate.value = rate;
+  src.playbackRate.value = rate * ttRate;
   const g = c.createGain();
   g.gain.value = vol;
   src.connect(g);
   out(g, send);
   src.start(t);
   return true;
+}
+
+/** Encode an AudioBuffer as a 16-bit PCM WAV blob — plays in every player. */
+export function encodeWav(buf: AudioBuffer): Blob {
+  const chans = Math.min(2, buf.numberOfChannels);
+  const len = buf.length;
+  const bytes = 44 + len * chans * 2;
+  const view = new DataView(new ArrayBuffer(bytes));
+  const str = (off: number, t: string) => {
+    for (let i = 0; i < t.length; i++) view.setUint8(off + i, t.charCodeAt(i));
+  };
+  str(0, "RIFF");
+  view.setUint32(4, bytes - 8, true);
+  str(8, "WAVEfmt ");
+  view.setUint32(16, 16, true);          // PCM header size
+  view.setUint16(20, 1, true);           // format: PCM
+  view.setUint16(22, chans, true);
+  view.setUint32(24, buf.sampleRate, true);
+  view.setUint32(28, buf.sampleRate * chans * 2, true);
+  view.setUint16(32, chans * 2, true);
+  view.setUint16(34, 16, true);          // bits per sample
+  str(36, "data");
+  view.setUint32(40, len * chans * 2, true);
+
+  const data = Array.from({ length: chans }, (_, c) => buf.getChannelData(c));
+  let off = 44;
+  for (let i = 0; i < len; i++) {
+    for (let c = 0; c < chans; c++) {
+      const v = Math.max(-1, Math.min(1, data[c][i]));
+      view.setInt16(off, v < 0 ? v * 0x8000 : v * 0x7fff, true);
+      off += 2;
+    }
+  }
+  return new Blob([view.buffer], { type: "audio/wav" });
 }

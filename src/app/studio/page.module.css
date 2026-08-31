@@ -1,11 +1,32 @@
 .studio {
   --acc: #ffb02e;
   justify-content: flex-start;
+  overflow-x: hidden;
   padding-top: clamp(66px, 9vh, 92px);
   padding-bottom: 48px;
 }
 
+.studio button,
+.studio input,
+.studio::before,
+.studio *::before {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* genre-tinted glow behind the whole page */
+.studio::before {
+  content: "";
+  position: fixed;
+  inset: -10% -20% auto;
+  height: 55vh;
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--acc) 13%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
 .inner {
+  position: relative;
+  z-index: 1;
   width: min(880px, 94vw);
   display: flex;
   flex-direction: column;
@@ -13,7 +34,10 @@
 }
 
 .head { text-align: center; }
-.head .tagline { margin-top: 6px; }
+.head :global(.tagline) {
+  max-width: 58ch;
+  margin: 6px auto 0;
+}
 
 .rowGroup,
 .panel {
@@ -26,6 +50,43 @@
   background: rgba(12, 13, 18, 0.55);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+}
+
+.panel {
+  position: relative;
+  overflow: hidden;
+  padding-top: 18px;
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 46%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--acc), transparent);
+}
+
+.panelTitle {
+  margin: 0 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--bone);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.panelTitle::before {
+  content: "";
+  width: 20px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--acc);
 }
 
 .row {
@@ -65,8 +126,48 @@
 
 .slider b { color: var(--bone); font-variant-numeric: tabular-nums; }
 
-.transport { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+/* ---------------- sticky transport ---------------- */
+
+.transportWrap {
+  position: sticky;
+  top: 8px;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+}
+
+.transport {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(12, 13, 18, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.4);
+}
+
 .transport button[disabled] { opacity: 0.6; cursor: default; }
+
+.barDots { display: flex; align-items: center; gap: 7px; padding: 0 6px; }
+
+.barDots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(239, 240, 244, 0.35);
+  background: transparent;
+}
+
+.barDots .barNow {
+  background: var(--acc);
+  border-color: var(--acc);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--acc) 60%, transparent);
+}
 
 /* ---------------- drum grid ---------------- */
 
@@ -94,10 +195,9 @@
   background: rgba(239, 240, 244, 0.05);
   padding: 0;
   cursor: pointer;
-  transition: background 0.1s ease, border-color 0.1s ease, transform 0.1s ease;
 }
 
-.cell:hover { border-color: rgba(239, 240, 244, 0.55); transform: scale(1.06); }
+.cell:hover { border-color: rgba(239, 240, 244, 0.55); }
 
 .q { margin-left: 7px; }
 
@@ -136,4 +236,110 @@
   .row { flex-wrap: wrap; gap: 8px; }
   .sliders { padding-left: 0; }
   .dgrid { min-width: 480px; }
+  .transportWrap { top: 4px; }
 }
+
+/* transport buttons share one size — Play keeps only its color emphasis */
+.transport button {
+  width: 148px;
+  min-height: 44px;
+  padding: 13px 16px;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.transport :global(.cta) { margin-top: 0; }
+
+/* ---------------- mixer ---------------- */
+.mixGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 20px;
+}
+
+.mix { display: flex; flex-direction: column; gap: 6px; }
+
+.mix span {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mix b { color: var(--bone); font-variant-numeric: tabular-nums; }
+
+/* ---------------- DJ deck ---------------- */
+.deck { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+
+.platter {
+  position: relative;
+  flex: 0 0 auto;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, #16171d 0 2px, #101116 2px 4px),
+    #101116;
+  border: 2px solid rgba(239, 240, 244, 0.28);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.6);
+  cursor: grab;
+  touch-action: none;
+}
+
+.platter:active { cursor: grabbing; }
+.platter:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; }
+
+.label {
+  position: absolute;
+  inset: 28%;
+  border-radius: 50%;
+  background: var(--acc);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--acc) 45%, transparent);
+}
+
+.spindle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: var(--bone);
+}
+
+.marker {
+  position: absolute;
+  left: 50%;
+  top: 7px;
+  width: 3px;
+  height: 26px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--bone);
+  opacity: 0.85;
+}
+
+.deckSide { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 10px; }
+
+.rateRead { display: flex; align-items: baseline; gap: 10px; }
+
+.rateRead b {
+  color: var(--acc);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.rateRead span {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.deckHint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; max-width: 46ch; }
+
