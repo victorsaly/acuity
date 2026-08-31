@@ -5,6 +5,7 @@ import Aurora from "@/components/Aurora";
 import SoundGate from "@/components/SoundGate";
 import {
   OPEN_GRAPH_IMAGE,
+  REPOSITORY_URL,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_URL,
@@ -34,12 +35,16 @@ export const metadata: Metadata = {
   creator: "Oliver Saly and Victor Saly",
   publisher: "Oliver Saly and Victor Saly",
   keywords: [
+    "free online games",
     "browser games",
     "music games",
     "rhythm games",
     "perception games",
     "memory games",
     "audio games",
+    "timing games",
+    "ear training games",
+    "Beat Lab",
   ],
   category: "games",
   alternates: { canonical: "/" },
@@ -79,9 +84,18 @@ const structuredData = {
   url: SITE_URL,
   description: SITE_DESCRIPTION,
   applicationCategory: "GameApplication",
+  applicationSubCategory: "Music, rhythm, memory, and perception games",
   operatingSystem: "Any",
   browserRequirements: "Requires a modern browser with Web Audio API support",
   isAccessibleForFree: true,
+  image: OPEN_GRAPH_IMAGE,
+  screenshot: OPEN_GRAPH_IMAGE,
+  sameAs: [REPOSITORY_URL],
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
   creator: [
     { "@type": "Person", name: "Oliver Saly" },
     { "@type": "Person", name: "Victor Saly" },

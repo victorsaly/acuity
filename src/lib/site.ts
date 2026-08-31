@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "Delulu Beats";
 export const SITE_URL = "https://delulubeats.com";
+export const REPOSITORY_URL = "https://github.com/victorsaly/delulubeats";
 export const SITE_DESCRIPTION =
-  "Nine free browser games that test what your eyes and ears actually caught. Plus Beat Lab, a studio where you build a track and take it with you.";
+  "Play nine free browser rhythm, music, memory, and perception games. Test your eyes, ears, and timing, then build a track in Beat Lab.";
 export const SOCIAL_IMAGE_ALT = "Delulu Beats: nine small games for your eyes, ears and sense of timing";
 export const OPEN_GRAPH_IMAGE = `${SITE_URL}/social/opengraph.png`;
 export const TWITTER_IMAGE = `${SITE_URL}/social/twitter.png`;

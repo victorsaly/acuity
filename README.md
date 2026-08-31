@@ -1,11 +1,15 @@
-# Delulu Beats
+# Delulu Beats: free browser rhythm and perception games
+
+[![Delulu Beats game collection](public/social/opengraph.png)](https://delulubeats.com/)
 
 Delulu Beats is a collection of nine full-screen perception games for color, pitch,
 duration, rhythm, spatial memory, and melody. See it, hear it, remember it, then try to dial it
 back in. It also includes Beat Lab, a browser-based studio for building and downloading your own
 rap, R&B, or house loop.
 
-**Play now: https://delulubeats.com/**
+**[Play Delulu Beats](https://delulubeats.com/)** — free, with no account or installation required.
+
+## Games
 
 | Game | Challenge | How it works |
 | --- | --- | --- |
@@ -18,6 +22,14 @@ rap, R&B, or house loop.
 | **Fever Dream** | Beat memory | Read a microwave's movement, then feed the rhythm back with eight taps |
 | **Phantom Drop** | Internal timing | Keep time through a silent bar and catch the returning drop |
 | **Off-Grid** | Microtiming | Find the one late hit hidden inside a repeating drum loop |
+
+## Screenshots
+
+| | |
+| --- | --- |
+| [![Afterimage color memory game](public/social/color.png)](https://delulubeats.com/color/) | [![Sine Language pitch memory game](public/social/sound.png)](https://delulubeats.com/sound/) |
+| [![Downbeat browser rhythm game](public/social/tempo.png)](https://delulubeats.com/tempo/) | [![Echo spatial memory game](public/social/memory.png)](https://delulubeats.com/memory/) |
+| [![Phantom Drop internal timing game](public/social/phantom.png)](https://delulubeats.com/phantom/) | [![Off-Grid microtiming game](public/social/offgrid.png)](https://delulubeats.com/offgrid/) |
 
 ## What's included
 
@@ -62,6 +74,7 @@ Pushes to `main` deploy automatically to GitHub Pages at
 ## About and credits
 
 Delulu Beats was created and vibe-coded by Oliver Saly and his dad, Victor Saly.
+The [source code is available on GitHub](https://github.com/victorsaly/delulubeats).
 
 The games draw inspiration from playful browser experiments such as
 [Neal.fun](https://neal.fun/) and the perception-game genre popularized by

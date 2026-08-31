@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { routeMetadata } from "@/lib/site";
+import { REPOSITORY_URL, routeMetadata } from "@/lib/site";
 import styles from "./page.module.css";
 
 export const metadata = routeMetadata(
@@ -104,6 +104,13 @@ export default function AboutPage() {
                   <dd>{c.how}</dd>
                 </div>
               ))}
+              <div>
+                <dt>Source code</dt>
+                <dd>
+                  Explore the project, report an issue, or follow its development on{" "}
+                  <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer">GitHub</a>.
+                </dd>
+              </div>
             </dl>
           </div>
         </section>
