@@ -1,15 +1,17 @@
 "use client";
 
-/* Wordle-style shareable score cards. */
+/* Wordle-style shareable score cards. The blocks are the whole trick:
+   a row of colour reads as a score at a glance in a chat, where
+   "B A B A" reads as nothing. Keep them. */
 
 export const SITE_URL = "https://delulubeats.com";
 
 export const slotEmoji = (score10: number) =>
-  score10 >= 9 ? "A" : score10 >= 7 ? "B" : score10 >= 4 ? "C" : "D";
+  score10 >= 9 ? "🟩" : score10 >= 7 ? "🟨" : score10 >= 4 ? "🟧" : "🟥";
 
 export const barEmoji = (pct: number) => {
   const filled = Math.round(Math.max(0, Math.min(100, pct)) / 10);
-  return `[${"#".repeat(filled)}${"-".repeat(10 - filled)}]`;
+  return "🟩".repeat(filled) + "⬛".repeat(10 - filled);
 };
 
 /** One finished run, in the shape every game's results screen can describe. */

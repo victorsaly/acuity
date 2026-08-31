@@ -303,7 +303,7 @@ export default function ColorGame() {
           game="Afterimage"
           route="color"
           detail={diff}
-          line={`${total.toFixed(1)} / 50 | Grades: ${scores.map(slotEmoji).join(" ")}`}
+          line={`${total.toFixed(1)} / 50 ${scores.map(slotEmoji).join("")}`}
           level={diff}
         />
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>

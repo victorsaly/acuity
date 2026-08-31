@@ -290,7 +290,7 @@ export default function TimeGame() {
           game="Second Sense"
           route="time"
           detail={`${diff} · ${todayStamp()}`}
-          line={`${total.toFixed(1)} / 50 | Grades: ${scores.map(slotEmoji).join(" ")}`}
+          line={`${total.toFixed(1)} / 50 ${scores.map(slotEmoji).join("")}`}
           level={diff}
         />
       </div>

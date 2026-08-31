@@ -338,7 +338,7 @@ export default function SoundGame() {
               game="Sine Language"
               route="sound"
               detail={diff}
-              line={`${resTotal.toFixed(1)} / 50 | Grades: ${resScores.map(slotEmoji).join(" ")}`}
+              line={`${resTotal.toFixed(1)} / 50 ${resScores.map(slotEmoji).join("")}`}
               level={diff}
             />
             <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
