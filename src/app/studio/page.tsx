@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import {
   audio, unlockAudio, bass, clap, hat, kick, perc, rim, snare, stab, uiBlip,
   setDrumKit, loadKitSamples, loadLabSamples, labPlay, outputStream, encodeWav, setTurntableRate,
-  type DrumKitName, type LeadVoice, type LabSound,
+  voicePlay, voiceReady, saveVoiceClip, clearVoiceClip, loadVoiceClip, trimBuffer,
+  type DrumKitName, type LeadVoice, type LabSound, type VoiceFx,
 } from "@/lib/audio";
 import styles from "./page.module.css";
 
@@ -162,7 +163,8 @@ type Cfg = {
   drums: string; grid: boolean[][];
   bassPat: string; prog: string; style: string; voice: LeadVoice;
   mel: string; melVoice: LeadVoice; chop: string; tex: string;
-  mix: { drums: number; bass: number; chords: number; mel: number; fx: number };
+  voiceOn: boolean; voiceFx: VoiceFx;
+  mix: { drums: number; bass: number; chords: number; mel: number; fx: number; voice: number };
 };
 
 const gridOf = (patId: string): boolean[][] =>
@@ -175,7 +177,8 @@ const defaults = (genre: Genre, keepKey = 0): Cfg => {
     drums: G.drums[0], grid: gridOf(G.drums[0]),
     bassPat: G.bass[0], prog: G.progs[0], style: G.styles[0], voice: G.voice,
     mel: G.mels[1], melVoice: G.melVoice, chop: "off", tex: G.tex[1],
-    mix: { drums: 100, bass: 100, chords: 100, mel: 100, fx: 100 },
+    voiceOn: false, voiceFx: "dry",
+    mix: { drums: 100, bass: 100, chords: 100, mel: 100, fx: 100, voice: 105 },
   };
 };
 
@@ -209,6 +212,11 @@ export default function BeatLab() {
   const [playing, setPlaying] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recLeft, setRecLeft] = useState(0);
+  const [booth, setBooth] = useState<"empty" | "ready" | "arming" | "rec">("empty");
+  const [recBar, setRecBar] = useState(0);
+  const [boothErr, setBoothErr] = useState("");
+  const boothJob = useRef<{ cancel: () => void } | null>(null);
+  const recVoiceRef = useRef<() => void>(() => {});
   const [uiStep, setUiStep] = useState(-1);
   const cfgRef = useRef(cfg);
   const playingRef = useRef(false);
@@ -228,6 +236,7 @@ export default function BeatLab() {
   useEffect(() => {
     loadKitSamples(cfgRef.current.kit);   // other kits decode on demand when picked
     loadLabSamples();
+    void loadVoiceClip().then((ok) => { if (ok) setBooth("ready"); });
     try {
       const raw = localStorage.getItem(LS_KEY);
       if (raw) {
@@ -292,6 +301,9 @@ export default function BeatLab() {
     for (const ev of CHOPS[C.chop].events) {
       if ((ev.b === -1 || ev.b === bar) && ev.s === s) labPlay(ev.snd, t, ev.v * fxv, ev.rate ?? 1);
     }
+
+    /* your voice — the booth take loops from bar 1, following tempo & platter */
+    if (i === 0 && C.voiceOn) voicePlay(t, 0.9 * (C.mix.voice / 100), C.voiceFx, C.bpm);
 
     /* texture */
     const tx = TEX[C.tex];
@@ -400,6 +412,7 @@ export default function BeatLab() {
   };
 
   const stopLoop = () => {
+    boothJob.current?.cancel();
     if (timer.current !== null) window.clearInterval(timer.current);
     timer.current = null;
     playingRef.current = false;
@@ -484,10 +497,110 @@ export default function BeatLab() {
     window.setTimeout(() => { window.clearInterval(iv); recorder.stop(); }, ms);
   };
 
+  /* ---------------- voice booth: record a 4-bar take over the beat ---------------- */
+
+  const recordVoice = async () => {
+    if (boothJob.current) return;
+    let mic: MediaStream;
+    try {
+      mic = await navigator.mediaDevices.getUserMedia({
+        /* echo cancellation strips the beat bleeding from speakers into the mic;
+           suppression/AGC stay off so singing isn't garbled or pumped */
+        audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false },
+      });
+    } catch {
+      setBoothErr("Mic blocked — allow microphone access and try again.");
+      return;
+    }
+    setBoothErr("");
+    if (!playingRef.current) startLoop();
+    setRate(1); /* a clean take needs the record at full speed */
+    const c = audio();
+    let rec: MediaRecorder;
+    try {
+      const mime = typeof MediaRecorder !== "undefined"
+        ? ["audio/webm;codecs=opus", "audio/webm", "audio/mp4;codecs=mp4a.40.2", "audio/mp4"]
+            .find((m2) => MediaRecorder.isTypeSupported(m2))
+        : undefined;
+      rec = mime ? new MediaRecorder(mic, { mimeType: mime }) : new MediaRecorder(mic);
+    } catch {
+      mic.getTracks().forEach((tr) => tr.stop());
+      setBoothErr("Recording is not supported in this browser.");
+      return;
+    }
+    const chunks: Blob[] = [];
+    rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    const startCt = c.currentTime;
+    rec.start(250);
+
+    /* the take starts on the next bar 1 (at least a beat away) and lasts one loop */
+    const C = cfgRef.current;
+    const stepDur = 60 / C.bpm / 4;
+    const loopSec = stepDur * LOOP_STEPS;
+    let t0 = sched.current.nextT + ((LOOP_STEPS - sched.current.step) % LOOP_STEPS) * stepDur;
+    while (t0 - c.currentTime < 0.8) t0 += loopSec;
+
+    const timeouts: number[] = [];
+    const later = (fn: () => void, atCt: number) =>
+      timeouts.push(window.setTimeout(fn, Math.max(0, (atCt - c.currentTime) * 1000)));
+    let cancelled = false;
+    const cleanup = () => {
+      timeouts.forEach((id) => window.clearTimeout(id));
+      mic.getTracks().forEach((tr) => tr.stop());
+      boothJob.current = null;
+    };
+    boothJob.current = {
+      cancel: () => {
+        cancelled = true;
+        cleanup();
+        try { rec.stop(); } catch { /* already stopped */ }
+        setBooth(voiceReady() ? "ready" : "empty");
+      },
+    };
+
+    setBooth("arming");
+    later(() => { setBooth("rec"); setRecBar(1); }, t0);
+    for (let b = 1; b < 4; b++) later(() => setRecBar(b + 1), t0 + b * stepDur * 16);
+
+    rec.onstop = async () => {
+      if (cancelled) return;
+      cleanup();
+      try {
+        const raw = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+        const decoded = await c.decodeAudioData(await raw.arrayBuffer());
+        /* the singer times to what they hear, which lags by the output latency —
+           shift the trim window later by the same amount to line the take up */
+        const latency = c.outputLatency || c.baseLatency || 0;
+        const clip = trimBuffer(decoded, t0 - startCt + latency, loopSec);
+        await saveVoiceClip(clip, C.bpm);
+        set({ voiceOn: true });
+        setBooth("ready");
+        uiBlip(784, 0.06);
+      } catch {
+        setBooth(voiceReady() ? "ready" : "empty");
+        setBoothErr("Couldn't process that take — try again.");
+      }
+    };
+    later(() => { try { rec.stop(); } catch { /* noop */ } }, t0 + loopSec + 0.25);
+  };
+
+  useEffect(() => {
+    recVoiceRef.current = () => { void recordVoice(); };
+  });
+
+  const clearBooth = () => {
+    boothJob.current?.cancel();
+    void clearVoiceClip();
+    set({ voiceOn: false });
+    setBooth("empty");
+    uiBlip(392, 0.04);
+  };
+
   /* ---------------- helpers ---------------- */
 
   const pickGenre = (genre: Genre) => {
-    setCfg((c) => defaults(genre, c.key));
+    boothJob.current?.cancel();
+    setCfg((c) => ({ ...defaults(genre, c.key), voiceOn: c.voiceOn, voiceFx: c.voiceFx }));
     if (playingRef.current) window.setTimeout(startLoop, 40);
   };
 
@@ -518,6 +631,10 @@ export default function BeatLab() {
       if (e.key === " " && idle && !e.repeat) {
         e.preventDefault();
         if (playingRef.current) stopLoop(); else startLoop();
+      }
+      if ((e.key === "r" || e.key === "R") && idle && !e.repeat && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        recVoiceRef.current();
       }
       if (e.key === "Escape" && playingRef.current && !document.fullscreenElement) {
         e.preventDefault();
@@ -671,6 +788,50 @@ export default function BeatLab() {
 
         <StaticBlock>
           <section className={styles.panel}>
+            <h2 className={styles.panelTitle}>Booth</h2>
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>Take</span>
+              <div className={styles.chips}>
+                <button
+                  className={`mode ${booth === "rec" ? styles.recLive : ""}`}
+                  data-note={659}
+                  disabled={booth === "arming" || booth === "rec"}
+                  onClick={() => { void recordVoice(); }}
+                >
+                  {booth === "arming" ? "Dropping on bar 1…"
+                    : booth === "rec" ? `● Recording — bar ${recBar} of 4`
+                    : booth === "ready" ? "● Re-record"
+                    : "● Record 4 bars"}
+                </button>
+                {(booth === "arming" || booth === "rec") && (
+                  <button className="mode" data-note={392} onClick={() => boothJob.current?.cancel()}>
+                    Cancel
+                  </button>
+                )}
+                {booth === "ready" && (
+                  <button className="mode" data-note={330} onClick={clearBooth}>Clear</button>
+                )}
+              </div>
+            </div>
+            {booth === "ready" && (
+              <>
+                <Chips label="Voice" items={[{ id: "on", label: "In the mix" }, { id: "off", label: "Muted" }]}
+                  active={cfg.voiceOn ? "on" : "off"} onPick={(id) => set({ voiceOn: id === "on" })} />
+                <Chips label="Tone" items={[{ id: "dry", label: "Dry" }, { id: "radio", label: "Radio" }, { id: "echo", label: "Echo" }]}
+                  active={cfg.voiceFx} onPick={(id) => set({ voiceFx: id as VoiceFx })} />
+              </>
+            )}
+            {boothErr && <p className={styles.boothErr} role="alert">{boothErr}</p>}
+            <p className={styles.deckHint}>
+              Record your own hook or ad-libs over the beat. The take starts on the next
+              bar 1, runs 4 bars, then loops with the track — following tempo and the
+              platter like everything else. Headphones keep the beat out of the mic.
+            </p>
+          </section>
+        </StaticBlock>
+
+        <StaticBlock>
+          <section className={styles.panel}>
             <h2 className={styles.panelTitle}>Deck</h2>
             <div className={styles.deck}>
               <div
@@ -722,7 +883,7 @@ export default function BeatLab() {
           <section className={styles.panel}>
             <h2 className={styles.panelTitle}>Mix</h2>
             <div className={styles.mixGrid}>
-              {([["drums", "Drums"], ["bass", "Bass"], ["chords", "Chords"], ["mel", "Melody"], ["fx", "FX & Chops"]] as const).map(([k, label]) => (
+              {([["drums", "Drums"], ["bass", "Bass"], ["chords", "Chords"], ["mel", "Melody"], ["fx", "FX & Chops"], ["voice", "Your Voice"]] as const).map(([k, label]) => (
                 <label key={k} className={styles.mix}>
                   <span>{label} <b>{cfg.mix[k]}</b></span>
                   <input type="range" min={0} max={130} value={cfg.mix[k]}
@@ -737,6 +898,7 @@ export default function BeatLab() {
           <div className="kbd">
             <span><b>Space</b>play / stop</span>
             <span><b>Esc</b>stop</span>
+            <span><b>R</b>record voice</span>
             <span><b>F</b>fullscreen</span>
           </div>
         </StaticBlock>

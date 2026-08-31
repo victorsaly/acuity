@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
@@ -78,10 +78,45 @@ const TRACK_LABELS: Record<string, string> = {
 };
 
 type LaneStyle = "curve" | "orbit" | "rain";
+/* Each lane is its own game type, so each gets its own line-art mark. */
+const laneIcon = (paths: ReactNode) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    {paths}
+  </svg>
+);
 const LANES_UI = [
-  { key: "curve", label: "Curve" },
-  { key: "orbit", label: "Orbit" },
-  { key: "rain", label: "Rain" },
+  {
+    key: "curve", label: "Curve", sub: "Sweep in",
+    icon: laneIcon(<>
+      <path d="M9.5 2.5C7.5 9 5.5 14 3 20.5" />
+      <path d="M14.5 2.5C16.5 9 18.5 14 21 20.5" />
+      <ellipse cx="12" cy="18" rx="6.6" ry="2.4" />
+      <circle cx="12" cy="9.2" r="1.7" fill="currentColor" stroke="none" />
+      <circle cx="9.6" cy="5" r="1" fill="currentColor" stroke="none" />
+    </>),
+  },
+  {
+    key: "orbit", label: "Orbit", sub: "Circle in",
+    icon: laneIcon(<>
+      <circle cx="12" cy="12" r="8.6" />
+      <circle cx="12" cy="12" r="3.4" />
+      <circle cx="12" cy="3.4" r="1.7" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="16.4" r="1.1" fill="currentColor" stroke="none" />
+    </>),
+  },
+  {
+    key: "rain", label: "Rain", sub: "Drop in",
+    icon: laneIcon(<>
+      <path d="M6 2.5v4.5" />
+      <path d="M12 4v5.5" />
+      <path d="M18 2.5v3.5" />
+      <circle cx="6" cy="10.5" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="13" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="9.5" r="1.5" fill="currentColor" stroke="none" />
+      <path d="M2.5 18.5h19" />
+    </>),
+  },
 ];
 const LANE_KEYS = LANES_UI.map((l) => l.key);
 /* rain: each note owns a deterministic column */
@@ -653,7 +688,7 @@ export default function TempoGame() {
               <GameSetup game="tempo" diffs={DIFFS} diff={diff}
                 onDiff={setDiff} onStart={start} refreshToken={runStamp}
                 beats={TRACKS_UI} beat={trackPick} onBeat={setTrackPick}
-                formats={LANES_UI} format={lane}
+                formats={LANES_UI} format={lane} formatsPrimary formatsLabel="Game type"
                 onFormat={(k) => setLane(k as LaneStyle)}
                 sounds={KITS_UI} sound={kit}
                 onSound={(k) => {

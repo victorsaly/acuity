@@ -170,9 +170,6 @@
 
 .silence .count { color: var(--muted); animation: questionFade 0.7s ease-out both; }
 
-.drop .hole { animation: dropImpact 0.58s cubic-bezier(0.15, 0.9, 0.2, 1.25); }
-.drop .wave { animation: waveImpact 0.58s ease-out; }
-
 .instruction {
   position: fixed;
   z-index: 5;
@@ -235,13 +232,6 @@
 
 .score small { color: var(--bone); font-size: 0.22em; }
 
-@keyframes dropImpact {
-  0% { transform: skewX(-6deg) scaleX(1); background: #030408; }
-  35% { transform: skewX(8deg) scaleX(0.08); background: var(--bone); }
-  65% { transform: skewX(-12deg) scaleX(1.55); }
-  100% { transform: skewX(-6deg) scaleX(1); background: #030408; }
-}
-
 @keyframes barPunch {
   0% { transform: scaleY(0.22); opacity: 0.35; }
   32% { transform: scaleY(1.55); opacity: 1; }
@@ -280,12 +270,6 @@
   50% { opacity: 0.48; }
 }
 
-@keyframes waveImpact {
-  0% { transform: scale(0.25); opacity: 0; }
-  42% { transform: scale(1.16); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
 @media (max-width: 640px) {
   .scene { width: 96vw; height: 52vh; }
   .wave { gap: 5px; height: 120px; }
@@ -296,5 +280,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .drop .hole, .drop .wave { animation-duration: 0.12s; }
+  .beat .bar, .beat .hole, .beat .count { animation-duration: 0.12s; }
 }

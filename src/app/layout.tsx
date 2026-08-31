@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Unbounded, Spline_Sans_Mono } from "next/font/google";
 import Chrome from "@/components/Chrome";
 import Aurora from "@/components/Aurora";
+import SoundGate from "@/components/SoundGate";
 import {
   OPEN_GRAPH_IMAGE,
   SITE_DESCRIPTION,
@@ -96,6 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
         <Aurora />
+        <SoundGate />
         <Chrome />
         {children}
       </body>

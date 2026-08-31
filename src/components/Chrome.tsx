@@ -9,13 +9,13 @@ import { audioState, uiBlip, unlockAudio } from "@/lib/audio";
  * App-wide chrome: fullscreen toggle, home link, and the rollover
  * sound layer — every button and link answers a hover with a soft
  * blip (its data-note pitch, or a default), and clicks confirm a
- * fifth higher. Audio unlocks on the first press anywhere.
+ * fifth higher. Audio unlocks on the first press anywhere; the
+ * full-screen SoundGate owns the initial unlock.
  */
 export default function Chrome() {
   const path = usePathname();
   const router = useRouter();
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [locked, setLocked] = useState(true);
 
   useEffect(() => {
     const query = window.matchMedia("(hover: none) or (pointer: coarse)");
@@ -44,7 +44,7 @@ export default function Chrome() {
        on every subsequent click just builds throwaway audio nodes. */
     const unlock = () => {
       if (audioState() === "running") return;
-      void unlockAudio().then(() => setLocked(audioState() !== "running"));
+      void unlockAudio();
     };
     // Keep retrying on real gestures in case iOS blocks the first unlock.
     window.addEventListener("pointerdown", unlock, { capture: true });
@@ -80,13 +80,7 @@ export default function Chrome() {
     document.addEventListener("pointerover", over);
     document.addEventListener("click", clickFx);
     document.addEventListener("keydown", onKey);
-    // iOS suspends the context whenever the tab is backgrounded.
-    const onVis = () => {
-      if (document.visibilityState === "visible") setLocked(audioState() !== "running");
-    };
-    document.addEventListener("visibilitychange", onVis);
     return () => {
-      document.removeEventListener("visibilitychange", onVis);
       document.removeEventListener("pointerover", over);
       document.removeEventListener("click", clickFx);
       document.removeEventListener("keydown", onKey);
@@ -107,21 +101,6 @@ export default function Chrome() {
 
   return (
     <>
-      {locked && !path.startsWith("/about") && (
-        <button
-          className="corner soundGate"
-          data-silent
-          onClick={() => {
-            void unlockAudio().then(() => {
-              const ok = audioState() === "running";
-              setLocked(!ok);
-              if (ok) uiBlip(660, 0.06, 0.14);
-            });
-          }}
-        >
-          Tap to enable sound
-        </button>
-      )}
       {path !== "/" && (
         <Link href="/" className="corner homeLink" data-note="349" aria-label="Back to games menu">
           <span className="homeLinkInner homeLinkLong">◂ Back to games</span>

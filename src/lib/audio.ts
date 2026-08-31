@@ -161,6 +161,24 @@ export function now(): number {
   return audio().currentTime;
 }
 
+/**
+ * The audio-clock time of the sound reaching the listener's ears *now*.
+ *
+ * Rhythm games must schedule and judge on the same clock: `setTimeout` +
+ * `performance.now()` drift against `currentTime` by tens of milliseconds,
+ * which is most of a scoring window. Notes are scheduled at a `currentTime`
+ * in the future, but they are only *heard* one output buffer later, so a
+ * perfectly timed tap arrives at `currentTime - outputLatency`. Subtracting
+ * it here means a tap compared against the note's scheduled time scores zero
+ * error. Safari reports no `outputLatency`; `baseLatency` is the next best
+ * estimate, and 0 is a safe floor.
+ */
+export function heardNow(): number {
+  const c = audio();
+  const latency = c.outputLatency || c.baseLatency || 0;
+  return c.currentTime - latency;
+}
+
 /** Sidechain pump: dip the duck bus when a kick lands. */
 function duck(t: number, amount: number) {
   if (!ctx || amount <= 0) return;
@@ -587,6 +605,7 @@ export function perc(t: number, vol = 0.8) {
 
 /** Bass note, in semitones from the kit's root (F1). Mono — a new note chokes the last. */
 export function bass(t: number, semis = 0, vol = 1) {
+  if (vol <= 0.001) return; /* muted — exponential ramps can't target 0 */
   choke(lastBass, t, 0.015);
   const rate = Math.pow(2, semis / 12);
   const v = playVoice("bass", t, vol, rate, false);
@@ -607,6 +626,7 @@ export function bass(t: number, semis = 0, vol = 1) {
 
 /** Soft mallet pluck (memory game): sine + faint octave through a closing lowpass. */
 export function pluck(freq: number, vol = 0.06, dur = 0.4) {
+  if (vol <= 0.001) return; /* muted — exponential ramps can't target 0 */
   const c = audio();
   const t = c.currentTime;
   const g = c.createGain();
@@ -644,6 +664,7 @@ export type LeadVoice = "piano" | "pluck" | "saw" | "steel" | "brass"
  * original rendition. `midi` is a MIDI note number (69 = A4).
  */
 export function stab(t: number, midi: number, dur = 0.3, voice: LeadVoice = "piano", vol = 0.16) {
+  if (vol <= 0.001) return; /* muted — exponential ramps can't target 0 */
   const c = audio();
   const f = 440 * Math.pow(2, (midi - 69) / 12);
   const g = c.createGain();
@@ -875,6 +896,153 @@ export function labPlay(name: LabSound, t: number, vol = 0.5, rate = 1, send = 0
   out(g, send);
   src.start(t);
   return true;
+}
+
+/* ---------------- voice booth (Beat Lab: record your own voice) ----------------
+ *
+ * One 4-bar take captured from the mic, trimmed to the loop on the audio
+ * clock, then looped like any other layer.  playbackRate rescales the take
+ * when the tempo (or the platter) changes so it always fits the bar, and the
+ * clip is persisted to IndexedDB as WAV so it survives reloads.
+ */
+
+export type VoiceFx = "dry" | "radio" | "echo";
+
+let voiceBuf: AudioBuffer | null = null;
+let voiceBpm = 0;
+
+export function voiceReady(): boolean {
+  return !!voiceBuf;
+}
+
+export function setVoiceClip(buf: AudioBuffer | null, bpm: number) {
+  voiceBuf = buf;
+  voiceBpm = bpm;
+}
+
+/** Loop-synced playback of the booth take; false (silently) when there is none. */
+export function voicePlay(t: number, vol: number, fx: VoiceFx, bpmNow: number): boolean {
+  if (!voiceBuf || !voiceBpm) return false;
+  const c = audio();
+  const src = c.createBufferSource();
+  src.buffer = voiceBuf;
+  const rate = (bpmNow / voiceBpm) * ttRate;
+  src.playbackRate.value = rate;
+  const g = c.createGain();
+  g.gain.value = vol;
+  let head: AudioNode = src;
+  if (fx === "radio") {
+    /* small-speaker squeeze: bandpass + highpass */
+    const bp = c.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 1500;
+    bp.Q.value = 0.9;
+    const hp = c.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 380;
+    head.connect(bp);
+    bp.connect(hp);
+    head = hp;
+  }
+  head.connect(g);
+  out(g, fx === "dry" ? 0.14 : 0.2);
+  if (fx === "echo") {
+    /* dotted-eighth feedback delay, faded out after the take so the cycle dies */
+    const d = c.createDelay(1.5);
+    d.delayTime.value = Math.min(1.4, 0.75 * (60 / bpmNow));
+    const fb = c.createGain();
+    const dur = voiceBuf.duration / rate;
+    fb.gain.setValueAtTime(0.34, t);
+    fb.gain.linearRampToValueAtTime(0, t + dur + 2.5);
+    const wet = c.createGain();
+    wet.gain.value = 0.38 * vol;
+    g.connect(d);
+    d.connect(fb);
+    fb.connect(d);
+    d.connect(wet);
+    out(wet, 0.3);
+  }
+  src.start(t);
+  return true;
+}
+
+/** Cut `seconds` out of a decoded take starting at `offset` (both in seconds). */
+export function trimBuffer(src: AudioBuffer, offset: number, seconds: number): AudioBuffer {
+  const rate = src.sampleRate;
+  const len = Math.max(1, Math.round(seconds * rate));
+  const from = Math.max(0, Math.round(offset * rate));
+  const chans = Math.max(1, Math.min(2, src.numberOfChannels));
+  const c = ctx ?? new OfflineAudioContext(1, 1, 44100);
+  const outBuf = c.createBuffer(chans, len, rate);
+  for (let ch = 0; ch < chans; ch++) {
+    const s = src.getChannelData(Math.min(ch, src.numberOfChannels - 1));
+    const d = outBuf.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = from + i < s.length ? s[from + i] : 0;
+  }
+  return outBuf;
+}
+
+/* the clip survives reloads: WAV blob + its tempo in IndexedDB */
+const VOICE_DB = "dialed-lab";
+const VOICE_STORE = "voice";
+
+function voiceDb(): Promise<IDBDatabase> {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(VOICE_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(VOICE_STORE);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+export async function saveVoiceClip(buf: AudioBuffer, bpm: number): Promise<void> {
+  setVoiceClip(buf, bpm);
+  try {
+    const db = await voiceDb();
+    await new Promise<void>((res, rej) => {
+      const tx = db.transaction(VOICE_STORE, "readwrite");
+      tx.objectStore(VOICE_STORE).put({ wav: encodeWav(buf), bpm }, "clip");
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+    db.close();
+  } catch { /* no persistence — the take still plays this session */ }
+}
+
+export async function clearVoiceClip(): Promise<void> {
+  setVoiceClip(null, 0);
+  try {
+    const db = await voiceDb();
+    await new Promise<void>((res, rej) => {
+      const tx = db.transaction(VOICE_STORE, "readwrite");
+      tx.objectStore(VOICE_STORE).delete("clip");
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+    db.close();
+  } catch { /* nothing stored */ }
+}
+
+export async function loadVoiceClip(): Promise<boolean> {
+  if (voiceBuf) return true;
+  if (typeof indexedDB === "undefined") return false;
+  try {
+    const db = await voiceDb();
+    const rec = await new Promise<{ wav: Blob; bpm: number } | undefined>((res, rej) => {
+      const tx = db.transaction(VOICE_STORE, "readonly");
+      const rq = tx.objectStore(VOICE_STORE).get("clip");
+      rq.onsuccess = () => res(rq.result as { wav: Blob; bpm: number } | undefined);
+      rq.onerror = () => rej(rq.error);
+    });
+    db.close();
+    if (!rec?.wav || !rec.bpm) return false;
+    const c = ctx ?? new OfflineAudioContext(1, 1, 44100);
+    const buf = await c.decodeAudioData(await rec.wav.arrayBuffer());
+    setVoiceClip(buf, rec.bpm);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Encode an AudioBuffer as a 16-bit PCM WAV blob — plays in every player. */

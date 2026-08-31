@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { getBest, scoreKey } from "@/lib/store";
 
 export type DiffDef = { key: string; label: string; sub: string; note: number };
+export type FormatDef = { key: string; label: string; sub?: string; icon?: ReactNode };
 
 const noopSubscribe = () => () => {};
 
@@ -12,7 +13,8 @@ const noopSubscribe = () => () => {};
  */
 export default function GameSetup({
   game, diffs, diff, onDiff, onStart, refreshToken,
-  sounds, sound, onSound, formats, format, onFormat, beats, beat, onBeat,
+  sounds, sound, onSound, formats, format, onFormat, formatsPrimary, formatsLabel = "Format",
+  beats, beat, onBeat,
   helpContent, formatBest,
 }: {
   game: string;
@@ -24,9 +26,13 @@ export default function GameSetup({
   sounds?: { key: string; label: string }[];
   sound?: string;
   onSound?: (k: string) => void;
-  formats?: { key: string; label: string }[];
+  formats?: FormatDef[];
   format?: string;
   onFormat?: (k: string) => void;
+  /** Show the format row on the menu itself (with icons) instead of behind "More options". */
+  formatsPrimary?: boolean;
+  /** Name for the format row — group label and keyboard hint. */
+  formatsLabel?: string;
   beats?: { key: string; label: string; sub?: string }[];
   beat?: string;
   onBeat?: (k: string) => void;
@@ -37,7 +43,7 @@ export default function GameSetup({
   const [showHelp, setShowHelp] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const appliedSharedLevel = useRef(false);
-  const hasExtraOptions = Boolean((sounds && onSound) || (formats && onFormat) || (beats && onBeat));
+  const hasExtraOptions = Boolean((sounds && onSound) || (formats && onFormat && !formatsPrimary) || (beats && onBeat));
 
   useEffect(() => {
     if (appliedSharedLevel.current) return;
@@ -86,8 +92,37 @@ export default function GameSetup({
     return () => document.removeEventListener("keydown", onKey);
   }, [diffs, onDiff, onStart, sounds, sound, onSound, formats, format, onFormat, beats, beat, onBeat]);
 
+  const formatButtons = formats && onFormat && (
+    <div
+      className={formatsPrimary ? "types" : "modes"}
+      role="group"
+      aria-label={formatsLabel}
+    >
+      {formats.map((f, i) => (
+        <button
+          key={f.key}
+          className={formatsPrimary ? "type" : "mode"}
+          aria-pressed={format === f.key}
+          data-note={392 + i * 60}
+          onClick={() => onFormat(f.key)}
+        >
+          {formatsPrimary && f.icon}
+          <span>{f.label}</span>
+          {f.sub && <small>{f.sub}</small>}
+        </button>
+      ))}
+    </div>
+  );
+  const formatRow = formatsPrimary ? (
+    <div className="typesWrap">
+      <span className="rowCaption">{formatsLabel}</span>
+      {formatButtons}
+    </div>
+  ) : formatButtons;
+
   return (
     <>
+      {formatsPrimary && formatRow}
       <div className="diffs" role="group" aria-label="Difficulty">
         {diffs.map((d) => (
           <button
@@ -148,21 +183,7 @@ export default function GameSetup({
               ))}
             </div>
           )}
-          {formats && onFormat && (
-            <div className="modes" role="group" aria-label="Format">
-              {formats.map((f, i) => (
-                <button
-                  key={f.key}
-                  className="mode"
-                  aria-pressed={format === f.key}
-                  data-note={392 + i * 60}
-                  onClick={() => onFormat(f.key)}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          )}
+          {!formatsPrimary && formatRow}
         </>
       )}
       <div className="menuActions">
@@ -202,7 +223,7 @@ export default function GameSetup({
         <span><b>1–{diffs.length}</b>difficulty</span>
         {sounds && <span><b>S</b>sound</span>}
         {beats && <span><b>B</b>beat</span>}
-        {formats && <span><b>L</b>format</span>}
+        {formats && <span><b>L</b>{formatsLabel.toLowerCase()}</span>}
         <span><b>↵</b>start</span>
         <span><b>Esc</b>menu</span>
         <span><b>F</b>fullscreen</span>
