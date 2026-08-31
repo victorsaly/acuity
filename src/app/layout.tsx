@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import { Unbounded, Spline_Sans_Mono } from "next/font/google";
 import Chrome from "@/components/Chrome";
 import Aurora from "@/components/Aurora";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import {
+  OPEN_GRAPH_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+  SOCIAL_IMAGE_ALT,
+  TWITTER_IMAGE,
+} from "@/lib/site";
 import "./globals.css";
 
 const display = Unbounded({
@@ -43,11 +50,19 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     locale: "en_GB",
     type: "website",
+    images: [{
+      url: OPEN_GRAPH_IMAGE,
+      width: 1200,
+      height: 630,
+      alt: SOCIAL_IMAGE_ALT,
+      type: "image/png",
+    }],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
+    images: [{ url: TWITTER_IMAGE, alt: SOCIAL_IMAGE_ALT }],
   },
   robots: {
     index: true,

@@ -4,7 +4,9 @@ export const SITE_NAME = "Delulu Beats";
 export const SITE_URL = "https://delulubeats.com";
 export const SITE_DESCRIPTION =
   "Nine free browser perception games and a beat-making studio for rhythm, sound, memory, and timing.";
-const SOCIAL_IMAGE_ALT = "Delulu Beats — nine perception games for eyes, ears, and timing";
+export const SOCIAL_IMAGE_ALT = "Delulu Beats — nine perception games for eyes, ears, and timing";
+export const OPEN_GRAPH_IMAGE = `${SITE_URL}/social/opengraph.png`;
+export const TWITTER_IMAGE = `${SITE_URL}/social/twitter.png`;
 
 export const GAME_ROUTES = [
   "/color",
@@ -32,7 +34,7 @@ export function routeMetadata(title: string, description: string, path: string):
       locale: "en_GB",
       type: "website",
       images: [{
-        url: `${SITE_URL}/opengraph-image`,
+        url: OPEN_GRAPH_IMAGE,
         width: 1200,
         height: 630,
         alt: SOCIAL_IMAGE_ALT,
@@ -43,7 +45,7 @@ export function routeMetadata(title: string, description: string, path: string):
       card: "summary_large_image",
       title: socialTitle,
       description,
-      images: [{ url: `${SITE_URL}/twitter-image`, alt: SOCIAL_IMAGE_ALT }],
+      images: [{ url: TWITTER_IMAGE, alt: SOCIAL_IMAGE_ALT }],
     },
   };
 }

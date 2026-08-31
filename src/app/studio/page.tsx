@@ -216,9 +216,11 @@ export default function BeatLab() {
   const rate = useRef(1);           // signed platter speed: <0 plays the loop backwards
   const reverse = useRef(false);
   const [revOn, setRevOn] = useState(false);
-  const [rateUi, setRateUi] = useState(1);
   const drag = useRef<{ angle: number; at: number } | null>(null);
   const sched = useRef({ step: 0, nextT: 0 });
+  const spin = useRef(0);
+  const discRef = useRef<HTMLDivElement>(null);
+  const readRef = useRef<HTMLElement>(null);
 
   const G = GENRES[cfg.genre];
 
@@ -327,11 +329,22 @@ export default function BeatLab() {
     }
   };
 
+  /* The disc spins at 60fps and the readout tracks every pointer move. Both are
+     written straight to the DOM: routing them through React state would re-render
+     this whole page (every chip, the 64-cell grid, all the sliders) each frame. */
+  const paintDisc = () => {
+    if (discRef.current) discRef.current.style.transform = `rotate(${spin.current}deg)`;
+  };
+
   /* platter: set the signed speed and pitch every sampled voice to match */
   const setRate = (r: number) => {
     rate.current = r;
     setTurntableRate(Math.abs(r) < 0.06 ? 1 : Math.abs(r));
-    setRateUi(Math.round(r * 100) / 100);
+    const v = Math.round(r * 100) / 100;
+    if (readRef.current) {
+      readRef.current.textContent = v === 0 ? "STOP" : `${v < 0 ? "−" : ""}${Math.abs(v).toFixed(2)}×`;
+    }
+    discRef.current?.setAttribute("aria-valuenow", String(v));
   };
 
   const angleOf = (el: HTMLElement, x: number, y: number) => {
@@ -356,13 +369,22 @@ export default function BeatLab() {
     /* one turn per bar at normal speed → angular velocity maps straight to rate */
     const barSec = (60 / cfgRef.current.bpm) * 4;
     setRate(Math.max(-2.2, Math.min(2.2, d / dt / ((2 * Math.PI) / barSec))));
+    spin.current += (d * 180) / Math.PI;
+    paintDisc();
     drag.current = { angle: a, at: now };
   };
 
   const platterUp = (e: React.PointerEvent<HTMLDivElement>) => {
     drag.current = null;
     e.currentTarget.releasePointerCapture?.(e.pointerId);
-    setRate(1);
+    const from = rate.current;
+    const t0 = performance.now();
+    const ease = () => {                       // the record spins back up to speed
+      const k = Math.min(1, (performance.now() - t0) / 260);
+      setRate(from + (1 - from) * (1 - Math.pow(1 - k, 3)));
+      if (k < 1 && !drag.current) requestAnimationFrame(ease);
+    };
+    requestAnimationFrame(ease);
   };
 
   const startLoop = () => {
@@ -386,6 +408,24 @@ export default function BeatLab() {
   };
 
   useEffect(() => stopLoop, []);
+
+  /* disc rotation follows the live rate, so it visibly slows, stops and reverses */
+  useEffect(() => {
+    if (!playing) return;
+    let raf = 0;
+    let last = performance.now();
+    const step = () => {
+      const now = performance.now();
+      if (!drag.current) {
+        spin.current += rate.current * (reverse.current ? -1 : 1) * ((now - last) / 1000) * 180;
+        paintDisc();
+      }
+      last = now;
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [playing]);
 
   /* ---------------- download: record two loops off the master bus ---------------- */
 
@@ -634,6 +674,7 @@ export default function BeatLab() {
             <h2 className={styles.panelTitle}>Deck</h2>
             <div className={styles.deck}>
               <div
+                ref={discRef}
                 className={styles.platter}
                 onPointerDown={platterDown}
                 onPointerMove={platterMove}
@@ -641,7 +682,7 @@ export default function BeatLab() {
                 onPointerCancel={platterUp}
                 role="slider"
                 aria-label="Turntable — drag to scrub, hold to stop"
-                aria-valuenow={rateUi}
+                aria-valuenow={1}
                 aria-valuemin={-2.2}
                 aria-valuemax={2.2}
                 tabIndex={0}
@@ -652,7 +693,7 @@ export default function BeatLab() {
               </div>
               <div className={styles.deckSide}>
                 <div className={styles.rateRead}>
-                  <b>{rateUi === 0 ? "STOP" : `${rateUi > 0 ? "" : "−"}${Math.abs(rateUi).toFixed(2)}×`}</b>
+                  <b ref={readRef}>1.00×</b>
                   <span>{revOn ? "reverse" : "forward"}</span>
                 </div>
                 <div className={styles.chips}>

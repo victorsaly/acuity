@@ -229,6 +229,10 @@ export default function OffGridGame() {
     );
   }
 
+  /* the nudge is a pure function of the round — derive it rather than reading
+     the scheduler's ref during render (React doesn't track ref reads) */
+  const nudgeMs = Math.round(
+    CONFIG[diff].startMs + ((CONFIG[diff].endMs - CONFIG[diff].startMs) * round) / (ROUNDS - 1));
   const showTruth = phase === "feedback" && current !== null;
 
   return (
@@ -239,7 +243,7 @@ export default function OffGridGame() {
          revealing ? "Hear it again — watch the flash" :
          current?.score === 10 ? "Caught it" : current?.score === 3 ? "Next door" : "Not that one"}
       </div>
-      <div className={styles.roundTag}>Round {round + 1} of {ROUNDS} · nudge {Math.round(offset.current)}ms</div>
+      <div className={styles.roundTag}>Round {round + 1} of {ROUNDS} · nudge {nudgeMs}ms</div>
       <div className={styles.scene}>
         <div className={styles.lane} role={phase === "pick" ? "group" : undefined} aria-label="Steps">
           {Array.from({ length: STEPS }, (_, step) => {
