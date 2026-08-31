@@ -1,10 +1,13 @@
 .stage {
-  --amber: #ffb02e;
+  /* The late hit — this game's identity colour, and the one its hub tile
+     and social card use. --hot and --ok below stay put: they mean wrong
+     and right, which is not a branding decision. */
+  --amber: var(--accent);
   --hot: #ff456f;
   --ok: #59f2b0;
   background:
     linear-gradient(rgba(10, 9, 6, 0.62), rgba(10, 9, 6, 0.62)),
-    repeating-linear-gradient(90deg, transparent 0 calc(12.5% - 1px), rgba(255, 176, 46, 0.13) calc(12.5% - 1px) 12.5%),
+    repeating-linear-gradient(90deg, transparent 0 calc(12.5% - 1px), color-mix(in srgb, var(--accent) 13%, transparent) calc(12.5% - 1px) 12.5%),
     #17130b;
   overflow: hidden;
 }
@@ -16,7 +19,7 @@
   right: 0;
   top: 50%;
   height: 1px;
-  background: rgba(255, 176, 46, 0.22);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   pointer-events: none;
 }
 
@@ -29,7 +32,7 @@
   height: 96px;
   margin: 0 auto 20px;
   padding: 0 6px;
-  border-block: 1px solid rgba(255, 176, 46, 0.35);
+  border-block: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .menuMark span {
@@ -42,8 +45,8 @@
 
 .menuMark .menuNudged {
   border-color: var(--amber);
-  background: rgba(255, 176, 46, 0.24);
-  box-shadow: 0 0 26px rgba(255, 176, 46, 0.4);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 40%, transparent);
   transform: translateX(clamp(4px, 1vw, 8px));
 }
 
@@ -139,7 +142,7 @@
 .flash i {
   border-color: var(--amber);
   background: var(--amber);
-  box-shadow: 0 0 46px rgba(255, 176, 46, 0.75);
+  box-shadow: 0 0 46px color-mix(in srgb, var(--accent) 75%, transparent);
 }
 
 .pickable { cursor: pointer; }
@@ -153,17 +156,17 @@
 
 .pickable:hover i {
   border-color: var(--amber);
-  background: rgba(255, 176, 46, 0.16);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
   transform: translateY(-8px) scale(1.05);
-  box-shadow: 0 12px 36px rgba(255, 176, 46, 0.28);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .culprit { color: var(--bone); }
 
 .culprit i {
   border-color: var(--amber);
-  background: rgba(255, 176, 46, 0.3);
-  box-shadow: 0 0 34px rgba(255, 176, 46, 0.4);
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow: 0 0 34px color-mix(in srgb, var(--accent) 40%, transparent);
   transform: translateX(clamp(5px, 1vw, 10px));
 }
 

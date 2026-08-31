@@ -1,6 +1,8 @@
 .stage {
   --acid: #dfff45;
-  --hot: #ff456f;
+  /* The half of the mark that carries the game's identity. --acid and
+     --ice keep framing the void either side of it. */
+  --hot: var(--accent);
   --ice: #68e8ff;
   background:
     linear-gradient(rgba(8, 9, 14, 0.72), rgba(8, 9, 14, 0.72)),
@@ -48,7 +50,7 @@
   transform: translate(-50%, -50%) skewX(-8deg);
   background: #05060a;
   border-inline: 3px solid var(--bone);
-  box-shadow: -12px 0 30px rgba(223, 255, 69, 0.22), 12px 0 30px rgba(255, 69, 111, 0.22);
+  box-shadow: -12px 0 30px rgba(223, 255, 69, 0.22), 12px 0 30px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .playStage { cursor: pointer; }
@@ -138,7 +140,7 @@
   background: #030408;
   transform: skewX(-6deg);
   border-inline: 2px solid rgba(239, 240, 244, 0.2);
-  box-shadow: -24px 0 60px rgba(223, 255, 69, 0.12), 24px 0 60px rgba(255, 69, 111, 0.12);
+  box-shadow: -24px 0 60px rgba(223, 255, 69, 0.12), 24px 0 60px color-mix(in srgb, var(--accent) 12%, transparent);
   transition: width 0.35s ease, box-shadow 0.35s ease;
 }
 
@@ -164,7 +166,7 @@
 .silence .bar { height: 3px; box-shadow: none; animation: barCollapse 0.4s ease-in both; }
 .silence .hole {
   width: clamp(220px, 42vw, 460px);
-  box-shadow: -35px 0 80px rgba(223, 255, 69, 0.1), 35px 0 80px rgba(255, 69, 111, 0.1);
+  box-shadow: -35px 0 80px rgba(223, 255, 69, 0.1), 35px 0 80px color-mix(in srgb, var(--accent) 10%, transparent);
   animation: voidOpen 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 

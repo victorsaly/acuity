@@ -319,7 +319,7 @@ export default function PianoGame() {
             <svg className="pianoLogo" viewBox="0 0 192 60" aria-hidden>
               {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
                 <rect key={`w${i}`} x={i * 24 + 1} y={1} width={22} height={58} rx={3}
-                  fill="#eff0f4"
+                  fill={[1, 4].includes(i) ? "currentColor" : "#eff0f4"}
                   style={[1, 4].includes(i) ? { animation: "logoPulse 3.6s ease-in-out infinite", animationDelay: `${i * -0.9}s` } : undefined} />
               ))}
               {[0, 1, 3, 4, 5].map((i) => (

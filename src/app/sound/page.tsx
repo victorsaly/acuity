@@ -8,6 +8,7 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import GameMark from "@/components/GameMark";
 import { audio, toneOn, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
+import { readAccent, shade, useAccent, type Hsl } from "@/lib/accent";
 import { slotEmoji } from "@/lib/share";
 
 type Phase = "menu" | "reveal" | "recall" | "results";
@@ -38,8 +39,11 @@ const posToFreq = (p: number) => F_LO * Math.pow(2, (p / 1000) * OCTAVES);
 const cents = (a: number, b: number) => Math.abs(1200 * Math.log2(a / b));
 const scoreOf = (t: number, g: number) => Math.max(0, 10 * (1 - cents(t, g) / 300));
 /* monochrome pitch cue: low = dim grey, high = bright white */
+/* Lightness is the pitch — low tones sit dark, high ones bright. The hue and
+   saturation come from the route's accent, so the wave you are tuning is the
+   same colour as the game's mark. */
 const lightOf = (f: number) => 45 + (Math.log2(f / F_LO) / OCTAVES) * 50;
-const colorOf = (f: number) => `hsl(0 0% ${lightOf(f)}%)`;
+const colorOf = (f: number, a: Hsl) => shade(a, lightOf(f));
 const resVerdict = (total: number) =>
   total >= 45 ? "Perfect pitch." :
   total >= 38 ? "Well tuned." :
@@ -68,11 +72,13 @@ export default function SoundGame() {
   /* ---------- full-screen waveform ---------- */
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wave = useRef({ liveFreq: 220, drawFreq: 220, amp: 0, targetAmp: 0, phase: 0, last: 0 });
+  const accent = useAccent();
 
   useEffect(() => {
     const cv = canvasRef.current!;
     const g2 = cv.getContext("2d")!;
     const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const accent = readAccent();
     const resize = () => {
       cv.width = innerWidth * devicePixelRatio;
       cv.height = innerHeight * devicePixelRatio;
@@ -103,9 +109,11 @@ export default function SoundGame() {
           const y = mid + Math.sin((i / N) * cycles * 2 * Math.PI - w.phase) * amp * env;
           if (i) g2.lineTo(x, y); else g2.moveTo(x, y);
         }
-        if (layer === 2) { g2.strokeStyle = `hsla(0 0% ${L}% / ${0.1 * w.amp})`; g2.lineWidth = 26 * devicePixelRatio; }
-        if (layer === 1) { g2.strokeStyle = `hsla(0 0% ${L}% / ${0.35 * w.amp})`; g2.lineWidth = 8 * devicePixelRatio; }
-        if (layer === 0) { g2.strokeStyle = `hsla(0 0% ${Math.min(98, L + 20)}% / ${0.95 * w.amp})`; g2.lineWidth = 2.5 * devicePixelRatio; }
+        if (layer === 2) { g2.strokeStyle = shade(accent, L, 0.1 * w.amp); g2.lineWidth = 26 * devicePixelRatio; }
+        if (layer === 1) { g2.strokeStyle = shade(accent, L, 0.35 * w.amp); g2.lineWidth = 8 * devicePixelRatio; }
+        /* the core stays near-white so the line reads at any pitch; the glow
+           either side of it is what carries the colour */
+        if (layer === 0) { g2.strokeStyle = shade({ ...accent, s: accent.s * 0.4 }, Math.min(98, L + 20), 0.95 * w.amp); g2.lineWidth = 2.5 * devicePixelRatio; }
         g2.lineCap = "round";
         g2.stroke();
       }
@@ -185,6 +193,7 @@ export default function SoundGame() {
   const panelsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (phase !== "results" || !panelsRef.current) return;
+    const accent = readAccent();
     panelsRef.current.querySelectorAll<HTMLElement>(".soundHalf").forEach((h) => {
       const f = Number(h.dataset.f);
       const cv = h.querySelector("canvas")!;
@@ -198,7 +207,7 @@ export default function SoundGame() {
         const y = H / 2 + Math.sin((i / 80) * cyc * 2 * Math.PI) * H * 0.36;
         if (i) c.lineTo(x, y); else c.moveTo(x, y);
       }
-      c.strokeStyle = colorOf(f);
+      c.strokeStyle = colorOf(f, accent);
       c.lineWidth = 2 * devicePixelRatio;
       c.lineCap = "round";
       c.stroke();
@@ -258,7 +267,7 @@ export default function SoundGame() {
       {phase === "reveal" && (
         <main className="stage">
           <div className="slotTag" style={{ color: "var(--muted)" }}>Listen</div>
-          <div className="slotNum" style={{ color: revealOn ? colorOf(targets[slot]) : "transparent", textShadow: "0 0 60px rgba(0,0,0,.55)" }}>
+          <div className="slotNum" style={{ color: revealOn ? colorOf(targets[slot], accent) : "transparent", textShadow: "0 0 60px rgba(0,0,0,.55)" }}>
             {slot + 1}
           </div>
         </main>
@@ -270,7 +279,7 @@ export default function SoundGame() {
             Rebuild tone {guesses.length + 1} of {SLOTS}
             {guesses.length > 0 && ` · ${guesses.reduce((s, g, i) => s + scoreOf(targets[i], g), 0).toFixed(1)} pts so far`}
           </div>
-          <div className="hz" style={{ color: colorOf(guessFreq) }}>
+          <div className="hz" style={{ color: colorOf(guessFreq, accent) }}>
             {Math.round(guessFreq)}<small>Hz</small>
           </div>
           <div className="mixer">

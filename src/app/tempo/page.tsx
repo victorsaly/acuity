@@ -8,6 +8,7 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import GameMark from "@/components/GameMark";
 import { audio, kick, snare, hat, click, uiBlip, setDrumKit, loadKitSamples, type DrumKitName } from "@/lib/audio";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
+import { readAccent, shade } from "@/lib/accent";
 import { barEmoji } from "@/lib/share";
 
 type Phase = "menu" | "play" | "results";
@@ -332,6 +333,7 @@ export default function TempoGame() {
     if (phase !== "play") return;
     const c = audio();
     const r = run.current!;
+    const accent = readAccent();
 
     const scheduler = window.setInterval(() => {
       const horizon = c.currentTime + 0.15;
@@ -484,9 +486,11 @@ export default function TempoGame() {
         return laneY * 0.92 * ppv;
       };
       const perfR = Math.max(laneDist(ppOf(W_PERFECT)), 30 * devicePixelRatio);
-      g2.fillStyle = "rgba(255,255,255,.05)";
+      /* the perfect-hit ring, in the game's colour — a white flash still means
+         you nailed one, so only the resting ring is tinted */
+      g2.fillStyle = shade(accent, 60, 0.07);
       g2.beginPath(); g2.arc(hitX, laneY, perfR, 0, Math.PI * 2); g2.fill();
-      g2.strokeStyle = "rgba(255,255,255,.75)";
+      g2.strokeStyle = shade(accent, 68, 0.8);
       g2.lineWidth = 1.5 * devicePixelRatio;
       g2.beginPath(); g2.arc(hitX, laneY, perfR, 0, Math.PI * 2); g2.stroke();
 

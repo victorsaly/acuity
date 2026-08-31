@@ -333,7 +333,50 @@ def wood():
         "bass": (lambda i: pluck_bass(), 1, 0.8, 0.0, 1),
     }
 
-KITS = {"punch": punch, "boom": boom, "club": club, "wood": wood}
+def eight():
+    """'808' — trap: long distorted sub kicks, bright snappy snares, tight hats."""
+    kicks = ["boochi/808-round-long", "boochi/808-dist-long", "boochi/808-bass-punch"]
+    def kick(i):
+        x = mix((cut(load(kicks[i]), 0.7), 0.9), (sub808(43.65, 0.85, 0.38, 2.0), 0.6), (click(0.004, 2500), 0.35))
+        return peak(sat(x, 1.9), 55, 1.0, 3)
+    def snare(i):
+        x = mix((noise_snare(210, 0.2, tone_tau=0.045, noise_tau=0.08, bpf=2200, q=0.8), 0.9),
+                (load(["tr808/SD1010", "tr808/SD2510", "tr808/SD0010"][i]), 0.5),
+                (clap(0.25, 0.008, 3, 0.06), 0.4))
+        return peak(sat(hp(x, 160), 1.8), 4500, 1.0, 3)
+    return {
+        "kick": (kick, 3, 1.0, 0.04, 0),
+        "snare": (snare, 3, 0.85, 0.24, 0),
+        "clap": (lambda i: hp(mix((clap(0.32, 0.01, 4, 0.09), 0.9), (cut(load("tr808/CP"), 0.4), 0.6)), 350), 2, 0.7, 0.3, 0),
+        "hat": (lambda i: peak(hp(mix((metal_hat(0.06, 0.015, 9000, 360), 0.9), (load("tr808/CH"), 0.4)), 7500), 11000, 1.0, 2), 3, 0.5, 0.06, 0.5),
+        "open": (lambda i: hp(mix((metal_hat(0.3, 0.1, 7000), 0.8), (load("tr808/OH25"), 0.5)), 6000), 2, 0.5, 0.13, 0.5),
+        "rim": (lambda i: snap(), 2, 0.5, 0.18, 0),
+        "perc": (lambda i: tom((160, 110)[i]), 2, 0.5, 0.2, 0),
+        "bass": (lambda i: sat(lp(sub808(43.65, 1.1, 0.42, 2.4), 700), 1.2), 1, 0.9, 0.0, 1),
+    }
+
+def lofi():
+    """'lofi' — dusty tape kit: crushed, pitched-down vintage hits, soft top end."""
+    kicks = ["boochi/vintage-kick-01", "boochi/vintage-kick-03", "tr808/BD2500"]
+    snares = ["boochi/vintage-snare-02", "boochi/vintage-snare-01", "tr808/SD7510"]
+    def kick(i):
+        x = mix((cut(load(kicks[i]), 0.45), 0.9), (sweep_kick(46, 120, 0.05, 0.42, 0.18, 1.1), 0.5))
+        return peak(sat(crush(lp(pitch(x, -1), 4500), 10, 2), 2.0), 75, 1.0, 2.5)
+    def snare(i):
+        x = mix((load(snares[i]), 0.9), (noise_snare(170, 0.2, bpf=1200), 0.4))
+        return peak(sat(crush(lp(pitch(x, -1), 6000), 10, 2), 1.8), 220, 1.1, 2)
+    return {
+        "kick": (kick, 3, 1.0, 0.07, 0),
+        "snare": (snare, 3, 0.85, 0.3, 0),
+        "clap": (lambda i: crush(lp(mix((load("boochi/vintage-clap-01"), 0.8), (snap(), 0.4)), 5500), 10, 2), 2, 0.65, 0.32, 0),
+        "hat": (lambda i: crush(lp(mix((load("boochi/hi-hat-closed-01"), 0.7), (shaker(0.1, 0.025, 4500), 0.4)), 7000), 10, 2), 3, 0.45, 0.1, 0.35),
+        "open": (lambda i: crush(lp(load("boochi/open-hat-01"), 6500), 10, 2), 2, 0.45, 0.16, 0.35),
+        "rim": (lambda i: crush(lp(load("tr808/RS"), 5000), 10), 2, 0.5, 0.2, 0),
+        "perc": (lambda i: crush(lp(mix((conga((190, 240)[i]), 0.7), (load(["tr808/LC00", "tr808/MC00"][i]), 0.5)), 5000), 10), 2, 0.5, 0.24, 0),
+        "bass": (lambda i: lp(sat(sub808(43.65, 0.8, 0.26, 1.6), 1.2), 500), 1, 0.85, 0.0, 1),
+    }
+
+KITS = {"punch": punch, "boom": boom, "club": club, "wood": wood, "808": eight, "lofi": lofi}
 
 # ───────────────────────── render ─────────────────────────
 

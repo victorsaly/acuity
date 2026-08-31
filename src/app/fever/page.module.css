@@ -27,7 +27,8 @@
   aspect-ratio: 1.55;
   margin: 0 auto 22px;
   border: 8px solid var(--bone);
-  background: var(--fever-red);
+  /* the accent, not --fever-red: that red still means a missed beat in .tally */
+  background: var(--accent);
   box-shadow: 14px 14px 0 var(--fever-cyan);
 }
 

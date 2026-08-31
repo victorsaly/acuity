@@ -30,6 +30,15 @@ const SOUNDS = {
   "fx-sweep":   ["reverse cymbal swell rising, one second, no music", 1.1],
   "fx-scratch": ["DJ vinyl scratch, single short wicka scratch, dry, no music", 0.8],
   "fx-air":     ["airy shimmering atmospheric texture swell, soft, two seconds, no melody", 2],
+  /* expansion pack (2026-08-31): per-genre vox + club FX for the pads */
+  "vox-woo":    ["male rap hype ad-lib shouting woo, single short energetic shout, dry, no music", 0.8],
+  "vox-aah":    ["gospel choir aah vocal stack, one short warm chord, soulful, dry, no music", 1.4],
+  "vox-diva":   ["female house diva vocal chop singing yeah, single short powerful note, dry, no music", 1.2],
+  "vox-huh":    ["male rap ad-lib grunt huh, single very short, dry, no music", 0.7],
+  "vox-mmm":    ["soulful female vocal hum mmm, single short warm note, dry, no music", 1.2],
+  "vox-hoo":    ["crowd shouting hoo in unison, single short shout, energetic, dry, no music", 1],
+  "fx-horn":    ["dancehall air horn blast, single short blast, dry, no music", 1.2],
+  "fx-rewind":  ["vinyl record rewind spinback scratch effect, one second, dry, no music", 1.2],
 };
 
 const args = process.argv.slice(2);

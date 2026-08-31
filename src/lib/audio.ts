@@ -343,7 +343,7 @@ export function toneActive(): boolean {
 
 /* ---------------- drum kits (tempo game) ---------------- */
 
-export type DrumKitName = "punch" | "boom" | "club" | "wood";
+export type DrumKitName = "punch" | "boom" | "club" | "wood" | "808" | "lofi";
 export type DrumVoice = "kick" | "snare" | "clap" | "hat" | "open" | "rim" | "perc" | "bass";
 
 const KITS: Record<DrumKitName, {
@@ -355,6 +355,8 @@ const KITS: Record<DrumKitName, {
   boom:  { kickStart: 115, kickEnd: 36, kickDecay: 0.48, snareFreq: 1750, snareBody: 175, hatHp: 7000, hatVol: 0.19 },
   club:  { kickStart: 210, kickEnd: 52, kickDecay: 0.17, snareFreq: 2900, snareBody: 250, clap: true, hatHp: 9600, hatVol: 0.3 },
   wood:  { kickStart: 95,  kickEnd: 68, kickDecay: 0.12, snareFreq: 3400, snareBody: 420, hatHp: 6200, hatVol: 0.15, shaker: true },
+  "808": { kickStart: 130, kickEnd: 34, kickDecay: 0.6,  snareFreq: 2500, snareBody: 220, hatHp: 9000, hatVol: 0.26 },
+  lofi:  { kickStart: 100, kickEnd: 40, kickDecay: 0.34, snareFreq: 1500, snareBody: 160, hatHp: 5600, hatVol: 0.16 },
 };
 
 let kitName: DrumKitName = "punch";
@@ -859,6 +861,8 @@ export function outputStream(): MediaStream {
 export const LAB_SOUNDS = [
   "vox-hey", "vox-oh", "vox-yeah", "vox-uh", "vox-la", "vox-chant",
   "fx-riser", "fx-drop", "fx-vinyl", "fx-sweep", "fx-scratch", "fx-air",
+  "vox-woo", "vox-aah", "vox-diva", "vox-huh", "vox-mmm", "vox-hoo",
+  "fx-horn", "fx-rewind",
 ] as const;
 export type LabSound = (typeof LAB_SOUNDS)[number];
 

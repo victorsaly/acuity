@@ -95,6 +95,10 @@ const CHOPS: Record<string, { label: string; events: ChopEvent[] }> = {
   chant:   { label: "Chant", events: [{ b: -1, s: 12, snd: "vox-chant", v: 0.45 }] },
   heys:    { label: "Hey!", events: [{ b: -1, s: 4, snd: "vox-hey", v: 0.38 }, { b: -1, s: 12, snd: "vox-hey", v: 0.3 }] },
   build:   { label: "Build", events: [{ b: 3, s: 8, snd: "fx-riser", v: 0.5 }, { b: 3, s: 15, snd: "fx-sweep", v: 0.35 }, { b: 0, s: 0, snd: "fx-drop", v: 0.55 }] },
+  hype:    { label: "Hype", events: [{ b: 0, s: 4, snd: "vox-woo", v: 0.5 }, { b: 1, s: 12, snd: "vox-huh", v: 0.45 }, { b: 2, s: 4, snd: "vox-woo", v: 0.4, rate: 1.06 }, { b: 3, s: 14, snd: "vox-hey", v: 0.45 }] },
+  gospel:  { label: "Gospel", events: [{ b: 0, s: 0, snd: "vox-aah", v: 0.5 }, { b: 2, s: 0, snd: "vox-mmm", v: 0.45 }, { b: 3, s: 8, snd: "vox-aah", v: 0.4, rate: 1.12 }] },
+  bigroom: { label: "Big Room", events: [{ b: 0, s: 0, snd: "vox-diva", v: 0.5 }, { b: 1, s: 8, snd: "vox-hoo", v: 0.45 }, { b: 3, s: 0, snd: "fx-horn", v: 0.4 }, { b: 3, s: 12, snd: "vox-hoo", v: 0.4 }] },
+  rewind:  { label: "Rewind", events: [{ b: 3, s: 10, snd: "fx-rewind", v: 0.5 }, { b: 0, s: 0, snd: "vox-hey", v: 0.35 }] },
 };
 
 /* textures: quiet glue — synth percussion or lab atmospheres */
@@ -124,7 +128,7 @@ const DRUMS: Record<string, DrumPat> = {
 /* every preset works in every genre — pools just put the genre's own first */
 const poolAll = (own: readonly string[], dict: Record<string, unknown>) =>
   [...own, ...Object.keys(dict).filter((k) => !own.includes(k))];
-const ALL_KITS: DrumKitName[] = ["punch", "boom", "club", "wood"];
+const ALL_KITS: DrumKitName[] = ["punch", "boom", "club", "wood", "808", "lofi"];
 
 const GENRES: Record<Genre, {
   label: string; accent: string; bpm: [number, number, number]; swing: number;
@@ -134,18 +138,18 @@ const GENRES: Record<Genre, {
 }> = {
   rap: {
     label: "Rap / Hip-Hop", accent: "#ffb02e", bpm: [70, 100, 88], swing: 22,
-    kits: ["boom", "punch", "wood"], backVoice: "snare", auxVoice: "rim", auxLabel: "Rim",
+    kits: ["boom", "808", "punch", "wood"], backVoice: "snare", auxVoice: "rim", auxLabel: "Rim",
     drums: ["boombap", "knock", "trap"], bass: ["hold", "boombap", "bounce"],
     progs: ["menace", "cypher", "soulflip"], styles: ["push", "pads", "roll"], voice: "piano",
-    melVoice: "pluck", mels: ["off", "hook", "lazy"], chops: ["off", "adlibs", "scratch", "build"],
+    melVoice: "pluck", mels: ["off", "hook", "lazy"], chops: ["off", "adlibs", "hype", "scratch", "build"],
     tex: ["off", "vinyl", "ride", "talk"],
   },
   rnb: {
     label: "R&B", accent: "#c48bff", bpm: [60, 95, 74], swing: 30,
-    kits: ["wood", "boom", "punch"], backVoice: "clap", auxVoice: "perc", auxLabel: "Perc",
+    kits: ["wood", "lofi", "boom", "punch"], backVoice: "clap", auxVoice: "perc", auxLabel: "Perc",
     drums: ["slowburn", "twostep"], bass: ["hold", "slowjam", "bounce"],
     progs: ["silk", "latenight", "heartbreak"], styles: ["roll", "pads", "push"], voice: "steel",
-    melVoice: "steel", mels: ["off", "lazy", "hook"], chops: ["off", "oohs", "laruns", "build"],
+    melVoice: "steel", mels: ["off", "lazy", "hook"], chops: ["off", "oohs", "gospel", "laruns", "build"],
     tex: ["off", "air", "shaker", "ride"],
   },
   house: {
@@ -153,7 +157,7 @@ const GENRES: Record<Genre, {
     kits: ["club", "punch"], backVoice: "clap", auxVoice: "open", auxLabel: "Open Hat",
     drums: ["four", "garage", "skippy"], bass: ["offbeat", "rolling", "hold"],
     progs: ["pianohouse", "warehouse", "euphoria"], styles: ["stabs", "pads"], voice: "piano",
-    melVoice: "pluck", mels: ["off", "arp", "sparkle"], chops: ["off", "chant", "heys", "build"],
+    melVoice: "pluck", mels: ["off", "arp", "sparkle"], chops: ["off", "chant", "bigroom", "heys", "rewind", "build"],
     tex: ["off", "shaker", "air"],
   },
 };
@@ -164,7 +168,8 @@ type Cfg = {
   bassPat: string; bassSteps: [number, number][]; /* [bar step 0-15, semis above chord root] */
   prog: string; style: string; voice: LeadVoice;
   mel: string; melNotes: [number, number][]; /* [absolute step 0-63, pentatonic row 0-9] */
-  melVoice: LeadVoice; chop: string; tex: string;
+  melVoice: LeadVoice; chop: string; chopEvents: [number, LabSound][]; /* [absolute step 0-63, sound] */
+  tex: string;
   voiceOn: boolean; voiceFx: VoiceFx;
   mix: { drums: number; bass: number; chords: number; mel: number; fx: number; voice: number };
 };
@@ -194,7 +199,8 @@ const defaults = (genre: Genre, keepKey = 0): Cfg => {
     drums: G.drums[0], grid: gridOf(G.drums[0]),
     bassPat: G.bass[0], bassSteps: bassStepsOf(G.bass[0]),
     prog: G.progs[0], style: G.styles[0], voice: G.voice,
-    mel: G.mels[1], melNotes: melNotesOf(G.mels[1]), melVoice: G.melVoice, chop: "off", tex: G.tex[1],
+    mel: G.mels[1], melNotes: melNotesOf(G.mels[1]), melVoice: G.melVoice,
+    chop: "off", chopEvents: [], tex: G.tex[1],
     voiceOn: false, voiceFx: "dry",
     mix: { drums: 100, bass: 100, chords: 100, mel: 100, fx: 100, voice: 105 },
   };
@@ -228,6 +234,8 @@ const TIPS: Record<string, Record<string, string>> = {
     boom: "Dusty, low-slung boom-bap kit.",
     club: "Clean electronic club kit.",
     wood: "Warm, woody hand percussion.",
+    "808": "Trap kit — long distorted sub kicks, snappy snares, tight hats.",
+    lofi: "Dusty tape kit — crushed, warm, pitched down.",
   },
   bass: {
     hold: "One long sub note per bar — maximum weight, zero clutter.",
@@ -279,6 +287,11 @@ const TIPS: Record<string, Record<string, string>> = {
     chant: "A crowd chant landing every bar.",
     heys: "Hey! stabs on the offbeats, every bar.",
     build: "A riser and sweep into a sub drop.",
+    hype: "Woo / huh / hey — a hype-man ad-lib pack.",
+    gospel: "Choir aahs and warm hums on the turnarounds.",
+    bigroom: "Diva yeahs, crowd hoos and an air horn.",
+    rewind: "A vinyl spinback pulling the loop around.",
+    custom: "Your recorded pad performance — play it on the pads below.",
   },
   tex: {
     off: "No texture layer.",
@@ -423,7 +436,12 @@ const previewMel = pv((id) => {
   }
 });
 const previewChop = pv((id) => {
-  const ev = CHOPS[id].events[0];
+  if (id === "custom") {
+    const first = cur().chopEvents[0];
+    if (first) labPlay(first[1], audio().currentTime + 0.02, 0.5);
+    return;
+  }
+  const ev = CHOPS[id]?.events[0];
   if (ev) labPlay(ev.snd, audio().currentTime + 0.02, ev.v, ev.rate ?? 1);
 });
 const previewTex = pv((id) => {
@@ -439,6 +457,21 @@ const previewTex = pv((id) => {
     }
   }
 });
+
+/* performance pads: 16 sounds, MPC-style key rows.  The last pad is your
+ * Booth take when one exists, else the sub drop. */
+type PadDef = { snd: LabSound | "voice"; label: string; key: string };
+const PADS: PadDef[] = [
+  { snd: "vox-hey", label: "Hey", key: "1" }, { snd: "vox-oh", label: "Ooh", key: "2" },
+  { snd: "vox-yeah", label: "Yeah", key: "3" }, { snd: "vox-uh", label: "Uh", key: "4" },
+  { snd: "vox-la", label: "La", key: "q" }, { snd: "vox-chant", label: "Chant", key: "w" },
+  { snd: "vox-woo", label: "Woo", key: "e" }, { snd: "vox-aah", label: "Aah", key: "r" },
+  { snd: "vox-diva", label: "Diva", key: "a" }, { snd: "vox-huh", label: "Huh", key: "s" },
+  { snd: "vox-mmm", label: "Mmm", key: "d" }, { snd: "vox-hoo", label: "Hoo", key: "f" },
+  { snd: "fx-scratch", label: "Scratch", key: "z" }, { snd: "fx-horn", label: "Horn", key: "x" },
+  { snd: "fx-rewind", label: "Rewind", key: "c" }, { snd: "voice", label: "You", key: "v" },
+];
+const PAD_KEY_INDEX: Record<string, number> = Object.fromEntries(PADS.map((pd, i) => [pd.key, i]));
 
 /* Note grids are memoized and get NO playhead prop — re-rendering ~700 buttons
  * every 16th note costs real frames.  The playhead is painted imperatively:
@@ -551,6 +584,10 @@ export default function BeatLab() {
   const [boothErr, setBoothErr] = useState("");
   const boothJob = useRef<{ cancel: () => void } | null>(null);
   const recVoiceRef = useRef<() => void>(() => {});
+  const [padRec, setPadRec] = useState(false);
+  const padRecRef = useRef(false);
+  const padGridRef = useRef<HTMLDivElement>(null);
+  const padKeyRef = useRef<(i: number) => void>(() => {});
   const [uiStep, setUiStep] = useState(-1);
   const cfgRef = useRef(cfg);
   const playingRef = useRef(false);
@@ -654,8 +691,14 @@ export default function BeatLab() {
     }
 
     /* vocal chops & FX */
-    for (const ev of CHOPS[C.chop].events) {
-      if ((ev.b === -1 || ev.b === bar) && ev.s === s) labPlay(ev.snd, t, ev.v * fxv, ev.rate ?? 1);
+    if (C.chop === "custom") {
+      for (const [cs, snd] of C.chopEvents) {
+        if (cs === i) labPlay(snd, t, 0.5 * fxv);
+      }
+    } else {
+      for (const ev of CHOPS[C.chop].events) {
+        if ((ev.b === -1 || ev.b === bar) && ev.s === s) labPlay(ev.snd, t, ev.v * fxv, ev.rate ?? 1);
+      }
     }
 
     /* your voice — the booth take loops from bar 1, following tempo & platter */
@@ -769,6 +812,53 @@ export default function BeatLab() {
     swap(melGridRef.current, prev, i);
     swap(bassGridRef.current, prev >= 0 ? prev & 15 : -1, i >= 0 ? i & 15 : -1);
     lastHead.current = i;
+  };
+
+  /* ---------------- pads: finger-drum the pack, record taps into the loop ---------------- */
+
+  const flashPad = (i: number) => {
+    const el = padGridRef.current?.children[i] as HTMLElement | undefined;
+    if (!el) return;
+    el.classList.add(styles.padHit);
+    window.setTimeout(() => el.classList.remove(styles.padHit), 130);
+  };
+
+  const padHit = useCallback((i: number) => {
+    const pd = PADS[i];
+    if (!pd) return;
+    void unlockAudio();
+    const c = audio();
+    const C = cfgRef.current;
+    const snd: LabSound | "voice" = pd.snd === "voice" && !voiceReady() ? "fx-drop" : pd.snd;
+    if (snd === "voice") voicePlay(c.currentTime, 0.9 * (C.mix.voice / 100), C.voiceFx, C.bpm);
+    else labPlay(snd, c.currentTime, 0.55);
+    flashPad(i);
+    /* armed + playing: quantize the tap to the nearest step and keep it */
+    if (padRecRef.current && playingRef.current && snd !== "voice") {
+      const stepDur = 60 / C.bpm / 4;
+      const frac = (sched.current.nextT - c.currentTime) / stepDur;
+      const step = ((Math.round(sched.current.step - frac) % 64) + 64) % 64;
+      setCfg((cc) => cc.chopEvents.some(([s2, n2]) => s2 === step && n2 === snd)
+        ? { ...cc, chop: "custom" }
+        : { ...cc, chop: "custom", chopEvents: [...cc.chopEvents, [step, snd]] });
+    }
+  }, []);
+
+  useEffect(() => { padKeyRef.current = padHit; });
+
+  const togglePadRec = () => {
+    const on = !padRecRef.current;
+    padRecRef.current = on;
+    setPadRec(on);
+    if (on && !playingRef.current) startLoop();
+    uiBlip(on ? 784 : 392, 0.05);
+  };
+
+  const clearPadRec = () => {
+    padRecRef.current = false;
+    setPadRec(false);
+    setCfg((cc) => ({ ...cc, chop: "off", chopEvents: [] }));
+    uiBlip(330, 0.04);
   };
 
   const startLoop = () => {
@@ -1047,9 +1137,16 @@ export default function BeatLab() {
         e.preventDefault();
         if (playingRef.current) stopLoop(); else startLoop();
       }
-      if ((e.key === "r" || e.key === "R") && idle && !e.repeat && !e.metaKey && !e.ctrlKey) {
+      if ((e.key === "b" || e.key === "B") && idle && !e.repeat && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         recVoiceRef.current();
+      }
+      /* pads: also fire when a button holds focus — letters can't activate it */
+      const padOk = idle || document.activeElement?.tagName === "BUTTON";
+      const pi = PAD_KEY_INDEX[e.key.toLowerCase()];
+      if (pi !== undefined && padOk && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault(); /* also keeps F from toggling fullscreen */
+        padKeyRef.current(pi);
       }
       if (e.key === "Escape" && playingRef.current && !document.fullscreenElement) {
         e.preventDefault();
@@ -1077,6 +1174,10 @@ export default function BeatLab() {
   const melChips = [
     ...poolAll(G.mels, MELS).map((id) => ({ id, label: MELS[id].label })),
     ...(cfg.mel === "custom" ? [{ id: "custom", label: "Custom" }] : []),
+  ];
+  const chopChips = [
+    ...poolAll(G.chops, CHOPS).map((id) => ({ id, label: CHOPS[id].label })),
+    ...(cfg.chopEvents.length ? [{ id: "custom", label: "Custom" }] : []),
   ];
 
 
@@ -1206,8 +1307,7 @@ export default function BeatLab() {
               left to right runs through bars 1–4. Presets load in as starting points; tap a cell to hear it.
             </p>
             <MelodyGrid notes={cfg.melNotes} keySemi={cfg.key} onToggle={toggleMel} gridRef={melGridRef} />
-            <Chips label="Chops" items={poolAll(G.chops, CHOPS).map((id) => ({ id, label: CHOPS[id].label }))}
-              active={cfg.chop} onPick={(id) => set({ chop: id })}
+            <Chips label="Chops" items={chopChips} active={cfg.chop} onPick={(id) => set({ chop: id })}
               tips={TIPS.chop} onPreview={previewChop} onInfo={announce} />
             <Chips label="Texture" items={poolAll(G.tex, TEX).map((id) => ({ id, label: TEX[id].label }))}
               active={cfg.tex} onPick={(id) => set({ tex: id })}
@@ -1257,6 +1357,45 @@ export default function BeatLab() {
               Record your own hook or ad-libs over the beat. The take starts on the next
               bar 1, runs 4 bars, then loops with the track — following tempo and the
               platter like everything else. Headphones keep the beat out of the mic.
+            </p>
+          </section>
+        </StaticBlock>
+
+        <StaticBlock>
+          <section className={styles.panel}>
+            <h2 className={styles.panelTitle}>Pads</h2>
+            <div className={styles.padGrid} ref={padGridRef}>
+              {PADS.map((pd, i) => {
+                const label = pd.snd === "voice" && booth !== "ready" ? "Drop" : pd.label;
+                return (
+                  <button key={pd.key} className={styles.pad} data-silent=""
+                    onPointerDown={() => padHit(i)}
+                    onPointerEnter={(e) => { if (e.pointerType !== "touch") announce(`${label} — pad · key ${pd.key.toUpperCase()}`); }}
+                    onPointerLeave={() => announce(null)}>
+                    <b>{label}</b>
+                    <span>{pd.key.toUpperCase()}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>Rec</span>
+              <div className={styles.chips}>
+                <button className={`mode ${padRec ? styles.recLive : ""}`} aria-pressed={padRec}
+                  data-note={659} onClick={togglePadRec}>
+                  {padRec ? "● Recording — tap along" : "● Record pads"}
+                </button>
+                {cfg.chopEvents.length > 0 && (
+                  <button className="mode" data-note={330} onClick={clearPadRec}>
+                    Clear ({cfg.chopEvents.length})
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className={styles.deckHint}>
+              Finger-drum the pack — tap the pads or play the keys. Hit Record and your taps
+              snap to the grid and loop with the track as a Custom chop pattern. The last pad
+              is your Booth take once you&apos;ve recorded one.
             </p>
           </section>
         </StaticBlock>
@@ -1329,7 +1468,8 @@ export default function BeatLab() {
           <div className="kbd">
             <span><b>Space</b>play / stop</span>
             <span><b>Esc</b>stop</span>
-            <span><b>R</b>record voice</span>
+            <span><b>B</b>record voice</span>
+            <span><b>1-4 QWER ASDF ZXCV</b>pads</span>
             <span><b>F</b>fullscreen</span>
           </div>
         </StaticBlock>

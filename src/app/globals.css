@@ -1204,3 +1204,34 @@ input[type="range"]::-moz-range-thumb {
 @media (max-width: 640px) {
   .gameMark { width: min(200px, 62vw); margin-bottom: 14px; }
 }
+
+/* ---------- the games' own visuals, in their colour ---------- */
+/* What each game lights up to say "this one" is the accent. What it lights up
+   to say "you got that wrong" stays the pink it has always been — that is
+   meaning, and it must not read as branding. */
+
+/* Echo: the tile the board is showing you, and the clock running out. */
+.gameRoot .memLogo span.on { background: var(--accent); }
+.gameRoot .memBar div { background: var(--accent); }
+.gameRoot .tile.lit {
+  background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.gameRoot .tile.hit {
+  background: color-mix(in srgb, var(--accent) 88%, transparent);
+  border-color: var(--accent);
+}
+.gameRoot .tile.reveal {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Refrain: the key the phrase is playing, and the key you got right. */
+.gameRoot .pianoLogo { color: var(--accent); }
+.gameRoot .pKey.lit, .gameRoot .pKey.hit {
+  background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.gameRoot .pKey.black.lit, .gameRoot .pKey.black.hit { background: var(--accent); }
+.gameRoot .pKey.reveal.black { box-shadow: inset 0 0 0 3px var(--accent), 0 0 22px color-mix(in srgb, var(--accent) 30%, transparent); }
+.gameRoot .pKey.reveal.white { box-shadow: inset 0 0 0 3px #0c0d12, 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent); }

@@ -14,7 +14,7 @@
   background:
     repeating-radial-gradient(circle, transparent 0 13%, rgba(239, 240, 244, 0.055) 13.4% 13.8%, transparent 14.2% 20%),
     radial-gradient(circle, rgba(239, 240, 244, 0.08), transparent 62%);
-  box-shadow: 0 0 90px rgba(75, 225, 255, 0.08);
+  box-shadow: 0 0 90px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .dial::before {
@@ -22,7 +22,7 @@
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: conic-gradient(var(--bone) calc(var(--progress) * 1turn), transparent 0);
+  background: conic-gradient(var(--accent) calc(var(--progress) * 1turn), transparent 0);
   mask: radial-gradient(circle, transparent calc(50% - 2px), #000 calc(50% - 1px));
   opacity: 0.9;
 }
@@ -35,8 +35,8 @@
   top: -4px;
   left: calc(50% - 4px);
   border-radius: 50%;
-  background: var(--bone);
-  box-shadow: 0 0 22px rgba(239, 240, 244, 0.9);
+  background: var(--accent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 90%, transparent);
   transform-origin: 4px calc(min(52vmin, 390px) / 2 + 4px);
   transform: rotate(calc(var(--progress) * 1turn));
 }
