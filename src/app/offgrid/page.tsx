@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import { Item, Pop, Stagger } from "@/components/Fx";
-import { audio, buzz, clap, hat, kick, uiBlip } from "@/lib/audio";
+import { audio, buzz, clap, hat, heardNow, kick, uiBlip } from "@/lib/audio";
 import { getBest, recordPlay, runRng, scoreKey, setBest, usePref } from "@/lib/store";
 import styles from "./page.module.css";
 
 type Phase = "menu" | "listen" | "pick" | "feedback" | "results";
+/** Something to do at a point on the audio clock. */
+type Cue = { at: number; run: () => void };
 type Result = { culprit: number; picked: number | null; offset: number; score: number };
 
 const ROUNDS = 5;
@@ -42,34 +44,56 @@ export default function OffGridGame() {
   const [current, setCurrent] = useState<Result | null>(null);
   const [record, setRecord] = useState(false);
   const [runStamp, setRunStamp] = useState(0);
-  const timers = useRef<number[]>([]);
+  const cues = useRef<Cue[]>([]);
+  const frame = useRef(0);
   const rng = useRef(runRng());
   const culprit = useRef(1);
   const offset = useRef(0);
   const settled = useRef(false);
 
   const clear = () => {
-    timers.current.forEach(window.clearTimeout);
-    timers.current = [];
+    if (frame.current) cancelAnimationFrame(frame.current);
+    frame.current = 0;
+    cues.current = [];
+  };
+
+  /**
+   * Everything visible happens on the audio clock. This game asks you to spot a
+   * hit that is 14ms late at the top difficulty, and the replay is supposed to
+   * flash the culprit at its true late moment — a setTimeout light, which
+   * drifts 5-20ms on its own, cannot show a 14ms nudge honestly.
+   */
+  const pump = () => {
+    const t = heardNow();
+    while (cues.current.length && t >= cues.current[0].at) cues.current.shift()!.run();
+    frame.current = cues.current.length ? requestAnimationFrame(pump) : 0;
+  };
+
+  const schedule = (list: Cue[]) => {
+    cues.current = [...cues.current, ...list].sort((a, b) => a.at - b.at);
+    if (!frame.current) frame.current = requestAnimationFrame(pump);
   };
 
   useEffect(() => clear, []);
 
   const stepSeconds = () => 60 / CONFIG[diff].bpm / 2; // eighth notes
 
-  /** Schedule one pass of the loop: audio on the WebAudio clock, lights via timeouts. */
-  const schedulePass = (audioAt: number, visualAt: number, nudged: boolean, reveal: boolean) => {
+  /** One pass of the loop. Audio is scheduled now; the lights come back as cues
+   *  on the same clock, so a lamp and the hit it belongs to cannot drift apart. */
+  const schedulePass = (audioAt: number, nudged: boolean, reveal: boolean): Cue[] => {
     const stepSec = stepSeconds();
+    const lights: Cue[] = [];
     for (let step = 0; step < STEPS; step++) {
       const late = nudged && step === culprit.current ? offset.current / 1000 : 0;
       const when = audioAt + step * stepSec + late;
       if (step === 0) kick(when, 0.9);
       if (step === 4) clap(when, 0.5);
       hat(when, false, step === 0 ? 0.42 : 0.3);
-      const lightAt = visualAt + step * stepSec * 1000 + (reveal ? late * 1000 : 0);
-      const timer = window.setTimeout(() => setActiveStep(step), Math.max(0, lightAt - performance.now()));
-      timers.current.push(timer);
+      /* Listening passes light the grid, not the nudge — a lamp sliding late
+         would hand you the answer. The reveal lights the true late moment. */
+      lights.push({ at: reveal ? when : audioAt + step * stepSec, run: () => setActiveStep(step) });
     }
+    return lights;
   };
 
   const beginRound = (roundIndex: number) => {
@@ -92,24 +116,18 @@ export default function OffGridGame() {
 
     const context = audio();
     const audioStart = context.currentTime + 0.65;
-    const visualStart = performance.now() + 650;
+    const passSec = passMs / 1000;
+    const queue: Cue[] = [];
     for (let p = 0; p < PASSES; p++) {
-      schedulePass(audioStart + (p * passMs) / 1000, visualStart + p * passMs, true, false);
-      const passTimer = window.setTimeout(
-        () => setPass(p),
-        Math.max(0, visualStart + p * passMs - performance.now()),
-      );
-      timers.current.push(passTimer);
+      const at = audioStart + p * passSec;
+      queue.push(...schedulePass(at, true, false), { at, run: () => setPass(p) });
     }
-    const pickTimer = window.setTimeout(() => {
-      setActiveStep(-1);
-      setPhase("pick");
-    }, Math.max(0, visualStart + PASSES * passMs + 120 - performance.now()));
-    const missTimer = window.setTimeout(
-      () => judge(null),
-      Math.max(0, visualStart + PASSES * passMs + 120 + PICK_MS - performance.now()),
+    const pickAt = audioStart + PASSES * passSec + 0.12;
+    queue.push(
+      { at: pickAt, run: () => { setActiveStep(-1); setPhase("pick"); } },
+      { at: pickAt + PICK_MS / 1000, run: () => judge(null) },
     );
-    timers.current.push(pickTimer, missTimer);
+    schedule(queue);
   };
 
   const judge = (picked: number | null) => {
@@ -126,17 +144,12 @@ export default function OffGridGame() {
     setActiveStep(-1);
     setPhase("feedback");
     // teach the ear: replay one pass with the culprit flashing at its true, late moment
-    const replayTimer = window.setTimeout(() => {
-      setRevealing(true);
-      const context = audio();
-      schedulePass(context.currentTime + 0.05, performance.now() + 50, true, true);
-      const doneTimer = window.setTimeout(
-        () => { setRevealing(false); setActiveStep(-1); },
-        STEPS * stepSeconds() * 1000 + 400,
-      );
-      timers.current.push(doneTimer);
-    }, 700);
-    timers.current.push(replayTimer);
+    const replayAt = audio().currentTime + 0.75;
+    schedule([
+      { at: replayAt - 0.05, run: () => setRevealing(true) },
+      ...schedulePass(replayAt, true, true),
+      { at: replayAt + STEPS * stepSeconds() + 0.4, run: () => { setRevealing(false); setActiveStep(-1); } },
+    ]);
   };
 
   const start = () => {

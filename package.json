@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "samples": "node scripts/gen-samples.mjs",
-    "samples:lab": "node scripts/gen-lab.mjs"
+    "samples:lab": "node scripts/gen-lab.mjs",
+    "test:audio": "node scripts/audio-invariants.mjs"
   },
   "dependencies": {
     "motion": "^13.1.1",
@@ -22,6 +23,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
+    "playwright-core": "^1.62.1",
     "typescript": "^5"
   }
 }

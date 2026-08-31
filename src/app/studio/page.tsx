@@ -185,20 +185,267 @@ const defaults = (genre: Genre, keepKey = 0): Cfg => {
 const LS_KEY = "dialed-lab-v1";
 const LOOP_STEPS = 64;
 
-/* small chip-row helper */
-function Chips({ label, items, active, onPick }: {
+/* one-line explanations, shown in the info bar on rollover/focus */
+const TIPS: Record<string, Record<string, string>> = {
+  genre: {
+    rap: "Head-nod hip-hop — swung boom-bap drums around 88 BPM.",
+    rnb: "Slow-burn R&B — claps, lush minor-9 chords, a 74 BPM glide.",
+    house: "Four-on-the-floor club energy at 124 BPM — piano stabs and chants.",
+  },
+  key: Object.fromEntries(KEYS.map((k) => [String(k.semi),
+    `Re-tunes every tonal layer to ${k.label} minor — nothing can play out of key.`])),
+  drums: {
+    boombap: "Kick on the one, a lazy answer kick — the classic head-nod skeleton.",
+    knock: "Busy doubled kicks and extra hats — hits harder.",
+    slowburn: "Half-time: one snare on beat 3, huge space between hits.",
+    twostep: "Skipping kicks that dodge the grid — light on its feet.",
+    four: "A kick on every beat with offbeat hats — the house heartbeat.",
+    garage: "Shuffled 2-step garage bounce.",
+    trap: "Machine-gun 16th hats, sparse kicks, one late snare.",
+    skippy: "Broken, syncopated kicks that skip and stumble.",
+    custom: "Your own pattern — tap cells in the grid below to edit it.",
+  },
+  kit: {
+    punch: "Tight, punchy modern kit.",
+    boom: "Dusty, low-slung boom-bap kit.",
+    club: "Clean electronic club kit.",
+    wood: "Warm, woody hand percussion.",
+  },
+  bass: {
+    hold: "One long sub note per bar — maximum weight, zero clutter.",
+    boombap: "Root-note thumps answering the kick.",
+    bounce: "Octave-hopping bounce under the beat.",
+    slowjam: "Late, lazy notes that slide in under the chords.",
+    offbeat: "Offbeat octave stabs — instant house energy.",
+    rolling: "An eighth-note roller that never stops moving.",
+  },
+  prog: {
+    menace: "i–VI–III–VII — dark and cinematic.",
+    cypher: "i–iv–i–v — a heads-down loop you can rap on for days.",
+    soulflip: "Soul-sample colours built on minor 9ths.",
+    silk: "A smooth minor-9 turnaround.",
+    latenight: "Moody after-hours changes.",
+    heartbreak: "Starts away from home, lands on the saddest chord.",
+    pianohouse: "The classic rave piano changes.",
+    warehouse: "One chord, all night long.",
+    euphoria: "A hands-in-the-air lift and release.",
+  },
+  style: {
+    pads: "Chords held for the whole bar — a soft bed.",
+    push: "Two pushes per bar — gives the chords a pulse.",
+    roll: "Notes rolled one after another, like a harp.",
+    stabs: "Short offbeat jabs — pure club.",
+  },
+  voice: {
+    piano: "Bright acoustic piano.", rhodes: "Soft, rounded electric piano.",
+    organ: "Breathing drawbar organ.", sax: "Breathy sax with slow vibrato.",
+    guitar: "Plucked nylon guitar.", bell: "Glassy, ringing bell.",
+    steel: "Sunny steel pan.", pluck: "Snappy synth pluck.",
+    saw: "Fat, buzzy saw synth.", brass: "Stabby synth brass.",
+  },
+  mel: {
+    off: "No melody layer.",
+    hook: "A singable four-bar topline.",
+    lazy: "A few long notes with lots of space.",
+    sparkle: "High, glittery accents on the offbeats.",
+    arp: "A rolling arpeggio that never rests.",
+  },
+  chop: {
+    off: "No vocal chops.",
+    adlibs: "Uh / yeah / hey scattered through the bars.",
+    scratch: "A DJ scratch with a grunt behind it.",
+    oohs: "Soulful ooh chops on the downbeats.",
+    laruns: "R&B la-la runs floating over the top.",
+    chant: "A crowd chant landing every bar.",
+    heys: "Hey! stabs on the offbeats, every bar.",
+    build: "A riser and sweep into a sub drop.",
+  },
+  tex: {
+    off: "No texture layer.",
+    ride: "Quiet rim ticks riding behind the kit.",
+    shaker: "A steady 16th-note shaker.",
+    talk: "Percussion that answers the beat.",
+    vinyl: "Vinyl crackle under everything.",
+    air: "Airy pad swells breathing through the bars.",
+  },
+  boothVoice: {
+    on: "Your take plays in the loop, in time with the beat.",
+    off: "Your take stays muted — the beat plays without it.",
+  },
+  tone: {
+    dry: "No effect — your voice exactly as recorded.",
+    radio: "A small-speaker telephone squeeze.",
+    echo: "A beat-synced echo trailing your voice.",
+  },
+};
+
+/* ---------------- rollover previews (module scope — the studio page is a singleton) ----------------
+ * Hovering an option explains it in the info bar and, while the loop is
+ * stopped, plays the actual sound it will make.  While the loop runs, a soft
+ * blip keeps rollover feedback without fighting the groove — clicking swaps
+ * the option straight into the live loop, which IS the audition. */
+
+const live: { cfg: Cfg | null; playing: boolean } = { cfg: null, playing: false };
+let infoEl: HTMLParagraphElement | null = null;
+let pvClock = 0;
+
+const announce = (text: string | null) => {
+  if (!infoEl) return;
+  infoEl.textContent = text ?? "";
+  infoEl.dataset.on = text ? "1" : "0";
+};
+
+const cur = (): Cfg => live.cfg ?? defaults("rap");
+
+const pv = (fn: (id: string) => void) => (id: string) => {
+  if (live.playing) { uiBlip(660, 0.045); return; }
+  void unlockAudio();
+  const t = audio().currentTime;
+  if (t - pvClock < 0.15) return;
+  pvClock = t;
+  fn(id);
+};
+
+/* half a bar of a drum pattern, with the right back/aux voices */
+const drumSnippet = (patId: string, GG: (typeof GENRES)[Genre], bpm: number) => {
+  const rows = DRUMS[patId]?.rows;
+  if (!rows) return;
+  const dur = 60 / bpm / 4;
+  const t0 = audio().currentTime + 0.02;
+  for (let st = 0; st < 8; st++) {
+    const t = t0 + st * dur;
+    if (rows[0].includes(st)) kick(t, 0.85);
+    if (rows[1].includes(st)) (GG.backVoice === "snare" ? snare : clap)(t, 0.65);
+    if (rows[2].includes(st)) hat(t, false, 0.25);
+    if (rows[3].includes(st)) {
+      if (GG.auxVoice === "open") hat(t, true, 0.26);
+      else if (GG.auxVoice === "rim") rim(t, 0.45);
+      else perc(t, 0.45);
+    }
+  }
+};
+
+const chordRoot = (deg: number) => {
+  let root = 53 + cur().key + deg;
+  if (root >= 60) root -= 12;
+  return root;
+};
+
+const previewGenre = pv((id) => {
+  const GG = GENRES[id as Genre];
+  drumSnippet(GG.drums[0], GG, GG.bpm[2]);
+});
+const previewKey = pv((id) => {
+  const semi = Number(id);
+  const t0 = audio().currentTime + 0.02;
+  bass(t0, semi, 0.85);
+  [0, 3, 7].forEach((iv) => stab(t0 + 0.1, 53 + semi + iv, 0.7, cur().voice, 0.07));
+});
+const previewDrums = pv((id) => {
+  const C = cur();
+  drumSnippet(id, GENRES[C.genre], C.bpm);
+});
+const previewKit = pv((id) => {
+  const k = id as DrumKitName;
+  loadKitSamples(k);
+  setDrumKit(k);
+  const t0 = audio().currentTime + 0.02;
+  kick(t0, 0.9); hat(t0 + 0.16, false, 0.3); snare(t0 + 0.32, 0.75); hat(t0 + 0.48, false, 0.24);
+  setDrumKit(cur().kit);
+});
+const previewBass = pv((id) => {
+  const C = cur();
+  const dur = 60 / C.bpm / 4;
+  const t0 = audio().currentTime + 0.02;
+  for (const [bs, add, v] of BASS[id].steps) bass(t0 + bs * dur, C.key + add, v * 0.9);
+});
+const previewProg = pv((id) => {
+  const C = cur();
+  const t0 = audio().currentTime + 0.02;
+  PROGS[id].bars.slice(0, 2).forEach((b, i) =>
+    b.iv.forEach((iv) => stab(t0 + i * 0.55, chordRoot(b.deg) + iv, 0.5, C.voice, 0.085)));
+});
+const previewStyle = pv((id) => {
+  const C = cur();
+  const st = CHORD_STYLES[id];
+  const chord = PROGS[C.prog].bars[0];
+  const dur = 60 / C.bpm / 4;
+  const t0 = audio().currentTime + 0.02;
+  st.hits.slice(0, 3).forEach((h) => chord.iv.forEach((iv, k) =>
+    stab(t0 + h * dur + (st.roll ? k * st.roll : 0), chordRoot(chord.deg) + iv,
+      st.dur === "bar" ? 1.1 : st.dur, C.voice, 0.08)));
+});
+const previewChordVoice = pv((id) => {
+  const C = cur();
+  const chord = PROGS[C.prog].bars[0];
+  const t0 = audio().currentTime + 0.02;
+  chord.iv.forEach((iv) => stab(t0, chordRoot(chord.deg) + iv, 0.7, id as LeadVoice, 0.09));
+});
+const previewLeadVoice = pv((id) => {
+  const C = cur();
+  const t0 = audio().currentTime + 0.02;
+  stab(t0, 65 + C.key, 0.3, id as LeadVoice, 0.11);
+  stab(t0 + 0.22, 65 + C.key + 3, 0.55, id as LeadVoice, 0.11);
+});
+const previewMel = pv((id) => {
+  const C = cur();
+  const dur = 60 / C.bpm / 4;
+  const t0 = audio().currentTime + 0.02;
+  const notes = MELS[id].notes;
+  if (!notes.length) return;
+  const start = notes[0][0];
+  for (const [ms2, idx, len] of notes) {
+    const at = (ms2 - start) * dur;
+    if (at > 1.6) break;
+    stab(t0 + at, 65 + C.key + PENTA[idx % 5] + 12 * Math.floor(idx / 5), len * dur * 0.9, C.melVoice, 0.09);
+  }
+});
+const previewChop = pv((id) => {
+  const ev = CHOPS[id].events[0];
+  if (ev) labPlay(ev.snd, audio().currentTime + 0.02, ev.v, ev.rate ?? 1);
+});
+const previewTex = pv((id) => {
+  const tx = TEX[id];
+  const C = cur();
+  const dur = 60 / C.bpm / 4;
+  const t0 = audio().currentTime + 0.02;
+  if (tx.lab?.length) labPlay(tx.lab[0].snd, t0, tx.lab[0].v, 1, 0.12);
+  if (tx.synth) {
+    for (const [ts, v] of tx.synth.steps) {
+      if (ts < 8) (tx.synth.voice === "rim" ? rim : tx.synth.voice === "perc" ? perc
+        : (tt: number, vv: number) => hat(tt, false, vv))(t0 + ts * dur, v);
+    }
+  }
+});
+
+/* small chip-row helper — rollover/focus explains the option (info bar) and,
+ * when a preview fn is given, plays the actual sound the option will make */
+function Chips({ label, items, active, onPick, tips, onPreview, onInfo }: {
   label: string;
   items: { id: string; label: string }[];
   active: string;
   onPick: (id: string) => void;
+  tips?: Record<string, string>;
+  onPreview?: (id: string) => void;
+  onInfo?: (text: string | null) => void;
 }) {
+  const enter = (id: string, name: string) => {
+    onInfo?.(tips?.[id] ? `${name} — ${tips[id]}` : null);
+    onPreview?.(id);
+  };
   return (
     <div className={styles.row}>
       <span className={styles.rowLabel}>{label}</span>
       <div className={styles.chips}>
         {items.map((it, i) => (
           <button key={it.id} className="mode" aria-pressed={active === it.id}
-            data-note={392 + i * 36} onClick={() => onPick(it.id)}>
+            data-note={392 + i * 36}
+            data-silent={onPreview ? "" : undefined}
+            onPointerEnter={(e) => { if (e.pointerType !== "touch") enter(it.id, it.label); }}
+            onFocus={() => enter(it.id, it.label)}
+            onPointerLeave={() => onInfo?.(null)}
+            onBlur={() => onInfo?.(null)}
+            onClick={() => { onPick(it.id); if (onPreview) uiBlip(650 + i * 40, 0.05, 0.11); }}>
             {it.label}
           </button>
         ))}
@@ -249,6 +496,7 @@ export default function BeatLab() {
   }, []);
   useEffect(() => {
     cfgRef.current = cfg;
+    live.cfg = cfg;
     try { localStorage.setItem(LS_KEY, JSON.stringify(cfg)); } catch { /* no persistence */ }
   }, [cfg]);
 
@@ -408,6 +656,7 @@ export default function BeatLab() {
     setRate(1);
     timer.current = window.setInterval(tick, 30);
     playingRef.current = true;
+    live.playing = true;
     setPlaying(true);
   };
 
@@ -416,6 +665,7 @@ export default function BeatLab() {
     if (timer.current !== null) window.clearInterval(timer.current);
     timer.current = null;
     playingRef.current = false;
+    live.playing = false;
     setPlaying(false);
     setUiStep(-1);
   };
@@ -623,6 +873,17 @@ export default function BeatLab() {
     const grid = cfg.grid.map((r) => [...r]);
     grid[row][col] = !grid[row][col];
     set({ grid, drums: "custom" });
+    if (grid[row][col] && !playingRef.current) {
+      /* placing a hit while stopped plays that drum, so the grid is audible */
+      const t = audio().currentTime + 0.01;
+      const GG = GENRES[cfg.genre];
+      if (row === 0) kick(t, 0.85);
+      else if (row === 1) (GG.backVoice === "snare" ? snare : clap)(t, 0.65);
+      else if (row === 2) hat(t, false, 0.28);
+      else if (GG.auxVoice === "open") hat(t, true, 0.26);
+      else if (GG.auxVoice === "rim") rim(t, 0.45);
+      else perc(t, 0.45);
+    }
   };
 
   useEffect(() => {
@@ -657,6 +918,7 @@ export default function BeatLab() {
   ];
 
   return (
+    <>
     <main className={`stage menuStage ${styles.studio}`} style={{ "--acc": G.accent } as AccStyle}>
       <div className={styles.inner}>
         <StaticBlock>
@@ -671,28 +933,12 @@ export default function BeatLab() {
 
         <StaticBlock>
           <div className={styles.rowGroup}>
-            <div className={styles.row}>
-              <span className={styles.rowLabel}>Genre</span>
-              <div className={styles.chips}>
-                {(Object.keys(GENRES) as Genre[]).map((g, i) => (
-                  <button key={g} className="mode" aria-pressed={cfg.genre === g}
-                    data-note={440 + i * 52} onClick={() => pickGenre(g)}>
-                    {GENRES[g].label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className={styles.row}>
-              <span className={styles.rowLabel}>Key</span>
-              <div className={styles.chips}>
-                {KEYS.map((k, i) => (
-                  <button key={k.label} className="mode" aria-pressed={cfg.key === k.semi}
-                    data-note={349 + i * 30} onClick={() => set({ key: k.semi })}>
-                    {k.label}m
-                  </button>
-                ))}
-              </div>
-            </div>
+            <Chips label="Genre" items={(Object.keys(GENRES) as Genre[]).map((g) => ({ id: g, label: GENRES[g].label }))}
+              active={cfg.genre} onPick={(id) => pickGenre(id as Genre)}
+              tips={TIPS.genre} onPreview={previewGenre} onInfo={announce} />
+            <Chips label="Key" items={KEYS.map((k) => ({ id: String(k.semi), label: `${k.label}m` }))}
+              active={String(cfg.key)} onPick={(id) => set({ key: Number(id) })}
+              tips={TIPS.key} onPreview={previewKey} onInfo={announce} />
             <div className={styles.sliders}>
               <label className={styles.slider}>
                 <span>Tempo <b>{cfg.bpm}</b> BPM</span>
@@ -729,9 +975,11 @@ export default function BeatLab() {
           <section className={styles.panel}>
             <h2 className={styles.panelTitle}>Groove</h2>
             <Chips label="Drums" items={drumChips} active={cfg.drums}
-              onPick={(id) => { if (id !== "custom") set({ drums: id, grid: gridOf(id) }); }} />
+              onPick={(id) => { if (id !== "custom") set({ drums: id, grid: gridOf(id) }); }}
+              tips={TIPS.drums} onPreview={previewDrums} onInfo={announce} />
             <Chips label="Kit" items={[...G.kits, ...ALL_KITS.filter((k) => !G.kits.includes(k))].map((k) => ({ id: k, label: k[0].toUpperCase() + k.slice(1) }))}
-              active={cfg.kit} onPick={(id) => { set({ kit: id as DrumKitName }); setDrumKit(id as DrumKitName); }} />
+              active={cfg.kit} onPick={(id) => { set({ kit: id as DrumKitName }); setDrumKit(id as DrumKitName); }}
+              tips={TIPS.kit} onPreview={previewKit} onInfo={announce} />
             <div className={styles.gridWrap}>
               <div className={styles.dgrid}>
                 {cfg.grid.map((row, r) => (
@@ -754,9 +1002,11 @@ export default function BeatLab() {
           <section className={styles.panel}>
             <h2 className={styles.panelTitle}>Harmony</h2>
             <Chips label="Bass" items={poolAll(G.bass, BASS).map((id) => ({ id, label: BASS[id].label }))}
-              active={cfg.bassPat} onPick={(id) => set({ bassPat: id })} />
+              active={cfg.bassPat} onPick={(id) => set({ bassPat: id })}
+              tips={TIPS.bass} onPreview={previewBass} onInfo={announce} />
             <Chips label="Chorus" items={poolAll(G.progs, PROGS).map((id) => ({ id, label: PROGS[id].label }))}
-              active={cfg.prog} onPick={(id) => set({ prog: id })} />
+              active={cfg.prog} onPick={(id) => set({ prog: id })}
+              tips={TIPS.prog} onPreview={previewProg} onInfo={announce} />
             <div className={styles.row}>
               <span className={styles.rowLabel} />
               <div className={styles.roman}>
@@ -766,9 +1016,11 @@ export default function BeatLab() {
               </div>
             </div>
             <Chips label="Style" items={poolAll(G.styles, CHORD_STYLES).map((id) => ({ id, label: CHORD_STYLES[id].label }))}
-              active={cfg.style} onPick={(id) => set({ style: id })} />
+              active={cfg.style} onPick={(id) => set({ style: id })}
+              tips={TIPS.style} onPreview={previewStyle} onInfo={announce} />
             <Chips label="Voice" items={VOICES.map((v) => ({ id: v.id, label: v.label }))}
-              active={cfg.voice} onPick={(id) => set({ voice: id as LeadVoice })} />
+              active={cfg.voice} onPick={(id) => set({ voice: id as LeadVoice })}
+              tips={TIPS.voice} onPreview={previewChordVoice} onInfo={announce} />
           </section>
         </StaticBlock>
 
@@ -776,13 +1028,17 @@ export default function BeatLab() {
           <section className={styles.panel}>
             <h2 className={styles.panelTitle}>Flavor</h2>
             <Chips label="Melody" items={poolAll(G.mels, MELS).map((id) => ({ id, label: MELS[id].label }))}
-              active={cfg.mel} onPick={(id) => set({ mel: id })} />
+              active={cfg.mel} onPick={(id) => set({ mel: id })}
+              tips={TIPS.mel} onPreview={previewMel} onInfo={announce} />
             <Chips label="Lead" items={VOICES.map((v) => ({ id: v.id, label: v.label }))}
-              active={cfg.melVoice} onPick={(id) => set({ melVoice: id as LeadVoice })} />
+              active={cfg.melVoice} onPick={(id) => set({ melVoice: id as LeadVoice })}
+              tips={TIPS.voice} onPreview={previewLeadVoice} onInfo={announce} />
             <Chips label="Chops" items={poolAll(G.chops, CHOPS).map((id) => ({ id, label: CHOPS[id].label }))}
-              active={cfg.chop} onPick={(id) => set({ chop: id })} />
+              active={cfg.chop} onPick={(id) => set({ chop: id })}
+              tips={TIPS.chop} onPreview={previewChop} onInfo={announce} />
             <Chips label="Texture" items={poolAll(G.tex, TEX).map((id) => ({ id, label: TEX[id].label }))}
-              active={cfg.tex} onPick={(id) => set({ tex: id })} />
+              active={cfg.tex} onPick={(id) => set({ tex: id })}
+              tips={TIPS.tex} onPreview={previewTex} onInfo={announce} />
           </section>
         </StaticBlock>
 
@@ -816,9 +1072,11 @@ export default function BeatLab() {
             {booth === "ready" && (
               <>
                 <Chips label="Voice" items={[{ id: "on", label: "In the mix" }, { id: "off", label: "Muted" }]}
-                  active={cfg.voiceOn ? "on" : "off"} onPick={(id) => set({ voiceOn: id === "on" })} />
+                  active={cfg.voiceOn ? "on" : "off"} onPick={(id) => set({ voiceOn: id === "on" })}
+                  tips={TIPS.boothVoice} onInfo={announce} />
                 <Chips label="Tone" items={[{ id: "dry", label: "Dry" }, { id: "radio", label: "Radio" }, { id: "echo", label: "Echo" }]}
-                  active={cfg.voiceFx} onPick={(id) => set({ voiceFx: id as VoiceFx })} />
+                  active={cfg.voiceFx} onPick={(id) => set({ voiceFx: id as VoiceFx })}
+                  tips={TIPS.tone} onInfo={announce} />
               </>
             )}
             {boothErr && <p className={styles.boothErr} role="alert">{boothErr}</p>}
@@ -904,5 +1162,8 @@ export default function BeatLab() {
         </StaticBlock>
       </div>
     </main>
+    {/* outside <main>: the stage's transform would trap position:fixed */}
+    <p ref={(el) => { infoEl = el; }} className={styles.infoBar} data-on="0" aria-live="polite" />
+    </>
   );
 }
