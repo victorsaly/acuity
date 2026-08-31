@@ -2,7 +2,7 @@ import { routeMetadata } from "@/lib/site";
 
 export const metadata = routeMetadata(
   "Downbeat",
-  "Notes ride a living lane toward the ring — tap dead on time.",
+  "Asteroids tumble in on the beat. Tap them at the ring, dead on time.",
   "/tempo/",
 );
 

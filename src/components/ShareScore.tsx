@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { shareText, whatsappShareUrl } from "@/lib/share";
 
 export default function ShareScore({ text }: { text: string }) {
   const [done, setDone] = useState(false);
   const timer = useRef<number>(0);
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
   return (
     <div className="shareRow">

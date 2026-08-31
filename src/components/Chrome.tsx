@@ -40,7 +40,12 @@ export default function Chrome() {
   }, [path, router]);
 
   useEffect(() => {
-    const unlock = () => { void unlockAudio().then(() => setLocked(audioState() !== "running")); };
+    /* Once the context is running there is nothing left to unlock — re-priming
+       on every subsequent click just builds throwaway audio nodes. */
+    const unlock = () => {
+      if (audioState() === "running") return;
+      void unlockAudio().then(() => setLocked(audioState() !== "running"));
+    };
     // Keep retrying on real gestures in case iOS blocks the first unlock.
     window.addEventListener("pointerdown", unlock, { capture: true });
     window.addEventListener("touchstart", unlock, { capture: true });
@@ -57,7 +62,7 @@ export default function Chrome() {
       uiBlip(Number(el.dataset.note) || 587);
     };
     const clickFx = (e: MouseEvent) => {
-      void unlockAudio();
+      if (audioState() !== "running") void unlockAudio();
       const el = (e.target as Element | null)?.closest<HTMLElement>("button, a");
       if (!el || el.dataset.silent !== undefined) return;
       uiBlip((Number(el.dataset.note) || 587) * 1.5, 0.055, 0.12);

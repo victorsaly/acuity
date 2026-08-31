@@ -18,17 +18,20 @@ const DIFFS: DiffDef[] = [
   { key: "hard", label: "Hard", sub: "1.5s each", note: 659 },
   { key: "brutal", label: "Brutal", sub: "0.7s each", note: 784 },
 ];
+const DIFF_KEYS = DIFFS.map((d) => d.key);
 const REVEAL_MS: Record<string, number> = { easy: 3000, hard: 1500, brutal: 700 };
 const FLOWS = [
   { key: "single", label: "One at a time" },
   { key: "batch", label: "All five first" },
 ];
+const FLOW_KEYS = FLOWS.map((f) => f.key);
 const VOICES = [
   { key: "warm", label: "Warm" },
   { key: "pure", label: "Pure" },
   { key: "organ", label: "Organ" },
   { key: "chip", label: "Chip" },
 ];
+const VOICE_KEYS = VOICES.map((v) => v.key);
 
 const posToFreq = (p: number) => F_LO * Math.pow(2, (p / 1000) * OCTAVES);
 const cents = (a: number, b: number) => Math.abs(1200 * Math.log2(a / b));
@@ -44,13 +47,13 @@ const resVerdict = (total: number) =>
 
 export default function SoundGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = usePref("sound-diff", "easy");
-  const [flow, setFlow] = usePref("sound-flow", "single");
+  const [diff, setDiff] = usePref("sound-diff", "easy", DIFF_KEYS);
+  const [flow, setFlow] = usePref("sound-flow", "single", FLOW_KEYS);
   const [slot, setSlot] = useState(0);
   const [targets, setTargets] = useState<number[]>([]);
   const [guesses, setGuesses] = useState<number[]>([]);
   const [pos, setPos] = useState(500);
-  const [voiceStr, setVoice] = usePref("sound-voice", "warm");
+  const [voiceStr, setVoice] = usePref("sound-voice", "warm", VOICE_KEYS);
   const voice = voiceStr as ToneVoice;
   const [revealOn, setRevealOn] = useState(false);
   const [runStamp, setRunStamp] = useState(0);
@@ -222,7 +225,7 @@ export default function SoundGame() {
         <main className="stage menuStage">
           <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <Item><h1 className="wordmark">Sine Language</h1></Item>
-            <Item><p className="tagline">Five tones, one each. Then silence — and you pull every pitch back out of thin air.</p></Item>
+            <Item><p className="tagline">Five tones, one play each, then silence. Your job is to find them again on a slider.</p></Item>
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
               <GameSetup game="sound" diffs={DIFFS} diff={diff}
                 onDiff={setDiff} onStart={start} refreshToken={runStamp}
@@ -237,11 +240,11 @@ export default function SoundGame() {
                 }}
                 helpContent={{
                   title: "Sine Language",
-                  description: "Each round plays five tones in sequence. Your job is to recall and recreate the exact pitches from memory.",
+                  description: "Five tones play, once each. Then you chase them down on a frequency slider.",
                   steps: [
-                    "Listen to the full tone sequence as it plays once.",
-                    "Use the frequency slider to match each remembered pitch as closely as possible.",
-                    "Lock each answer in and keep the pattern going until all five tones are rebuilt.",
+                    "Listen. There is no replay, so don't wait for one.",
+                    "Slide until the tone sits on top of the one in your head.",
+                    "Lock it in. Humming along helps more than it should.",
                   ],
                 }} />
             </Item>

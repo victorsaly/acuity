@@ -2,7 +2,7 @@ import { routeMetadata } from "@/lib/site";
 
 export const metadata = routeMetadata(
   "Off-Grid",
-  "A drum loop repeats and exactly one hit lands late. Find it before the nudge shrinks past hearing.",
+  "One hit in an eight-step drum loop lands late. Say which one, before it gets too small to hear.",
   "/offgrid/",
 );
 

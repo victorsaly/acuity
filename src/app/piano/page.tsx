@@ -24,6 +24,7 @@ const DIFFS: DiffDef[] = [
   { key: "hard", label: "Hard", sub: "13 keys · chromatic", note: 659 },
   { key: "brutal", label: "Brutal", sub: "17 keys · 1½ octaves", note: 784 },
 ];
+const DIFF_KEYS = DIFFS.map((d) => d.key);
 const SPAN: Record<string, number> = { easy: 13, hard: 13, brutal: 17 };
 const WHITES_ONLY: Record<string, boolean> = { easy: true, hard: false, brutal: false };
 const STEP_MS: Record<string, number> = { easy: 520, hard: 440, brutal: 360 };
@@ -35,11 +36,13 @@ const FORMATS = [
   { key: "watch", label: "Watch · keys light up" },
   { key: "ear", label: "By ear · sound only" },
 ];
+const FORMAT_KEYS = FORMATS.map((f) => f.key);
 const PHRASES = [
   { key: "auto", label: "Phrase", sub: "Auto" },
   { key: "west", label: "Phrase", sub: "West Coast · inspired" },
   { key: "snap", label: "Phrase", sub: "Snap Bounce · inspired" },
 ];
+const PHRASE_KEYS = PHRASES.map((p) => p.key);
 
 const NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 const BLACK = new Set([1, 3, 6, 8, 10]);
@@ -118,10 +121,10 @@ function buildInspiredPhrase(preset: Exclude<PhrasePreset, "auto">, n: number): 
 
 export default function PianoGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = usePref("piano-diff", "easy");
-  const [fmtStr, setFmt] = usePref("piano-fmt", "watch");
+  const [diff, setDiff] = usePref("piano-diff", "easy", DIFF_KEYS);
+  const [fmtStr, setFmt] = usePref("piano-fmt", "watch", FORMAT_KEYS);
   const fmt = fmtStr as Fmt;
-  const [phraseStr, setPhrase] = usePref("piano-phrase", "auto");
+  const [phraseStr, setPhrase] = usePref("piano-phrase", "auto", PHRASE_KEYS);
   const phrase = phraseStr as PhrasePreset;
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
@@ -326,7 +329,7 @@ export default function PianoGame() {
               ))}
             </svg>
           </Item>
-          <Item><p className="tagline">A piano phrase plays, then it&apos;s yours — hit the same notes in the same order. Every level adds a note to the same melody; three slips end the run.</p></Item>
+          <Item><p className="tagline">A piano phrase plays, then it&apos;s yours. Same notes, same order. Every level adds one more to the end. Three wrong notes and it&apos;s over.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="piano" diffs={DIFFS} diff={diff}
               onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `level ${b}`}
@@ -334,11 +337,11 @@ export default function PianoGame() {
               beats={PHRASES} beat={phraseStr} onBeat={setPhrase}
               helpContent={{
                 title: "Refrain",
-                description: "A melody plays one note at a time, then you must repeat that exact phrase back on the piano in the same order.",
+                description: "A phrase plays note by note. You play it back on the keyboard below.",
                 steps: [
-                  "Listen to the phrase as it plays.",
-                  "Press the same white and black keys in sequence.",
-                  "Every level adds another note, and mistakes cost lives.",
+                  "Listen to the whole phrase before you touch anything.",
+                  "Press the same keys, in the same order.",
+                  "Each level adds one note to the end. Three wrong notes ends the run.",
                 ],
               }} />
           </Item>

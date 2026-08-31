@@ -2,7 +2,7 @@ import { routeMetadata } from "@/lib/site";
 
 export const metadata = routeMetadata(
   "Refrain",
-  "A piano melody grows one note every level — play the same notes back in order before the clock runs out.",
+  "A piano phrase plays and you play it back. One note longer every level.",
   "/piano/",
 );
 

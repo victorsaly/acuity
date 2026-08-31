@@ -546,8 +546,8 @@ export default function BeatLab() {
           <header className={styles.head}>
             <h1 className="wordmark">Beat Lab</h1>
             <p className="tagline">
-              Build your own beat. Mix drums, bass, chords, melody and vocal chops —
-              everything stays in key. Play it, then download your track.
+              Stack drums, bass, chords, melody and vocal chops. Everything stays in key,
+              including the parts you picked at random. Play it, then take it with you.
             </p>
           </header>
         </StaticBlock>

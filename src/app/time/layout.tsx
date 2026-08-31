@@ -2,7 +2,7 @@ import { routeMetadata } from "@/lib/site";
 
 export const metadata = routeMetadata(
   "Second Sense",
-  "Experience five durations, then recreate each one from memory without a clock.",
+  "Five stretches of time. Hold the button for exactly as long, with no clock to help.",
   "/time/",
 );
 

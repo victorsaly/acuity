@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 export const SITE_NAME = "Delulu Beats";
 export const SITE_URL = "https://delulubeats.com";
 export const SITE_DESCRIPTION =
-  "Nine free browser perception games and a beat-making studio for rhythm, sound, memory, and timing.";
-export const SOCIAL_IMAGE_ALT = "Delulu Beats — nine perception games for eyes, ears, and timing";
+  "Nine free browser games that test what your eyes and ears actually caught. Plus Beat Lab, a studio where you build a track and take it with you.";
+export const SOCIAL_IMAGE_ALT = "Delulu Beats: nine small games for your eyes, ears and sense of timing";
 export const OPEN_GRAPH_IMAGE = `${SITE_URL}/social/opengraph.png`;
 export const TWITTER_IMAGE = `${SITE_URL}/social/twitter.png`;
 

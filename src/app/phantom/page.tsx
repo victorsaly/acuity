@@ -19,6 +19,7 @@ const DIFFS: DiffDef[] = [
   { key: "hard", label: "Hard", sub: "2 silent bars", note: 659 },
   { key: "brutal", label: "Brutal", sub: "3 silent bars", note: 784 },
 ];
+const DIFF_KEYS = DIFFS.map((d) => d.key);
 const CONFIG: Record<string, { bpm: number; gap: number; window: number }> = {
   easy: { bpm: 100, gap: 4, window: 900 },
   hard: { bpm: 118, gap: 8, window: 700 },
@@ -33,7 +34,7 @@ const verdict = (score: number) =>
 
 export default function PhantomGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = usePref("phantom-diff", "easy");
+  const [diff, setDiff] = usePref("phantom-diff", "easy", DIFF_KEYS);
   const [round, setRound] = useState(0);
   const [pulse, setPulse] = useState(0);
   const [grooveBeat, setGrooveBeat] = useState(0);
@@ -176,16 +177,16 @@ export default function PhantomGame() {
         <Stagger style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
           <Item><div className={styles.menuMark} aria-hidden><div className={styles.void} /></div></Item>
           <Item><h1 className="wordmark">Phantom Drop</h1></Item>
-          <Item><p className="tagline">Listen without tapping. When the beat cuts out, count the hidden bar in your head, then tap once on the next 1.</p></Item>
+          <Item><p className="tagline">Listen, hands off. The beat cuts out. Keep counting anyway, then tap once where the next 1 belongs.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="phantom" diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Phantom Drop",
-                description: "Internalize the groove, carry it through silence, and tap where the next downbeat belongs.",
+                description: "You hear the groove, the groove disappears, and you have to keep counting anyway.",
                 steps: [
-                  "Listen to two full bars, counting 1, 2, 3, 4 with the screen. Do not tap yet.",
-                  "When the sound stops, continue counting the hidden bar: 1, 2, 3, 4.",
-                  "After the hidden 4, tap once where the next 1 should land. Three drops make your score.",
+                  "Two bars play. Count 1, 2, 3, 4 with the screen. Hands off.",
+                  "The sound cuts. Keep counting the silent bar in your head.",
+                  "After the hidden 4, tap once on the next 1. Three drops, one score.",
                 ],
               }} />
           </Item>

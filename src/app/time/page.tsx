@@ -18,6 +18,7 @@ const DIFFS: DiffDef[] = [
   { key: "hard", label: "Hard", sub: "1–7 seconds", note: 659 },
   { key: "brutal", label: "Brutal", sub: "0.7–10 seconds", note: 784 },
 ];
+const DIFF_KEYS = DIFFS.map((d) => d.key);
 const RANGES: Record<string, [number, number]> = {
   easy: [1500, 4000],
   hard: [1000, 7000],
@@ -41,7 +42,7 @@ type ProgressStyle = CSSProperties & { "--progress": number };
 
 export default function TimeGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = usePref("time-diff", "easy");
+  const [diff, setDiff] = usePref("time-diff", "easy", DIFF_KEYS);
   const [targets, setTargets] = useState<number[]>([]);
   const [guesses, setGuesses] = useState<number[]>([]);
   const [slot, setSlot] = useState(0);
@@ -175,17 +176,17 @@ export default function TimeGame() {
       <main className="stage menuStage">
         <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
           <Item><h1 className="wordmark">Second Sense</h1></Item>
-          <Item><p className="tagline">Listen to a measured stretch of time, then immediately recreate it by holding down. Five rounds test your inner clock.</p></Item>
+          <Item><p className="tagline">Something lasts a while. Then you make it last exactly that long again, holding a button, with nothing to count against.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="time" diffs={DIFFS} diff={diff}
               onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Second Sense",
-                description: "Experience each duration through a steady sequence of taps, then immediately reproduce it without seeing a clock.",
+                description: "A stretch of time goes by, marked with taps. Then you have to produce the same stretch yourself.",
                 steps: [
-                  "Watch one orbit and listen to its half-second taps until the interval ends.",
-                  "Press and hold the button or Space to replay the same tap pulse, then release at the remembered moment.",
-                  "See your error, then repeat with the next duration; five rounds make your final score.",
+                  "Watch one orbit and listen to the taps. That's your reference.",
+                  "Hold the button (or Space) and let go when it feels like the same length.",
+                  "You'll see how far off you were. Five rounds, then a total.",
                 ],
               }} />
           </Item>

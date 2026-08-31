@@ -2,7 +2,7 @@ import { routeMetadata } from "@/lib/site";
 
 export const metadata = routeMetadata(
   "Echo",
-  "Numbered tiles appear and vanish — tap them back in order, against the clock, as the grid keeps growing.",
+  "Numbered tiles light up and go dark. Tap them back in order before the clock runs out.",
   "/memory/",
 );
 

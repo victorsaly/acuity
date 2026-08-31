@@ -4,15 +4,25 @@ import { useCallback, useSyncExternalStore } from "react";
 
 /* Best scores, remembered preferences, and run randomness. */
 
-/** A localStorage-backed preference that survives refreshes. SSR-safe. */
-export function usePref(key: string, def: string): [string, (v: string) => void] {
+/**
+ * A localStorage-backed preference that survives refreshes. SSR-safe.
+ *
+ * Pass `allowed` whenever the value indexes into a config object: a stored key
+ * from an older build (difficulty names change as games get reworked) would
+ * otherwise come back and crash the lookup. Anything unrecognised falls back
+ * to `def`.
+ */
+export function usePref(key: string, def: string, allowed?: readonly string[]): [string, (v: string) => void] {
   const subscribe = useCallback((cb: () => void) => {
     window.addEventListener("acuity-pref", cb);
     return () => window.removeEventListener("acuity-pref", cb);
   }, []);
   const get = useCallback(() => {
-    try { return localStorage.getItem(`dialed-pref-${key}`) ?? def; } catch { return def; }
-  }, [key, def]);
+    try {
+      const v = localStorage.getItem(`dialed-pref-${key}`) ?? def;
+      return !allowed || allowed.includes(v) ? v : def;
+    } catch { return def; }
+  }, [key, def, allowed]);
   const value = useSyncExternalStore(subscribe, get, () => def);
   const set = useCallback((v: string) => {
     try { localStorage.setItem(`dialed-pref-${key}`, v); } catch { /* no persistence */ }

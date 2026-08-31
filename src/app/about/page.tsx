@@ -4,7 +4,7 @@ import styles from "./page.module.css";
 
 export const metadata = routeMetadata(
   "About & Credits",
-  "Meet the father-and-son team behind Delulu Beats and learn what inspired its nine browser-based perception games.",
+  "Who made Delulu Beats, what it was built with, and where the nine games came from.",
   "/about/",
 );
 
@@ -21,10 +21,10 @@ const GAMES = [
 ];
 
 const CREDITS = [
-  { what: "Sound engine", how: "Every game sound is synthesized live in your browser with the Web Audio API — drums, keys, bass and blips share one mastered signal chain." },
-  { what: "Drum kits & vocal chops", how: "One-shot samples generated with the ElevenLabs Sound Effects API, then layered over the synth engine." },
-  { what: "Framework", how: "Next.js and React, statically exported and served from GitHub Pages." },
-  { what: "Vibe-coding", how: "Built in conversation with Claude Code." },
+  { what: "Sound engine", how: "Nothing is streamed. Every drum, key, bass note and blip is generated in your browser with the Web Audio API, all running through one shared mastering chain." },
+  { what: "Drum kits & vocal chops", how: "One-shot samples made with the ElevenLabs Sound Effects API, layered on top of the synths." },
+  { what: "Framework", how: "Next.js and React, exported as static files and served from GitHub Pages. No server, no database." },
+  { what: "Vibe-coding", how: "Most of this was written in conversation with Claude Code." },
 ];
 
 export default function AboutPage() {
@@ -32,12 +32,12 @@ export default function AboutPage() {
     <main className={`stage menuStage ${styles.stage}`}>
       <article className={styles.page}>
         <header className={styles.header}>
-          <p className={styles.eyebrow}>About the project</p>
+          <p className={styles.eyebrow}>What this is</p>
           <h1 className={styles.title}>Delulu Beats</h1>
           <p className={styles.lede}>
-            Nine free browser games that put your eyes, ears, memory, and sense of timing to the test.
-            Plus Beat Lab, where you can build and download your own track. No account, no download —
-            just pick something and play.
+            Nine small games about what you actually noticed. Was that color that red? Was that
+            gap that long? Usually not. There is also Beat Lab, which isn&apos;t a game at all: it&apos;s a
+            studio for building a track and taking it home. Nothing to install, nothing to sign up for.
           </p>
         </header>
 
@@ -57,9 +57,9 @@ export default function AboutPage() {
               </div>
             </div>
             <p>
-              Delulu Beats was created and vibe-coded by <strong>Oliver Saly</strong> and his dad,
-              {" "}<strong>Victor Saly</strong> — a father-and-son project built around short, strange
-              challenges that are easy to start and difficult to master.
+              Delulu Beats is a father-and-son side project by <strong>Oliver Saly</strong> and his dad,
+              {" "}<strong>Victor Saly</strong>. Every game here is quick to pick up and stubborn to get
+              good at, which is roughly the point.
             </p>
           </div>
         </section>
@@ -68,12 +68,13 @@ export default function AboutPage() {
           <h2 id="inspiration">Inspiration</h2>
           <div>
             <p>
-              The games draw inspiration from playful browser experiments such as{" "}
+              We got the idea from{" "}
               <a href="https://neal.fun/" target="_blank" rel="noopener noreferrer">Neal.fun</a>
-              {" "}and the perception-game genre popularized by{" "}
-              <a href="https://dialed.gg/" target="_blank" rel="noopener noreferrer">dialed.gg</a>.
+              {" "}and{" "}
+              <a href="https://dialed.gg/" target="_blank" rel="noopener noreferrer">dialed.gg</a>
+              {" "}— sites where you open a tab, do one strange thing, and close it again.
             </p>
-            <p>Delulu Beats is an original, independent project and is not affiliated with either site.</p>
+            <p>This is our own project and we&apos;re not connected to either of them.</p>
           </div>
         </section>
 
@@ -111,13 +112,16 @@ export default function AboutPage() {
           <h2 id="privacy">Good to know</h2>
           <div>
             <p>
-              Scores, preferences, and streaks stay in your browser. Most games use sound, so headphones
-              are recommended. Everything works with mouse, keyboard, or touch.
+              Your scores, settings and streaks live in your browser and nowhere else. Clear your site
+              data and they are gone for good, which is a risk we are quietly asking you to accept.
+              Sound matters in most of the games, so headphones help. Mouse, keyboard and touch all work.
             </p>
           </div>
         </section>
 
-        <p className={styles.signoff}>Made for curious ears and questionable confidence.</p>
+        <p className={styles.signoff}>
+          No leaderboard. Just you and the number, and the number does not care.
+        </p>
       </article>
     </main>
   );

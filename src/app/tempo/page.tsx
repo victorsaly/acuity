@@ -17,6 +17,7 @@ const DIFFS: DiffDef[] = [
   { key: "hard", label: "Hard", sub: "2 tracks", note: 659 },
   { key: "brutal", label: "Brutal", sub: "3 tracks", note: 784 },
 ];
+const DIFF_KEYS = DIFFS.map((d) => d.key);
 
 /* 16-step bar patterns. Player taps every kick + snare. */
 type Pattern = { kick: number[]; snare: number[]; hat: number[]; open?: number[] };
@@ -63,12 +64,14 @@ const KITS_UI = [
   { key: "club", label: "Club" },
   { key: "wood", label: "Wood" },
 ];
+const KIT_KEYS = KITS_UI.map((k) => k.key);
 
 const TRACKS_UI = [
   { key: "auto", label: "Track", sub: "Auto" },
   { key: "stillDre", label: "Track", sub: "Still D.R.E." },
   { key: "crankThat", label: "Track", sub: "Crank That" },
 ];
+const TRACK_KEYS = TRACKS_UI.map((t) => t.key);
 const TRACK_LABELS: Record<string, string> = {
   stillDre: "Still D.R.E.",
   crankThat: "Crank That",
@@ -80,6 +83,7 @@ const LANES_UI = [
   { key: "orbit", label: "Orbit" },
   { key: "rain", label: "Rain" },
 ];
+const LANE_KEYS = LANES_UI.map((l) => l.key);
 /* rain: each note owns a deterministic column */
 const rainX = (n: Note, W: number) => W * (0.5 + 0.36 * Math.sin(n.t * 5.3));
 
@@ -214,11 +218,11 @@ type Run = {
 
 export default function TempoGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = usePref("tempo-diff", "medium");
-  const [kitStr, setKit] = usePref("tempo-kit", "punch");
+  const [diff, setDiff] = usePref("tempo-diff", "medium", DIFF_KEYS);
+  const [kitStr, setKit] = usePref("tempo-kit", "punch", KIT_KEYS);
   const kit = kitStr as DrumKitName;
-  const [trackPick, setTrackPick] = usePref("tempo-track", "auto");
-  const [laneStr, setLane] = usePref("tempo-lane", "curve");
+  const [trackPick, setTrackPick] = usePref("tempo-track", "auto", TRACK_KEYS);
+  const [laneStr, setLane] = usePref("tempo-lane", "curve", LANE_KEYS);
   const lane = laneStr as LaneStyle;
   const [runStamp, setRunStamp] = useState(0);
   const [hud, setHud] = useState({ track: "", bpm: 0, combo: 0, pts: 0 });
@@ -640,9 +644,9 @@ export default function TempoGame() {
             <Item><h1 className="wordmark">Downbeat</h1></Item>
             <Item>
               <p className="tagline">
-                A beat rolls and asteroids tumble out of the deep toward the ring. Tap dead on time
-                to blow them up — solid rocks are kicks, hollow ones are snares. Perfect
-                hits explode white; sloppy ones ricochet; misses sail right past.
+                A beat rolls and asteroids tumble in toward the ring. Tap when one touches it.
+                Solid rocks are kicks, hollow ones are snares. Perfect hits explode white.
+                Sloppy ones bounce off. Misses just keep going.
               </p>
             </Item>
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
@@ -661,11 +665,11 @@ export default function TempoGame() {
                 }}
                 helpContent={{
                   title: "Downbeat",
-                  description: "A beat rolls in while shapes drift toward the center. Hit exactly on time to detonate the target before it passes.",
+                  description: "Rocks drift in on the beat and you blow them up at the ring, not before it.",
                   steps: [
-                    "Watch the rhythm and learn the pulse of the current track.",
-                    "Tap when the target reaches the center line for a clean hit.",
-                    "White explosions are perfect; misses and mistimed taps lose points fast.",
+                    "Let the loop run a bar first. Get the pulse into your hands.",
+                    "Tap the moment a rock touches the ring.",
+                    "White means you nailed it. Early, late and missed all cost you.",
                   ],
                 }} />
             </Item>

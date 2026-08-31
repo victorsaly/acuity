@@ -18,6 +18,7 @@ const DIFFS: DiffDef[] = [
   { key: "hard", label: "Hard", sub: "116 BPM · tighter", note: 659 },
   { key: "brutal", label: "Brutal", sub: "142 BPM · possessed", note: 784 },
 ];
+const DIFF_KEYS = DIFFS.map((d) => d.key);
 const CONFIG: Record<string, { bpm: number; window: number }> = {
   easy: { bpm: 92, window: 190 },
   hard: { bpm: 116, window: 145 },
@@ -31,7 +32,7 @@ const verdict = (score: number) =>
 
 export default function FeverGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = usePref("fever-diff", "easy");
+  const [diff, setDiff] = usePref("fever-diff", "easy", DIFF_KEYS);
   const [pulse, setPulse] = useState(0);
   const [activeBeat, setActiveBeat] = useState(-1);
   const [judgements, setJudgements] = useState<Judgement[]>([]);
@@ -151,17 +152,17 @@ export default function FeverGame() {
         <Stagger style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
           <Item><div className={styles.menuMark} aria-hidden /></Item>
           <Item><h1 className="wordmark">Fever Dream</h1></Item>
-          <Item><p className="tagline">The microwave is keeping time and breakfast wants out. Watch how it moves, then feed it eight taps without a timing lane.</p></Item>
+          <Item><p className="tagline">The microwave is keeping time and breakfast wants out. Watch how it moves, then hold the pulse yourself. No lane, no arrows, nothing to aim at.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="fever" diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Fever Dream",
-                description: "Read the appliance's movement like a drummer's count-in, then keep the same pulse yourself.",
+                description: "The microwave counts you in like a drummer. Then it stops and you carry the pulse on your own.",
                 steps: [
-                  "Watch four beats as the microwave squashes and its door kicks open.",
-                  "A two-tone alarm gives you one full beat to get ready.",
-                  "When TAP appears, tap anywhere or press Space on each pulse.",
-                  "Eight taps are judged by timing; missed beats score zero.",
+                  "Four beats: the microwave squashes and the door kicks open on each one.",
+                  "A two-tone alarm gives you one beat to get ready.",
+                  "When TAP shows up, tap anywhere (or Space) on every pulse.",
+                  "Eight taps, scored on timing. Beats you skip score nothing.",
                 ],
               }} />
           </Item>

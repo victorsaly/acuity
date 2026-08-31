@@ -38,8 +38,8 @@ export default function Hub() {
         </Item>
         <Item>
           <p className="tagline">
-            Nine full-screen perception games. Your memory for color, pitch, melody,
-            time, and space is worse than you think — prove otherwise.
+            Nine games about noticing things. You will be worse at them than you
+            expect. That&apos;s most of the fun.
           </p>
         </Item>
         <Stagger className="hubCards" delay={0.12}>
@@ -55,7 +55,7 @@ export default function Hub() {
                   }}
                 />
                 <h2>Afterimage</h2>
-                <p>Five colors flood the screen, then you rebuild each one from memory.</p>
+                <p>Five colors, one at a time, then nothing. Rebuild each one on a slider.</p>
                 <CardStats game="color" />
                 <span className="go">Play ▸</span>
               </Link>
@@ -73,7 +73,7 @@ export default function Hub() {
                   </svg>
                 </div>
                 <h2>Sine Language</h2>
-                <p>Five tones play once each, then you pull every pitch back out of thin air.</p>
+                <p>Five tones. Each plays once. Now go find them again by ear.</p>
                 <CardStats game="sound" />
                 <span className="go">Play ▸</span>
               </Link>
@@ -92,7 +92,7 @@ export default function Hub() {
                   </svg>
                 </div>
                 <h2>Second Sense</h2>
-                <p>Feel each duration, then hold and release to recreate it without a clock.</p>
+                <p>How long was that? Hold the button for exactly as long. No clock anywhere.</p>
                 <CardStats game="time" />
                 <span className="go">Play ▸</span>
               </Link>
@@ -111,7 +111,7 @@ export default function Hub() {
                   </svg>
                 </div>
                 <h2>Downbeat</h2>
-                <p>A beat rolls, notes swing in from the deep — tap dead on time or eat the miss.</p>
+                <p>Asteroids tumble in on the beat. Tap them at the ring or watch them sail past.</p>
                 <CardStats game="tempo" />
                 <span className="go">Play ▸</span>
               </Link>
@@ -132,7 +132,7 @@ export default function Hub() {
                   </svg>
                 </div>
                 <h2>Echo</h2>
-                <p>Numbered tiles flash and vanish. Tap them back in order before the clock runs out.</p>
+                <p>Numbered tiles flash, then go dark. Tap them back in order, and hurry.</p>
                 <CardStats game="memory" />
                 <span className="go">Play ▸</span>
               </Link>
@@ -153,7 +153,7 @@ export default function Hub() {
                   </svg>
                 </div>
                 <h2>Refrain</h2>
-                <p>A piano phrase grows one note per level — play the same notes back in order.</p>
+                <p>A phrase plays. You play it back. One note longer every level.</p>
                 <CardStats game="piano" />
                 <span className="go">Play ▸</span>
               </Link>
@@ -187,7 +187,7 @@ export default function Hub() {
                   </svg>
                 </div>
                 <h2>Fever Dream</h2>
-                <p>The microwave keeps the beat. Read its movement, then feed it eight taps.</p>
+                <p>A microwave is keeping time. Watch how it moves, then give it eight taps back.</p>
                 <CardStats game="fever" />
                 <span className="go">Play ▸</span>
               </Link>
@@ -215,7 +215,7 @@ export default function Hub() {
                   </svg>
                 </div>
                 <h2>Phantom Drop</h2>
-                <p>The beat disappears before the drop. Keep time in the silence and bring it back.</p>
+                <p>The beat cuts out right before the drop. Count the silence. Land the 1.</p>
                 <CardStats game="phantom" />
                 <span className="go">Play ▸</span>
               </Link>
@@ -241,7 +241,7 @@ export default function Hub() {
                   </svg>
                 </div>
                 <h2>Off-Grid</h2>
-                <p>A loop repeats and one hit lands late. Find it before the nudge shrinks past hearing.</p>
+                <p>One hit in the loop is late. Point at it. Every round it gets harder to hear.</p>
                 <CardStats game="offgrid" />
                 <span className="go">Play ▸</span>
               </Link>
@@ -273,7 +273,7 @@ export default function Hub() {
               <div className="studioCopy">
                 <span className="studioTag">The Studio</span>
                 <h2>Beat Lab</h2>
-                <p>Not a game — a studio. Pick and mix drums, bass, chords, melody and vocal chops in rap, R&amp;B or house; everything stays in key. Play it, then download your track.</p>
+                <p>No score, no timer. Stack drums, bass, chords, melody and vocal chops in rap, R&amp;B or house. It stays in key even when you don&apos;t. Download whatever you end up with.</p>
                 <span className="go">Create ▸</span>
               </div>
             </Link>
@@ -284,6 +284,10 @@ export default function Hub() {
       <div className="hint deskHint">
         <Link href="/about" className="hubMetaLink">About &amp; credits</Link>
         {" · "}Sound on · headphones recommended · F fullscreen · B changes the background
+      </div>
+      <div className="footJoke">
+        No accounts, no leaderboard, nobody watching you lose. The microwave is the only
+        one keeping score, and it has never explained how.
       </div>
       <div className="hint touchNote">
         <Link href="/about" className="hubMetaLink">About &amp; credits</Link>

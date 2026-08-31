@@ -19,6 +19,7 @@ const DIFFS: DiffDef[] = [
   { key: "hard", label: "Hard", sub: "112 BPM · thin nudge", note: 659 },
   { key: "brutal", label: "Brutal", sub: "128 BPM · hair thin", note: 784 },
 ];
+const DIFF_KEYS = DIFFS.map((d) => d.key);
 const CONFIG: Record<string, { bpm: number; startMs: number; endMs: number }> = {
   easy: { bpm: 96, startMs: 85, endMs: 48 },
   hard: { bpm: 112, startMs: 55, endMs: 28 },
@@ -32,7 +33,7 @@ const verdict = (score: number) =>
 
 export default function OffGridGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = usePref("offgrid-diff", "easy");
+  const [diff, setDiff] = usePref("offgrid-diff", "easy", DIFF_KEYS);
   const [round, setRound] = useState(0);
   const [pass, setPass] = useState(0);
   const [activeStep, setActiveStep] = useState(-1);
@@ -191,17 +192,17 @@ export default function OffGridGame() {
             </div>
           </Item>
           <Item><h1 className="wordmark">Off-Grid</h1></Item>
-          <Item><p className="tagline">Eight hits, and exactly one of them is late. Easy round one — but the nudge shrinks every round until it is almost nothing.</p></Item>
+          <Item><p className="tagline">Eight hits and exactly one of them drags. Round one is easy. By round five the delay is a few milliseconds and you start doubting yourself.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="offgrid" diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `${b} / 50`}
               helpContent={{
                 title: "Off-Grid",
-                description: "A producer's ear test: hear which hit drags behind the grid.",
+                description: "An eight-step drum loop with one hit sitting slightly behind the grid. Which one?",
                 steps: [
-                  "The eight-step loop plays three times; the steps light up as it goes.",
-                  "One hit (never beat 1) lands late. Bind what you hear to the step numbers.",
-                  "When the loop stops, tap the guilty step — or press its number — within six seconds.",
-                  "Exact step scores 10, next door scores 3. Each of the five rounds shrinks the nudge.",
+                  "The loop plays three times and the steps light up as it goes.",
+                  "One hit is late. Never step 1, so that's one guess you can skip.",
+                  "When it stops you get six seconds: tap the step, or press its number.",
+                  "Dead on scores 10, one either side scores 3. Five rounds, each one tighter.",
                 ],
               }} />
           </Item>

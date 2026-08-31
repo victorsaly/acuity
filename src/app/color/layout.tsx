@@ -2,7 +2,7 @@ import { routeMetadata } from "@/lib/site";
 
 export const metadata = routeMetadata(
   "Afterimage",
-  "Five colors flood the screen, then you rebuild each one from memory.",
+  "Five colors, one at a time, then nothing. Rebuild each one on a slider.",
   "/color/",
 );
 

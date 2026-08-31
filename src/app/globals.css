@@ -952,3 +952,41 @@ input[type="range"]::-moz-range-thumb {
 @media (prefers-reduced-motion: reduce) {
   .studioCard:hover .fk1, .studioCard:hover .fk2, .studioCard:hover .fk3 { transform: none; }
 }
+
+/* ---------- hub footer aside ---------- */
+.footJoke {
+  flex: none;
+  width: 100%;
+  max-width: 46ch;
+  margin: 10px auto 0;
+  padding-bottom: 6px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* ---------- 404 ---------- */
+.nf404 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(72px, 20vmin, 180px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(239, 240, 244, 0.22);
+  margin-bottom: 2vh;
+}
+.nfList {
+  list-style: none;
+  margin: 0 0 4vh;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.nfList li::before { content: "✕ "; opacity: 0.5; }

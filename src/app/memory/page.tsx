@@ -23,6 +23,7 @@ const DIFFS: DiffDef[] = [
   { key: "hard", label: "Hard", sub: "5×5 · 0.85s per tile", note: 659 },
   { key: "brutal", label: "Brutal", sub: "6×6 · 0.65s per tile", note: 784 },
 ];
+const DIFF_KEYS = DIFFS.map((d) => d.key);
 const GRID: Record<string, number> = { easy: 4, hard: 5, brutal: 6 };
 const START_TILES = 4;                                                             // level 1
 const FLASH: Record<string, [number, number]> = { easy: [800, 280], hard: [600, 220], brutal: [420, 160] }; // base + per tile
@@ -33,6 +34,7 @@ const FORMATS = [
   { key: "flash", label: "Flash · numbers at once" },
   { key: "trail", label: "Trail · one by one" },
 ];
+const FORMAT_KEYS = FORMATS.map((f) => f.key);
 const LIVES = 3;
 
 /** Pentatonic pitch for the k-th number (1-based): the sequence climbs as you get it right. */
@@ -64,8 +66,8 @@ const EMPTY: View = {
 
 export default function MemoryGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = usePref("memory-diff", "easy");
-  const [fmtStr, setFmt] = usePref("memory-fmt", "flash");
+  const [diff, setDiff] = usePref("memory-diff", "easy", DIFF_KEYS);
+  const [fmtStr, setFmt] = usePref("memory-fmt", "flash", FORMAT_KEYS);
   const fmt = fmtStr as Fmt;
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
@@ -230,18 +232,18 @@ export default function MemoryGame() {
               })}
             </div>
           </Item>
-          <Item><p className="tagline">Numbered tiles appear, then vanish. Tap them back in order before the clock runs out — every level adds a tile, three misses end the run.</p></Item>
+          <Item><p className="tagline">Numbered tiles light up, then the board goes dark. Tap them back in order, quickly. Every level adds a tile. Three mistakes and you&apos;re out.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="memory" diffs={DIFFS} diff={diff}
               onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `level ${b}`}
               formats={FORMATS} format={fmt} onFormat={setFmt}
               helpContent={{
                 title: "Echo",
-                description: "The board lights up, then wipes clean. You must tap the tiles back in the same order before time or lives run out.",
+                description: "The board lights up and wipes clean. Tap the tiles back in the same order before the clock beats you to it.",
                 steps: [
-                  "Watch the highlighted tiles as the pattern appears.",
-                  "Replay the pattern in order by tapping each tile as it lights up.",
-                  "Each level grows longer, and three misses end the run.",
+                  "Watch the pattern. Remember the numbers, not just the shape.",
+                  "Once the board clears, tap them back in order.",
+                  "Every level adds a tile. Three mistakes ends the run.",
                 ],
               }} />
           </Item>

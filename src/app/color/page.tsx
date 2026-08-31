@@ -18,11 +18,13 @@ const DIFFS: DiffDef[] = [
   { key: "hard", label: "Hard", sub: "2s each", note: 659 },
   { key: "brutal", label: "Brutal", sub: "1s each", note: 784 },
 ];
+const DIFF_KEYS = DIFFS.map((d) => d.key);
 const REVEAL_MS: Record<string, number> = { easy: 5000, hard: 2000, brutal: 1000 };
 const FLOWS = [
   { key: "single", label: "One at a time" },
   { key: "batch", label: "All five first" },
 ];
+const FLOW_KEYS = FLOWS.map((f) => f.key);
 
 /* ---------- color math ---------- */
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
@@ -62,8 +64,8 @@ const deltaLabel = (t: HSL, g: HSL) => {
 
 export default function ColorGame() {
   const [phase, setPhase] = useState<Phase>("menu");
-  const [diff, setDiff] = usePref("color-diff", "easy");
-  const [flow, setFlow] = usePref("color-flow", "single");
+  const [diff, setDiff] = usePref("color-diff", "easy", DIFF_KEYS);
+  const [flow, setFlow] = usePref("color-flow", "single", FLOW_KEYS);
   const [slot, setSlot] = useState(0);
   const [targets, setTargets] = useState<HSL[]>([]);
   const [guesses, setGuesses] = useState<HSL[]>([]);
@@ -187,18 +189,18 @@ export default function ColorGame() {
               ))}
             </div>
           </Item>
-          <Item><p className="tagline">Five colors flood the screen. Then they&apos;re gone, and you rebuild every one from memory.</p></Item>
+          <Item><p className="tagline">Five colors take over the screen. Then they&apos;re gone and you have to build them back by hand.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <GameSetup game="color" diffs={DIFFS} diff={diff}
               onDiff={setDiff} onStart={start} refreshToken={runStamp}
               formats={FLOWS} format={flow} onFormat={setFlow}
               helpContent={{
                 title: "Afterimage",
-                description: "Five colors flood the screen, then vanish. You rebuild each one from memory by matching hue, saturation, and lightness.",
+                description: "Five colors fill the screen, then vanish. You get three sliders — hue, saturation, lightness — to put each one back.",
                 steps: [
-                  "Memorize the five color swatches during the reveal phase.",
-                  "When the board resets, tune the sliders until each color matches the original.",
-                  "Lock in each guess and keep going until all five are reconstructed.",
+                  "Look at the color. Don't study it. First impressions score better here.",
+                  "Move the sliders until it feels like the same color.",
+                  "Lock it in. Five colors, then a score out of 50.",
                 ],
               }} />
           </Item>
