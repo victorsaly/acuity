@@ -119,20 +119,19 @@ export default function AboutPage() {
           <h2 id="privacy">Good to know</h2>
           <div>
             <p>
-              Your scores, settings and streaks live in your browser and nowhere else. Clear your site
-              data and they are gone for good, which is a risk we are quietly asking you to accept.
-              The one exception is the daily challenge: if you choose to sign in, the score you post
-              and the name you post it under are kept on our server so the board can exist at all. No
-              email address is asked for or received, and you can delete the lot from the board in one
-              click. Sound matters in most of the games, so headphones help. Mouse, keyboard and touch
-              all work.
+              Sign in and the scores you post to the daily are kept properly &mdash; on our server,
+              under a name you choose, ranked against everyone else playing the same challenge. No
+              email address is asked for or received, and you can delete the lot in one click from the
+              board itself. Your settings, streaks and free-play bests still live in your browser, so
+              clearing your site data still takes those with it. Sound matters in most of the games,
+              so headphones help. Mouse, keyboard and touch all work.
             </p>
           </div>
         </section>
 
         <p className={styles.signoff}>
-          The leaderboard is opt-in, and only for the daily. Everywhere else it is still just you
-          and the number, and the number does not care.
+          Everyone gets the same colours, the same tones, the same silence to count through. The
+          board sorts out the rest.
         </p>
       </article>
     </main>

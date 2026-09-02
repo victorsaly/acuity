@@ -182,9 +182,9 @@ export default function Hub() {
         {" · "}Sound on · headphones recommended · F fullscreen · B changes the background
       </div>
       <div className="footJoke">
-        No account needed, and nobody watching you lose unless you ask them to. Sign in only
-        if you want your name on the daily board; everything else stays in your browser. The
-        microwave keeps score either way, and has never explained how.
+        Sign in and the daily stops being yours alone: your score is kept, ranked, and waiting
+        next time — on the same board as Shut The Cube. The microwave keeps its own score, and
+        has never explained how.
       </div>
       <div className="hint touchNote">
         <Link href="/about" className="hubMetaLink">About &amp; credits</Link>

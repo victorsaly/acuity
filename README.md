@@ -7,7 +7,8 @@ duration, rhythm, spatial memory, and melody. See it, hear it, remember it, then
 back in. It also includes Beat Lab, a browser-based studio for building and downloading your own
 rap, R&B, or house loop.
 
-**[Play Delulu Beats](https://delulubeats.com/)** — free, with no account or installation required.
+**[Play Delulu Beats](https://delulubeats.com/)** — free, nothing to install. Sign in if you want your
+daily scores kept and ranked; every game plays in full without it.
 
 ## Games
 
@@ -34,9 +35,8 @@ rap, R&B, or house loop.
 ## What's included
 
 - Free Play and a seeded **Daily** challenge shared by everyone at each difficulty
-- An optional shared **leaderboard** for the daily, ranked alongside
-  [Shut The Cube](https://shutthecube.com) on the same board — sign in with Google if you want a
-  name on it, or ignore it entirely and nothing leaves your browser
+- A shared **leaderboard** for the daily, ranked alongside [Shut The Cube](https://shutthecube.com)
+  on the same board — sign in with Google and the scores you post are kept under a name you choose
 - Easy, Hard, and Brutal difficulty levels, plus a fourth Medium level in Downbeat
 - **One at a time** and **All five first** recall formats for Afterimage and Sine Language
 - Warm, Pure, Organ, and Chip tone voices in Sine Language
