@@ -64,7 +64,43 @@ function mulberry32(seed: number): () => number {
 
 /** A fresh deterministic stream for each run. */
 export function runRng(): () => number {
-  return mulberry32((Math.random() * 4294967296) >>> 0);
+  return seededRng((Math.random() * 4294967296) >>> 0);
+}
+
+/** A stream for one known seed, so a run can be shared or ranked. */
+export function seededRng(seed: number): () => number {
+  return mulberry32(seed);
+}
+
+/** Any string to a well-mixed 32-bit seed (xfnv1a). */
+export function seedFrom(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+/**
+ * The seed for one game's daily challenge.
+ *
+ * Namespaced per game so the same date deals each game its own challenge, and
+ * deliberately not per difficulty: difficulty changes how long you get to look,
+ * never what you are looking at, so one board can rank every level together.
+ */
+export function dailySeed(game: string, stamp: string = todayStamp()): number {
+  return seedFrom(`beats:${stamp}:${game}`);
+}
+
+/** The first daily. Day numbers on a shared card count from here. */
+export const DAILY_EPOCH = "2026-09-02";
+
+/** Which daily this is, counting the epoch as #1 — the number on the card. */
+export function dayNumber(stamp: string = todayStamp()): number {
+  const [y, m, d] = stamp.split("-").map(Number);
+  const [ey, em, ed] = DAILY_EPOCH.split("-").map(Number);
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(ey, em - 1, ed)) / 86400000) + 1;
 }
 
 /* ---------- play stats: games played + daily streak, per game ---------- */

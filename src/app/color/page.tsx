@@ -5,7 +5,8 @@ import GameSetup, { type DiffDef } from "@/components/GameSetup";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, seededRng, dailySeed, dayNumber, todayStamp, usePref, recordPlay } from "@/lib/store";
+import { readToken, signIn, submitScore } from "@/lib/arcade";
 import { slotEmoji } from "@/lib/share";
 import { uiBlip } from "@/lib/audio";
 
@@ -73,6 +74,13 @@ export default function ColorGame() {
   const [revealColor, setRevealColor] = useState<HSL | null>(null);
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
+  /* Whether this run is today's shared challenge, and its seed. Only a seeded
+     run can be rebuilt server-side, so only a seeded run can be ranked. */
+  const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
+  const seedRef = useRef<number | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => { setSignedIn(Boolean(readToken())); }, [phase]);
 
   const timers = useRef<number[]>([]);
   const ringRef = useRef<SVGCircleElement>(null);
@@ -109,7 +117,12 @@ export default function ColorGame() {
 
   const start = () => {
     clear();
-    const rng = runRng();
+    setRank(null);
+    /* Everyone gets the same five colours on the daily, so the scores mean
+       something next to each other. */
+    const seed = daily === "on" ? dailySeed("color") : null;
+    seedRef.current = seed;
+    const rng = seed === null ? runRng() : seededRng(seed);
     const cols: HSL[] = Array.from({ length: SLOTS }, () => ({
       h: Math.floor(rng() * 360),
       s: 35 + Math.floor(rng() * 60),
@@ -138,6 +151,23 @@ export default function ColorGame() {
       recordPlay("color");
       setRunStamp(Date.now());
       setPhase("results");
+
+      /* Put it on the shared board, if this was the daily and there is
+         somewhere to put it. Failure is silent: the score is already safe
+         locally, and a leaderboard is never worth interrupting a game for. */
+      const seed = seedRef.current;
+      const token = readToken();
+      if (seed !== null && token) {
+        submitScore(token, {
+          mode: `color-${diff}`,
+          period: todayStamp(),
+          seed,
+          score: Math.round(total * 10),
+          proof: { guesses: next },
+        })
+          .then((posted) => setRank(posted?.rank ?? null))
+          .catch(() => {});
+      }
     }
   };
 
@@ -194,6 +224,9 @@ export default function ColorGame() {
             <GameSetup game="color" diffs={DIFFS} diff={diff}
               onDiff={setDiff} onStart={start} refreshToken={runStamp}
               formats={FLOWS} format={flow} onFormat={setFlow}
+              daily={daily === "on"}
+              onDaily={(on) => setDaily(on ? "on" : "off")}
+              dayNumber={dayNumber()}
               helpContent={{
                 title: "Afterimage",
                 description: "Five colors fill the screen, then vanish. You get three sliders — hue, saturation, lightness — to put each one back.",
@@ -306,6 +339,17 @@ export default function ColorGame() {
           line={`${total.toFixed(1)} / 50 ${scores.map(slotEmoji).join("")}`}
           level={diff}
         />
+        {/* Where this run landed against everyone else's, or the offer to put
+            it there. Only ever for the daily, which is the only ranked run. */}
+        {rank !== null ? (
+          <p className="rankLine">
+            <b>#{rank}</b> on today&rsquo;s Afterimage board
+          </p>
+        ) : seedRef.current !== null && !signedIn ? (
+          <button className="ghost" data-note={523} onClick={() => signIn()}>
+            Put this score on the daily board
+          </button>
+        ) : null}
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
       </div>
     </main>

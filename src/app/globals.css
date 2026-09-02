@@ -1235,3 +1235,15 @@ input[type="range"]::-moz-range-thumb {
 .gameRoot .pKey.black.lit, .gameRoot .pKey.black.hit { background: var(--accent); }
 .gameRoot .pKey.reveal.black { box-shadow: inset 0 0 0 3px var(--accent), 0 0 22px color-mix(in srgb, var(--accent) 30%, transparent); }
 .gameRoot .pKey.reveal.white { box-shadow: inset 0 0 0 3px #0c0d12, 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* Where a daily run landed on the shared board. Quiet: the score itself is
+   the headline, and the rank is the footnote that makes it competitive. */
+.rankLine {
+  margin: 0;
+  font-size: .9rem;
+  color: var(--muted, #7e8290);
+}
+.rankLine b {
+  color: var(--fg, #eff0f4);
+  font-size: 1.05em;
+}

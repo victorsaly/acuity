@@ -15,6 +15,7 @@ export default function GameSetup({
   game, diffs, diff, onDiff, onStart, refreshToken,
   sounds, sound, onSound, formats, format, onFormat, formatsPrimary, formatsLabel = "Format",
   beats, beat, onBeat,
+  daily, onDaily, dayNumber,
   helpContent, formatBest,
 }: {
   /** Score namespace, not the route: a game whose rules changed bumps this
@@ -38,6 +39,11 @@ export default function GameSetup({
   beats?: { key: string; label: string; sub?: string }[];
   beat?: string;
   onBeat?: (k: string) => void;
+  /** When present, offers today's shared challenge instead of a random one.
+   *  Only games whose runs can be checked server-side pass this. */
+  daily?: boolean;
+  onDaily?: (on: boolean) => void;
+  dayNumber?: number;
   helpContent?: { title: string; description: string; steps: string[] };
   /** Render the best score; defaults to one decimal. Level-based games pass their own. */
   formatBest?: (best: number) => string;
@@ -122,8 +128,25 @@ export default function GameSetup({
     </div>
   ) : formatButtons;
 
+  /* The daily sits above difficulty because it is the bigger choice: which
+     challenge, and only then how hard you want it. */
+  const dailyRow = onDaily && (
+    <div className="modes" role="group" aria-label="Challenge">
+      <button
+        className="mode"
+        aria-pressed={daily === true}
+        data-note={523}
+        onClick={() => onDaily(!daily)}
+      >
+        <span>Daily{dayNumber ? ` #${dayNumber}` : ""}</span>
+        <small>Same colours for everyone · ranked</small>
+      </button>
+    </div>
+  );
+
   return (
     <>
+      {dailyRow}
       {formatsPrimary && formatRow}
       <div className="diffs" role="group" aria-label="Difficulty">
         {diffs.map((d) => (

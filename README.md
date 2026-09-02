@@ -34,6 +34,9 @@ rap, R&B, or house loop.
 ## What's included
 
 - Free Play and a seeded **Daily** challenge shared by everyone at each difficulty
+- An optional shared **leaderboard** for the daily, ranked alongside
+  [Shut The Cube](https://shutthecube.com) on the same board — sign in with Google if you want a
+  name on it, or ignore it entirely and nothing leaves your browser
 - Easy, Hard, and Brutal difficulty levels, plus a fourth Medium level in Downbeat
 - **One at a time** and **All five first** recall formats for Afterimage and Sine Language
 - Warm, Pure, Organ, and Chip tone voices in Sine Language

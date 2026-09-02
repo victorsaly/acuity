@@ -182,8 +182,9 @@ export default function Hub() {
         {" · "}Sound on · headphones recommended · F fullscreen · B changes the background
       </div>
       <div className="footJoke">
-        No accounts, no leaderboard, nobody watching you lose. The microwave is the only
-        one keeping score, and it has never explained how.
+        No account needed, and nobody watching you lose unless you ask them to. Sign in only
+        if you want your name on the daily board; everything else stays in your browser. The
+        microwave keeps score either way, and has never explained how.
       </div>
       <div className="hint touchNote">
         <Link href="/about" className="hubMetaLink">About &amp; credits</Link>

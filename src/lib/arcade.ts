@@ -1,0 +1,134 @@
+"use client";
+
+/**
+ * The shared arcade leaderboard.
+ *
+ * The same board that ranks Shut The Cube ranks these games — one Google
+ * account, one name, across both sites. The API is at api.victorsaly.com and
+ * is entirely optional to playing: if it is unreachable, over quota, or
+ * blocked, every game plays exactly as it always has and the board simply does
+ * not appear. Nothing here throws at its caller.
+ *
+ * Only the daily challenge is ranked. A free-play run is dealt from a random
+ * seed nobody else has, so the server cannot rebuild it to check the score,
+ * and an unverifiable entry on a public board is worth less than no entry.
+ */
+
+const BASE = process.env.NEXT_PUBLIC_ARCADE_API ?? "https://api.victorsaly.com";
+const TOKEN_KEY = "beats-session";
+const GAME = "beats";
+
+export type BoardEntry = {
+  rank: number;
+  name: string;
+  score: number;
+  days?: number;
+  shut?: number;
+};
+
+export const readToken = (): string | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+export const writeToken = (token: string | null) => {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* a session that cannot be remembered still works for this visit */
+  }
+};
+
+type CallResult<T> = { ok: boolean; status: number; data: T | null };
+
+/** One request, with a short leash: a board that hangs is worse than absent. */
+async function call<T>(
+  path: string,
+  { method = "GET", body, token, timeout = 6000 }:
+    { method?: string; body?: unknown; token?: string | null; timeout?: number } = {},
+): Promise<CallResult<T>> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(`${BASE}${path}`, {
+      method,
+      /* The board is usually read seconds after posting to it, and a cached
+         copy from before the post looks exactly like the post having failed. */
+      cache: "no-store",
+      signal: controller.signal,
+      headers: {
+        ...(body ? { "content-type": "application/json" } : {}),
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = (await response.json().catch(() => null)) as T | null;
+    return { ok: response.ok, status: response.status, data };
+  } catch {
+    return { ok: false, status: 0, data: null };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Send the browser to Google. It returns to this page with `?auth=`. */
+export const signIn = () => {
+  const back = `${window.location.origin}${window.location.pathname}`;
+  window.location.assign(`${BASE}/v1/auth/start?redirect=${encodeURIComponent(back)}`);
+};
+
+/**
+ * Finish a sign-in just returned from Google.
+ *
+ * The callback hands over a one-time code rather than the session itself, so
+ * no token ever sits in browser history or leaks through a referrer.
+ */
+export async function claimSession(code: string) {
+  const { ok, data } = await call<{ token: string; name: string }>("/v1/auth/claim", {
+    method: "POST",
+    body: { code },
+  });
+  if (!ok || !data?.token) return null;
+  writeToken(data.token);
+  return { name: data.name };
+}
+
+export async function whoAmI(token: string) {
+  const { ok, status, data } = await call<{ id: string; name: string }>("/v1/me", { token });
+  /* Only a real refusal ends a session. Any other failure is the network
+     having a moment, and signing someone out for losing signal would break
+     the very thing being offline-first is for. */
+  if (status === 401) writeToken(null);
+  return ok ? data : null;
+}
+
+export async function fetchBoard(mode: string, period: string, limit = 20) {
+  const query = new URLSearchParams({ game: GAME, mode, period, limit: String(limit) });
+  const { ok, data } = await call<{ board: string; entries: BoardEntry[] }>(`/v1/board?${query}`);
+  return ok ? data : null;
+}
+
+export type BeatsSubmission = {
+  /** `<game>-<difficulty>`, e.g. "color-hard". */
+  mode: string;
+  period: string;
+  seed: number;
+  /** Tenths — 42.1 points travels as 421, because the table holds integers. */
+  score: number;
+  /** Whatever the game's checker needs to recompute the score. */
+  proof: unknown;
+};
+
+export async function submitScore(token: string, run: BeatsSubmission) {
+  const { ok, data, status } = await call<{ ok: boolean; rank: number | null }>("/v1/score", {
+    method: "POST",
+    token,
+    body: { game: GAME, ...run },
+  });
+  if (status === 401) writeToken(null);
+  return ok ? data : null;
+}
