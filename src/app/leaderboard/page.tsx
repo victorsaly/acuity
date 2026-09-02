@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Leaderboard from "@/components/Leaderboard";
-import { RANKED, NOT_YET_RANKED } from "@/lib/arcade";
+import { RANKED } from "@/lib/arcade";
 
 /**
  * The board, from the hub.
@@ -53,18 +53,9 @@ export default function LeaderboardPage() {
           Only the daily is ranked. <Link href={current.route} className="hubMetaLink">Play {current.title}</Link>
         </p>
 
-        {/* The rest of the games exist and are not here yet. Saying so is
-            better than an absence nobody can explain. */}
         <p className="boardNote boardSoon">
-          Not ranked yet:{" "}
-          {NOT_YET_RANKED.map((g, i) => (
-            <span key={g.route}>
-              {i > 0 && ", "}
-              <Link href={g.route} className="hubMetaLink">{g.title}</Link>
-            </span>
-          ))}
-          . Each needs its score checked server-side before it can join, so that
-          nothing on the board is taken on trust.
+          Every score here is rechecked on the server against the challenge its
+          seed dealt, so nothing on the board is taken on trust.
         </p>
       </div>
     </main>

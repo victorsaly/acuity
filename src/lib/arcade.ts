@@ -60,20 +60,21 @@ export const RANKED = [
   { key: "offgrid", title: "Off-Grid", route: "/offgrid", levels: LEVELS,
     max: 50, metric: "Microtiming", unit: "/ 50",
     blurb: "Five bars: ten for the late hit, three for next door." },
+  { key: "memory", title: "Echo", route: "/memory", levels: LEVELS,
+    max: 0, metric: "Levels cleared", unit: "levels",
+    blurb: "One more tile every level, three lives. How far you got." },
+  { key: "piano", title: "Refrain", route: "/piano", levels: LEVELS,
+    max: 0, metric: "Levels cleared", unit: "levels",
+    blurb: "One more note every level, three lives. How far you got." },
+  /* Downbeat is the only game with a fourth difficulty. */
+  { key: "tempo", title: "Downbeat", route: "/tempo",
+    levels: [...LEVELS.slice(0, 1), { key: "medium", label: "Medium" }, ...LEVELS.slice(1)] as const,
+    max: 100, metric: "Accuracy", unit: "%",
+    blurb: "Every note scored by how close you landed, less a charge for air." },
 ] as const;
 
-/**
- * Games that exist and cannot be ranked yet.
- *
- * Downbeat scores a whole timeline of notes, and Echo and Refrain score levels
- * survived — both need the run replayed rather than a list of errors
- * rescored, which is a larger piece of work than the six above.
- */
-export const NOT_YET_RANKED = [
-  { title: "Downbeat", route: "/tempo" },
-  { title: "Echo", route: "/memory" },
-  { title: "Refrain", route: "/piano" },
-] as const;
+/** Every game is ranked. Beat Lab has no score by design, so it never will be. */
+export const NOT_YET_RANKED = [] as const;
 
 export type BoardEntry = {
   rank: number;

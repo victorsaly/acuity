@@ -11,7 +11,8 @@
     "samples": "node scripts/gen-samples.mjs",
     "samples:lab": "node scripts/gen-lab.mjs",
     "test:audio": "node scripts/audio-invariants.mjs",
-    "social": "node scripts/gen-social.mjs"
+    "social": "node scripts/gen-social.mjs",
+    "sync:arcade": "node scripts/sync-arcade.mjs"
   },
   "dependencies": {
     "motion": "^13.1.1",

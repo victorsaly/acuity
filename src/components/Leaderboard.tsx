@@ -30,6 +30,16 @@ export default function Leaderboard({
   /** One line on how the number is arrived at. */
   blurb?: string;
 }) {
+  /*
+   * Everything is stored in tenths because the table holds integers, but not
+   * every game reads back as one decimal: levels cleared are whole, and
+   * Downbeat is a percentage.
+   */
+  const show = (tenths: number) => {
+    if (unit === "levels") return String(Math.round(tenths / 10));
+    if (unit === "%") return `${(tenths / 10).toFixed(1)}%`;
+    return (tenths / 10).toFixed(1);
+  };
   const [period, setPeriod] = useState<"today" | "alltime">("today");
   const [board, setBoard] = useState<{ entries: BoardEntry[] } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,7 +94,9 @@ export default function Leaderboard({
             {period === "today" ? `Daily #${dayNumber()}` : "All time · every daily so far"}
           </p>
           <h2 className="boardTitle">{title}</h2>
-          {metric && <p className="boardMetric">{metric} {unit}</p>}
+          {metric && (
+            <p className="boardMetric">{metric}{unit && unit !== "levels" ? ` ${unit}` : ""}</p>
+          )}
         </div>
         <button className="ghost" data-note={349} onClick={onClose}>Back</button>
       </div>
@@ -114,9 +126,11 @@ export default function Leaderboard({
               <span className="boardRank">{medal(e.rank)}</span>
               <span className="boardWho">{e.name}</span>
               <span className="boardMeta">
-                {period === "alltime" ? `${e.days} ${e.days === 1 ? "day" : "days"}` : unit ?? ""}
+                {period === "alltime"
+                  ? `${e.days} ${e.days === 1 ? "day" : "days"}`
+                  : unit === "%" || unit === "levels" ? "" : unit ?? ""}
               </span>
-              <span className="boardScore">{(e.score / 10).toFixed(1)}</span>
+              <span className="boardScore">{show(e.score)}</span>
             </li>
           ))}
         </ol>
