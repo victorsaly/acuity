@@ -179,6 +179,7 @@ export default function Hub() {
       </Stagger>
       <div className="hint deskHint">
         <Link href="/about" className="hubMetaLink">About &amp; credits</Link>
+        {" · "}<Link href="/leaderboard" className="hubMetaLink">Leaderboard</Link>
         {" · "}Sound on · headphones recommended · F fullscreen · B changes the background
       </div>
       <div className="footJoke">
@@ -188,6 +189,7 @@ export default function Hub() {
       </div>
       <div className="hint touchNote">
         <Link href="/about" className="hubMetaLink">About &amp; credits</Link>
+        {" · "}<Link href="/leaderboard" className="hubMetaLink">Leaderboard</Link>
         {" · "}Works on touch — tap to play · sound on, headphones recommended
       </div>
     </main>

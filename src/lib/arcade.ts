@@ -18,6 +18,28 @@ const BASE = process.env.NEXT_PUBLIC_ARCADE_API ?? "https://api.victorsaly.com";
 const TOKEN_KEY = "beats-session";
 const GAME = "beats";
 
+/**
+ * The games that can be ranked, and the difficulties each ranks separately.
+ *
+ * A game appears here only once the Worker can check its scores — ranking a
+ * game it cannot verify would put unverifiable entries on a public board. The
+ * list grows as checkers are written.
+ */
+export const RANKED = [
+  {
+    key: "color",
+    title: "Afterimage",
+    route: "/color",
+    /* A one-second glance and a five-second one are not the same challenge,
+       so each difficulty keeps its own board. The colours are shared. */
+    levels: [
+      { key: "easy", label: "Easy" },
+      { key: "hard", label: "Hard" },
+      { key: "brutal", label: "Brutal" },
+    ],
+  },
+] as const;
+
 export type BoardEntry = {
   rank: number;
   name: string;

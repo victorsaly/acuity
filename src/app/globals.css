@@ -1301,3 +1301,8 @@ input[type="range"]::-moz-range-thumb {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
+
+.boardPage {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  width: min(100%, 30rem);
+}
