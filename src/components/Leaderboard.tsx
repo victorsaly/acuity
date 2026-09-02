@@ -17,12 +17,18 @@ import { todayStamp, dayNumber } from "@/lib/store";
  * with: the game is unaffected either way.
  */
 export default function Leaderboard({
-  mode, title, onClose,
+  mode, title, onClose, metric, unit, blurb,
 }: {
   /** `<game>-<difficulty>`, e.g. "color-hard". */
   mode: string;
   title: string;
   onClose: () => void;
+  /** What the number measures, e.g. "Pitch accuracy". */
+  metric?: string;
+  /** The scale it is out of, e.g. "/ 50". */
+  unit?: string;
+  /** One line on how the number is arrived at. */
+  blurb?: string;
 }) {
   const [period, setPeriod] = useState<"today" | "alltime">("today");
   const [board, setBoard] = useState<{ entries: BoardEntry[] } | null>(null);
@@ -78,6 +84,7 @@ export default function Leaderboard({
             {period === "today" ? `Daily #${dayNumber()}` : "All time · every daily so far"}
           </p>
           <h2 className="boardTitle">{title}</h2>
+          {metric && <p className="boardMetric">{metric} {unit}</p>}
         </div>
         <button className="ghost" data-note={349} onClick={onClose}>Back</button>
       </div>
@@ -107,13 +114,15 @@ export default function Leaderboard({
               <span className="boardRank">{medal(e.rank)}</span>
               <span className="boardWho">{e.name}</span>
               <span className="boardMeta">
-                {period === "alltime" ? `${e.days} ${e.days === 1 ? "day" : "days"}` : ""}
+                {period === "alltime" ? `${e.days} ${e.days === 1 ? "day" : "days"}` : unit ?? ""}
               </span>
               <span className="boardScore">{(e.score / 10).toFixed(1)}</span>
             </li>
           ))}
         </ol>
       )}
+
+      {blurb && <p className="boardNote boardBlurb">{blurb}</p>}
 
       <div className="boardFoot">
         {me ? (

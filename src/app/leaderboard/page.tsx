@@ -43,6 +43,9 @@ export default function LeaderboardPage() {
         <Leaderboard
           mode={`${current.key}-${level}`}
           title={current.title}
+          metric={current.metric}
+          unit={current.unit}
+          blurb={current.blurb}
           onClose={() => { window.location.href = "/"; }}
         />
 

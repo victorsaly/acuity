@@ -31,22 +31,48 @@ const LEVELS = [
   { key: "brutal", label: "Brutal" },
 ] as const;
 
+/**
+ * Every ranked game, with what its number actually means.
+ *
+ * The games do not share a scale — five colours out of ten apiece is not
+ * eight taps against a metronome — so the board says what it is measuring
+ * rather than showing a bare figure and hoping.
+ *
+ * Each difficulty keeps its own board: a one-second glance and a five-second
+ * one are not the same challenge, even when the targets are.
+ */
 export const RANKED = [
-  /* Each difficulty keeps its own board: a one-second glance and a
-     five-second one are not the same challenge, even when the targets are. */
-  { key: "color", title: "Afterimage", route: "/color", levels: LEVELS },
-  { key: "sound", title: "Sine Language", route: "/sound", levels: LEVELS },
-  { key: "time", title: "Second Sense", route: "/time", levels: LEVELS },
+  { key: "color", title: "Afterimage", route: "/color", levels: LEVELS,
+    max: 50, metric: "Colour accuracy", unit: "/ 50",
+    blurb: "Five colours, ten points each for how close you got." },
+  { key: "sound", title: "Sine Language", route: "/sound", levels: LEVELS,
+    max: 50, metric: "Pitch accuracy", unit: "/ 50",
+    blurb: "Five tones, ten points each, scored in cents off." },
+  { key: "time", title: "Second Sense", route: "/time", levels: LEVELS,
+    max: 50, metric: "Duration accuracy", unit: "/ 50",
+    blurb: "Five durations, ten points each for how near you held it." },
+  { key: "fever", title: "Fever Dream", route: "/fever", levels: LEVELS,
+    max: 80, metric: "Timing", unit: "/ 80",
+    blurb: "Eight taps, ten points each for landing on the beat." },
+  { key: "phantom", title: "Phantom Drop", route: "/phantom", levels: LEVELS,
+    max: 30, metric: "Internal timing", unit: "/ 30",
+    blurb: "Three drops, ten points each for catching the return." },
+  { key: "offgrid", title: "Off-Grid", route: "/offgrid", levels: LEVELS,
+    max: 50, metric: "Microtiming", unit: "/ 50",
+    blurb: "Five bars: ten for the late hit, three for next door." },
 ] as const;
 
-/** Games that exist but cannot be ranked yet, so the board can say so. */
+/**
+ * Games that exist and cannot be ranked yet.
+ *
+ * Downbeat scores a whole timeline of notes, and Echo and Refrain score levels
+ * survived — both need the run replayed rather than a list of errors
+ * rescored, which is a larger piece of work than the six above.
+ */
 export const NOT_YET_RANKED = [
   { title: "Downbeat", route: "/tempo" },
   { title: "Echo", route: "/memory" },
   { title: "Refrain", route: "/piano" },
-  { title: "Fever Dream", route: "/fever" },
-  { title: "Phantom Drop", route: "/phantom" },
-  { title: "Off-Grid", route: "/offgrid" },
 ] as const;
 
 export type BoardEntry = {

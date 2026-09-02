@@ -808,17 +808,19 @@ input[type="range"]::-moz-range-thumb {
 
 /* compact menus: several option rows must fit without scrolling */
 .modes { margin-bottom: 10px; }
-.menuStage .cta { margin-top: 14px; }
 .menuStage .tagline { margin-bottom: 3vh; }
-.menuStage .best { margin-top: 2vh; }
+.menuStage .optionToggleWrap { margin-block: clamp(6px, 1vh, 12px); }
+.menuStage .menuActions { margin-top: clamp(12px, 2vh, 20px); }
+.menuStage .best { margin-top: clamp(14px, 2vh, 24px); }
+.menuLb { margin-top: clamp(20px, 3vh, 32px); }
 @media (max-height: 820px) {
   .menuStage .wordmark { font-size: clamp(24px, 5vw, 44px); margin-bottom: 4px; }
   .menuStage .tagline { margin-bottom: 14px; font-size: 14px; }
   .menuStage .diffs { margin-bottom: 10px; }
   .menuStage .diff { padding: 8px 14px; }
-  .menuStage .best { margin-top: 10px; }
+  .menuStage .best { margin-top: 14px; }
   .menuStage .swatches { margin-bottom: 12px; }
-  .menuStage .kbd { margin-top: 8px; }
+  .menuStage .kbd { margin-top: 10px; }
 }
 
 /* Taller desktop menus breathe vertically instead of clustering at center. */
@@ -1309,3 +1311,11 @@ input[type="range"]::-moz-range-thumb {
 
 .boardGames { flex-wrap: wrap; justify-content: center; }
 .boardSoon { max-width: 34rem; font-size: .82rem; opacity: .8; }
+
+/* What the number on this board actually measures. Without it a score is
+   just a figure, and the games do not share a scale. */
+.boardMetric {
+  margin: 2px 0 0; font-size: .78rem; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted, #7e8290);
+}
+.boardBlurb { max-width: 32rem; font-size: .82rem; opacity: .85; }

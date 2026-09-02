@@ -249,7 +249,7 @@ export default function ColorGame() {
                   "Lock it in. Five colors, then a score out of 50.",
                 ],
               }} />
-            <button className="ghost" data-note={392} onClick={() => setPhase("board")}>
+            <button className="ghost menuLb" data-note={392} onClick={() => setPhase("board")}>
               Leaderboard
             </button>
           </Item>
