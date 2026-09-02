@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/gen-social.mjs",
+    "prebuild": "node scripts/gen-social.mjs && node scripts/gen-icons.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -12,7 +12,8 @@
     "samples:lab": "node scripts/gen-lab.mjs",
     "test:audio": "node scripts/audio-invariants.mjs",
     "social": "node scripts/gen-social.mjs",
-    "sync:arcade": "node scripts/sync-arcade.mjs"
+    "sync:arcade": "node scripts/sync-arcade.mjs",
+    "icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
     "motion": "^13.1.1",

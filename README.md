@@ -7,8 +7,10 @@ duration, rhythm, spatial memory, and melody. See it, hear it, remember it, then
 back in. It also includes Beat Lab, a browser-based studio for building and downloading your own
 rap, R&B, or house loop.
 
-**[Play Delulu Beats](https://delulubeats.com/)** — free, nothing to install. Sign in if you want your
-daily scores kept and ranked; every game plays in full without it.
+**[Play Delulu Beats](https://delulubeats.com/)** — free, and nothing to install unless you want to:
+it is a progressive web app, so your browser will offer to put it on your home screen, and once it
+is there every game works with no connection at all. Sign in if you want your daily scores kept and
+ranked; every game plays in full without it.
 
 ## Games
 
@@ -48,6 +50,7 @@ daily scores kept and ranked; every game plays in full without it.
 - Per-mode best scores, play counts, daily streaks, saved preferences, and new-best celebrations
 - Shareable emoji score cards with native sharing, clipboard fallback, and WhatsApp sharing
 - Built-in How to play guides, audio feedback, fullscreen mode, and four animated backgrounds
+- **Installable** to a phone or desktop, with every game and every drum kit cached for offline play
 - Beat Lab with mix-and-match drums, bass, chords, melody, vocal chops, and track download
 
 Keyboard shortcuts appear in each game. Common controls include number keys for difficulty,
@@ -61,6 +64,7 @@ Contextual shortcuts are shown for sound, format, beat, and background options.
 - [Motion](https://motion.dev) for interface transitions
 - Web Audio API for synthesized voices, drum playback, effects, and timing
 - Canvas for waveforms, rhythm lanes, and animated backgrounds
+- A hand-written service worker (`public/sw.js`) — no build plugin, no runtime dependency
 
 ## Develop
 
@@ -69,7 +73,17 @@ npm install
 npm run dev      # http://localhost:3000
 npm run lint
 npm run build    # static export to out/
+
+npm run social   # regenerate the per-game share images
+npm run icons    # regenerate the app icons and store screenshots
 ```
+
+Both generators run on `prebuild` and their output is committed, so a build without network
+still ships images.
+
+The service worker is deliberately not registered in development — it treats `/_next/static`
+as immutable, which is true of a build and not of `next dev`. To exercise it, build and serve
+`out/` (`npx serve out`) rather than running the dev server.
 
 Pushes to `main` deploy automatically to GitHub Pages at
 [delulubeats.com](https://delulubeats.com/).
