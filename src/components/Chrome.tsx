@@ -16,6 +16,8 @@ export default function Chrome() {
   const path = usePathname();
   const router = useRouter();
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [navigatingGame, setNavigatingGame] = useState<string | null>(null);
 
   useEffect(() => {
     const query = window.matchMedia("(hover: none) or (pointer: coarse)");
@@ -38,6 +40,29 @@ export default function Chrome() {
     document.addEventListener("keydown", onEsc);
     return () => document.removeEventListener("keydown", onEsc);
   }, [path, router]);
+
+  useEffect(() => {
+    setIsNavigating(false);
+    setNavigatingGame(null);
+  }, [path]);
+
+  useEffect(() => {
+    const onNavigate = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const anchor = (e.target as Element | null)?.closest<HTMLAnchorElement>("a[href]");
+      if (!anchor || anchor.target === "_blank" || anchor.dataset.silent !== undefined) return;
+      const href = anchor.getAttribute("href");
+      if (!href || !href.startsWith("/") || href.startsWith("/#") || href === path) return;
+      const destination = href.split(/[/?#]/)[1] ?? "";
+      const game = ["color", "sound", "time", "tempo", "memory", "piano", "fever", "phantom", "offgrid"].includes(destination)
+        ? destination
+        : null;
+      setNavigatingGame(game);
+      setIsNavigating(true);
+    };
+    document.addEventListener("click", onNavigate);
+    return () => document.removeEventListener("click", onNavigate);
+  }, [path]);
 
   useEffect(() => {
     /* Once the context is running there is nothing left to unlock — re-priming
@@ -101,6 +126,17 @@ export default function Chrome() {
 
   return (
     <>
+      {isNavigating && (
+        <div className="routeLoading" data-game={navigatingGame ?? undefined} aria-live="polite" aria-busy="true">
+          <span className="routeLoadingBar" aria-hidden />
+          <div className="routeLoadingMark" aria-hidden>
+            <span />
+            <span />
+            <span />
+          </div>
+          <p>Loading game</p>
+        </div>
+      )}
       {path !== "/" && (
         <Link href="/" className="corner homeLink" data-note="349" aria-label="Back to games menu">
           <span className="homeLinkInner homeLinkLong">◂ Back to games</span>

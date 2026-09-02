@@ -132,6 +132,75 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   .soundGateMark span { animation: none; }
 }
 .fsBtn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+.routeLoading {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: grid;
+  place-content: center;
+  gap: 18px;
+  background: rgba(12, 13, 18, 0.46);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  color: var(--muted);
+  text-align: center;
+  pointer-events: none;
+}
+.routeLoadingBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 34%;
+  height: 2px;
+  background: #ffb02e;
+  box-shadow: 0 0 16px rgba(255, 176, 46, 0.55);
+  animation: routeLoadBar 1.15s ease-in-out infinite;
+}
+.routeLoading[data-game="color"] { --loading-accent: #ff5959; }
+.routeLoading[data-game="sound"] { --loading-accent: #4be1ff; }
+.routeLoading[data-game="time"] { --loading-accent: #ffe93d; }
+.routeLoading[data-game="tempo"] { --loading-accent: #c48bff; }
+.routeLoading[data-game="memory"] { --loading-accent: #6fe06f; }
+.routeLoading[data-game="piano"] { --loading-accent: #8b5cf6; }
+.routeLoading[data-game="fever"] { --loading-accent: #ffb13d; }
+.routeLoading[data-game="phantom"] { --loading-accent: #7a6bff; }
+.routeLoading[data-game="offgrid"] { --loading-accent: #e05fd0; }
+.routeLoading[data-game] .routeLoadingBar { background: var(--loading-accent); box-shadow: 0 0 16px color-mix(in srgb, var(--loading-accent) 55%, transparent); }
+.routeLoading[data-game] .routeLoadingMark span:nth-child(3) { background: var(--loading-accent); }
+.routeLoadingMark {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  justify-content: center;
+}
+.routeLoadingMark span {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--bone);
+  animation: routeLoadPulse 0.9s ease-in-out infinite;
+}
+.routeLoadingMark span:nth-child(2) { opacity: 0.35; animation-delay: 0.12s; }
+.routeLoadingMark span:nth-child(3) { background: #ffb02e; animation-delay: 0.24s; }
+.routeLoading p {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+@keyframes routeLoadPulse {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+@keyframes routeLoadBar {
+  0% { transform: translateX(-120%); }
+  55% { transform: translateX(210%); }
+  100% { transform: translateX(340%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .routeLoadingMark span { animation: none; }
+  .routeLoadingBar { animation: none; width: 100%; }
+}
 .homeLink {
   top: 18px; left: 18px;
   z-index: 45;
@@ -153,7 +222,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 }
 .homeLinkInner {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase;
 }
 .homeLinkShort { display: none; }
 .hud { position: fixed; top: 58px; left: 24px; z-index: 40; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
@@ -168,6 +238,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   text-wrap: balance; text-align: center;
   margin: 0 0 10px;
 }
+/* The hub anchors its bar to the top; the hero centers in what's left. */
+.hubStage { justify-content: flex-start; }
+
 /* hub top bar: small lockup left, site links right. The right padding
    clears the fixed fullscreen button (40px circle at top/right 18px). */
 .hubNav {
@@ -181,40 +254,175 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 }
 .hubNavBrand { display: flex; align-items: center; gap: 12px; }
 .hubNavMark { width: 34px; height: auto; flex: none; }
+/* Same voice as the wordmark below: Unbounded 900, all caps. */
 .hubNavName {
   font-family: var(--font-display), system-ui, sans-serif;
-  font-weight: 700; font-size: 16px; letter-spacing: 0.02em;
+  font-weight: 900; font-size: 15px; letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
-.hubNavLinks { display: flex; gap: 34px; font-size: 13px; }
+.hubNavLinks {
+  display: flex;
+  gap: 34px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
 .hubNavLinks a { color: var(--muted); white-space: nowrap; transition: color 0.15s; }
 .hubNavLinks a:hover { color: var(--bone); }
 #games { scroll-margin-top: 16px; }
 @media (max-width: 480px) { .hubNavName { display: none; } }
-/* The bar's name carries the brand: its last u sits off the grid. */
+@media (max-width: 480px) {
+  .hubNav {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 2px 4px 14px;
+  }
+  .hubNavLinks {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+}
+/* The bar's name carries the brand: its last u sits off the grid.
+   On load it slips there from the aligned position, like the wordmark's. */
 .navOffU {
   display: inline-block;
   font-style: normal;
   color: #ffb02e;
   transform: translateY(0.09em) rotate(7deg);
+  animation: offSlip 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) 0.9s both;
+}
+/* The bar's mark pops in cell by cell; the amber cell lands on the grid
+   and then drops off it, in time with the two slipping u's. */
+.navCell1, .navCell2 {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: navPop 0.34s cubic-bezier(0.2, 0.9, 0.25, 1.3) forwards;
+}
+.navCell2 { animation-delay: 0.1s; }
+.navCell3 {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: navPopSlip 1.1s cubic-bezier(0.3, 1.2, 0.5, 1) 0.2s both;
+}
+@keyframes navPop {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes navPopSlip {
+  0% { opacity: 0; transform: translateY(-4px) scale(0.4); }
+  28% { opacity: 1; transform: translateY(-4px) scale(1); }
+  70% { opacity: 1; transform: translateY(-4px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-/* hero copy — the heading is the hero now the wordmark lives in the bar */
-.hubHead {
-  font-family: var(--font-display), system-ui, sans-serif;
-  font-weight: 700;
-  font-size: clamp(24px, 3.4vw, 40px);
-  line-height: 1.25;
-  text-align: center;
-  text-wrap: balance;
-  margin: 0 0 14px;
+/* hero: the wordmark is back in the middle, over the star field */
+.brandName span {
+  display: inline-block;
+  opacity: 0;
+  animation: brandWordHit 0.48s cubic-bezier(0.2, 0.9, 0.25, 1.25) forwards;
 }
+.brandName span:nth-child(2) { animation-delay: 0.14s; }
+/* The last U slips off the grid after the word lands — the brand in one letter. */
+.offLetter {
+  display: inline-block;
+  font-style: normal;
+  color: #ffb02e;
+  transform: translateY(0.14em) rotate(7deg);
+  animation: offSlip 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) 0.85s both;
+}
+@keyframes offSlip {
+  from { color: var(--bone); transform: translateY(0) rotate(0deg); }
+}
+@keyframes brandWordHit {
+  0% { opacity: 0; transform: translateY(12px) scale(0.88); filter: blur(5px); }
+  58% { opacity: 1; transform: translateY(-2px) scale(1.045); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.tagline.hubTag { color: var(--bone); max-width: 60ch; }
 .offWords {
   display: inline-block;
   font-style: normal;
   color: #ffb02e;
   transform: rotate(-2deg);
 }
-.tagline.hubSub { max-width: 52ch; margin-bottom: 3vh; }
+.taglineSub {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 7px;
+}
+
+/* Depth Field: three dot layers behind the hub, each drifting on its own
+   clock and leaning away from the cursor at its own depth (--px/--py are
+   set from pointermove; without them the field just drifts). */
+/* Clipped: the layers are deliberately oversized (inset: -140px) so drifting
+   never reveals an edge, and .stage's perspective makes it their containing
+   block — unclipped they give the hub 140px of sideways scroll. */
+.starField { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.starField i {
+  position: absolute; inset: -140px;
+  background-image: radial-gradient(circle, rgba(239, 240, 244, 0.13) 1px, transparent 1.6px);
+  background-size: 190px 190px;
+  transform: translate(calc(var(--px, 0) * -16px), calc(var(--py, 0) * -10px));
+  animation: starDriftA 70s linear infinite;
+}
+.starField i:nth-child(2) {
+  background-image: radial-gradient(circle, rgba(75, 225, 255, 0.16) 1.5px, transparent 2.1px);
+  background-size: 310px 310px;
+  transform: translate(calc(var(--px, 0) * -34px), calc(var(--py, 0) * -22px));
+  animation-name: starDriftB; animation-duration: 100s;
+}
+.starField i:nth-child(3) {
+  background-image: radial-gradient(circle, rgba(196, 139, 255, 0.11) 2px, transparent 2.6px);
+  background-size: 470px 470px;
+  transform: translate(calc(var(--px, 0) * -58px), calc(var(--py, 0) * -38px));
+  animation-name: starDriftC; animation-duration: 130s;
+}
+@keyframes starDriftA { to { background-position: 380px 190px; } }
+@keyframes starDriftB { to { background-position: -310px 155px; } }
+@keyframes starDriftC { to { background-position: 235px -470px; } }
+
+/* Depth shelf: the cards ride a horizontal rail; JS turns each slot away
+   from center (rotateY/translateZ) as it scrolls. Narrow screens revert
+   to the plain column below. */
+.depthScroller {
+  width: 100%;
+  overflow-x: auto;
+  padding: 26px 0 30px;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;   /* one card is always the selection */
+}
+.depthScroller::-webkit-scrollbar { display: none; }
+.hubCards.depthRow {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  max-width: none;
+  width: max-content;
+  gap: 22px;
+  padding: 0 calc(50vw - 150px);
+  perspective: none;   /* each slot carries its own perspective() */
+}
+.depthSlot {
+  flex: none;
+  width: 280px;
+  display: flex;
+  scroll-snap-align: center;
+  will-change: transform;
+}
+.depthSlot .hubCard { width: 100%; background: rgba(21, 23, 33, 0.94); }
+/* The selected card wears its game's colour without waiting for hover. */
+.depthSlot.isCentered .hubCard {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.45),
+              0 0 34px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.depthSlot.isCentered .hubCard::before { opacity: 1; }
+.depthSlot.isCentered .hubCard .go { color: var(--accent); }
 .tagline {
   color: var(--muted); text-align: center; max-width: 38ch;
   line-height: 1.6; margin: 0 0 4.5vh;
@@ -229,7 +437,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   background: rgba(12, 13, 18, 0.6);
 }
 .mode { font-size: 11px; padding: 8px 16px; }
-.diff small { display: block; font-size: 10px; letter-spacing: 0.06em; margin-top: 2px; opacity: 0.7; }
+.diff small, .mode small { display: block; font-size: 10px; letter-spacing: 0.06em; margin-top: 2px; opacity: 0.7; }
 .diff[aria-pressed="true"], .mode[aria-pressed="true"] {
   color: var(--ink); background: var(--bone); border-color: var(--bone);
 }
@@ -297,6 +505,14 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
   position: absolute; bottom: 2.5vh; left: 0; right: 0; text-align: center;
   font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--muted); opacity: 0.8;
+}
+/* On menus the hint flows after the content instead of pinning to the
+   viewport — a pinned hint lands on the shortcut row when the window is
+   short. In-game hints (play phases) keep the pinned position. */
+.menuStage .hint {
+  position: static;
+  flex: none;
+  margin-top: clamp(10px, 2vh, 18px);
 }
 
 /* ---------- hub ---------- */
@@ -399,6 +615,13 @@ input[type="range"]::-moz-range-thumb {
 
 /* ---------- results ---------- */
 .resStage { padding: 0; }
+/* Results sit over whatever the game left running (tempo and sound keep
+   their canvas alive; Aurora is always there) — a scrim keeps the verdict
+   readable however bright the playfield ended up. Sound stays lighter:
+   its results canvas still answers rollovers with the tone's wave.
+   (No backdrop-filter: the CSS toolchain strips it for our targets.) */
+.resStage, .resScrim { background: rgba(12, 13, 18, 0.82); }
+.resStage.soundRes { background: rgba(12, 13, 18, 0.55); }
 .resHead { flex: none; text-align: center; padding: max(20px, 3.5vh) 24px 2vh; }
 .resVerdict {
   font-family: var(--font-display), system-ui, sans-serif;
@@ -598,6 +821,7 @@ input[type="range"]::-moz-range-thumb {
 
 @media (prefers-reduced-motion: reduce) {
   .aurora i { animation: none; }
+  .starField i { animation: none; transform: none; }
 }
 
 /* ================= v3: monolithic black & white ================= */
@@ -655,7 +879,7 @@ input[type="range"]::-moz-range-thumb {
 /* ================= mobile ================= */
 /* short/narrow screens: menus may exceed the viewport — let them
    scroll, and keep centering only when it fits ("safe center") */
-.menuStage { overflow-y: auto; justify-content: safe center; overscroll-behavior: contain; }
+.menuStage { overflow-y: auto; overflow-x: hidden; justify-content: safe center; overscroll-behavior: contain; }
 .stage:not(.menuStage) { overflow: hidden; }
 
 /* The hub grows as tiles are added; keep its footer after the grid, not pinned over it. */
@@ -703,8 +927,17 @@ input[type="range"]::-moz-range-thumb {
   .hubNavMark { width: 28px; }
   .hubNavName { font-size: 14px; }
   .hubNavLinks { gap: 16px; font-size: 11px; }
-  .hubHead { margin-bottom: 10px; }
-  .tagline.hubSub { max-width: 34ch; }
+  .tagline.hubTag { max-width: 34ch; }
+  .depthScroller { overflow-x: hidden; overflow-y: visible; padding: 0; }
+  .hubCards.depthRow {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 900px;
+    gap: 10px;
+    padding: 0;
+  }
+  .depthSlot { width: min(100%, 280px); height: 282px; }
   .tagline {
     max-width: 28ch;
     font-size: 13px;
@@ -713,12 +946,15 @@ input[type="range"]::-moz-range-thumb {
   }
   .hubCards { gap: 10px; }
   .hubCard {
-    padding: 16px 14px 14px;
+    min-height: 206px;
+    padding: 14px 12px 12px;
+    gap: 6px;
   }
-  .hubCard .art { height: 58px; }
-  .hubCard h2 { font-size: 14px; }
-  .hubCard p { font-size: 12px; line-height: 1.45; }
-  .hubCard .go { padding-top: 8px; font-size: 10px; }
+  .hubCard .art { height: 48px; margin-bottom: 4px; }
+  .hubCard h2 { font-size: 12px; line-height: 1.25; }
+  .hubCard p { font-size: 11px; line-height: 1.4; }
+  .hubCard .cardStats { font-size: 9px; }
+  .hubCard .go { padding-top: 6px; font-size: 9px; }
   .tempoHud {
     top: 18px;
     gap: 8px 14px;
@@ -749,18 +985,34 @@ input[type="range"]::-moz-range-thumb {
   .menuActions > * { min-height: 48px; }
   .helpPanel { padding: 18px 16px 16px; }
   .wordmark { margin-top: 52px; }      /* clear the fixed chrome */
+  .brandName { margin-top: 8px; }      /* the hub's nav is in-flow, nothing to clear */
   .tagline { max-width: 30ch; font-size: 14px; margin-bottom: 18px; }
   .hubCards { gap: 12px; width: 100%; }
   .hubCard {
     flex-basis: 100%;
     max-width: 100%;
     min-width: 0;
-    padding: 18px 16px 16px;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    min-height: 0;
+    padding: 14px 12px 12px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
-  .hubCard h2 { font-size: 15px; }
-  .hubCard p { font-size: 12px; }
-  .hubCard .art { height: 62px; }
-  .hubCard .go { padding-top: 10px; }
+  .hubCard h2 { font-size: 16px; line-height: 1.25; }
+  .hubCard p { width: 100%; max-width: 42ch; font-size: 12px; line-height: 1.45; }
+  .hubCard .art {
+    width: 100%;
+    height: 72px;
+    margin-bottom: 6px;
+    display: grid;
+    place-items: center;
+  }
+  .hubCard .art svg { width: min(100%, 240px); height: auto; }
+  .hubCard .cardStats { font-size: 10px; }
+  .hubCard .go { width: 100%; margin-top: 2px; padding-top: 6px; font-size: 10px; }
   .hint {
     position: static;
     width: 100%;
@@ -801,8 +1053,10 @@ input[type="range"]::-moz-range-thumb {
 /* compact menus: several option rows must fit without scrolling */
 .modes { margin-bottom: 10px; }
 .menuStage .tagline { margin-bottom: 3vh; }
-.menuStage .optionToggleWrap { margin-block: clamp(6px, 1vh, 12px); }
-.menuStage .menuActions { margin-top: clamp(12px, 2vh, 20px); }
+/* Game menus render as .stage without .menuStage, so this spacing is unscoped
+   — scoped to .menuStage the toggle sits flush against the Start row. */
+.optionToggleWrap { margin-block: clamp(6px, 1vh, 12px); }
+.menuActions { margin-top: clamp(12px, 2vh, 20px); }
 .menuStage .best { margin-top: clamp(14px, 2vh, 24px); }
 .menuLb { margin-top: clamp(20px, 3vh, 32px); }
 @media (max-height: 820px) {
@@ -821,15 +1075,15 @@ input[type="range"]::-moz-range-thumb {
   .menuStage .tagline { margin-bottom: clamp(24px, 4vh, 42px); }
   .menuStage .diffs { margin-bottom: clamp(18px, 2.5vh, 28px); }
   .menuStage .modes { margin-bottom: clamp(16px, 2.2vh, 24px); }
-  .menuStage .optionToggleWrap { margin-block: clamp(4px, 1vh, 10px); }
-  .menuStage .menuActions { margin-top: clamp(12px, 2vh, 22px); }
+  .optionToggleWrap { margin-block: clamp(4px, 1vh, 10px); }
+  .menuActions { margin-top: clamp(12px, 2vh, 22px); }
   .menuStage .best { margin-top: clamp(20px, 3vh, 34px); }
   .menuStage .kbd { margin-top: clamp(18px, 2.5vh, 28px); }
 }
 
 @media (min-width: 701px) and (min-height: 980px) {
   .menuStage .tagline { margin-bottom: 5vh; }
-  .menuStage .menuActions { margin-top: 3vh; }
+  .menuActions { margin-top: 3vh; }
   .menuStage .best { margin-top: 4vh; }
   .menuStage .kbd { margin-top: 3vh; }
 }
@@ -969,11 +1223,59 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ---------- hub card art motion ---------- */
+/* Every mark idles: a quiet ambient loop per game, and a livelier one on
+   hover where the game earns it. All of it stops under reduced motion. */
 .feverShake, .phantomDrop { transform-box: fill-box; }
-.feverShake { transform-origin: 50% 92%; }
-.phantomDrop { transform-origin: 50% 50%; }
+.feverShake { transform-origin: 50% 92%; animation: feverIdle 3.4s ease-in-out infinite; }
+.phantomDrop { transform-origin: 50% 50%; animation: phantomIdle 2.6s ease-in-out infinite; }
 .hubCard:hover .feverShake { animation: feverNudge 0.62s cubic-bezier(0.2, 0.9, 0.25, 1.3) infinite; }
 .hubCard:hover .phantomDrop { animation: phantomPulse 1.05s ease-out infinite; }
+.markWave { animation: markWaveSlide 3.2s linear infinite; }
+.markSweep {
+  transform-box: view-box;
+  transform-origin: 100px 36px;
+  animation: markSpin 8s linear infinite;
+}
+.markBeat {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: markBeatPulse 1.2s ease-out infinite;
+}
+.markBlink { animation: markBlinkFade 2.8s ease-in-out infinite; }
+.markKey {
+  transform-box: fill-box;
+  animation: markKeyPress 2.6s ease-in-out infinite;
+}
+.markLate {
+  transform-box: fill-box;
+  animation: markLateWiggle 2.8s ease-in-out infinite;
+}
+@keyframes markWaveSlide { to { transform: translateX(-25px); } }
+@keyframes markSpin { to { transform: rotate(360deg); } }
+@keyframes markBeatPulse {
+  0%, 30%, 100% { transform: scale(1); }
+  12% { transform: scale(1.14); }
+}
+@keyframes markBlinkFade {
+  0%, 72%, 100% { opacity: 1; }
+  82% { opacity: 0.25; }
+}
+@keyframes markKeyPress {
+  0%, 16%, 100% { transform: translateY(0); }
+  8% { transform: translateY(3px); }
+}
+@keyframes markLateWiggle {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+@keyframes feverIdle {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.015, 0.985); }
+}
+@keyframes phantomIdle {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
 @keyframes feverNudge {
   0%, 100% { transform: scale(1, 1); }
   30% { transform: scale(1.05, 0.92); }
@@ -985,7 +1287,8 @@ input[type="range"]::-moz-range-thumb {
   100% { opacity: 0.6; transform: scaleY(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hubCard:hover .feverShake, .hubCard:hover .phantomDrop { animation: none; }
+  .feverShake, .phantomDrop, .hubCard:hover .feverShake, .hubCard:hover .phantomDrop,
+  .markWave, .markSweep, .markBeat, .markBlink, .markKey, .markLate { animation: none; }
 }
 
 /* ---------- Beat Lab banner card ---------- */
@@ -1131,19 +1434,18 @@ input[type="range"]::-moz-range-thumb {
     color-mix(in srgb, var(--accent) 20%, transparent), transparent 62%);
   opacity: 0; transition: opacity 0.18s;
 }
-.hubCard .art { color: var(--rest); transition: color 0.18s, filter 0.28s; }
+/* Cards wear their game's colour at rest; hover still adds the wash and glow. */
+.hubCard .art { color: var(--accent); transition: color 0.18s, filter 0.28s; }
 
-/* Afterimage has no line art to tint — its whole tile is the spectrum. It
-   rests drained of colour like every other card and floods back on hover,
-   which is more or less what the game does to you. */
+/* Afterimage has no line art to tint — its whole tile is the spectrum. */
 .hubCard[data-game="color"] .art {
   background: conic-gradient(from 0deg,
     #ff5959, #ffb13d, #ffe93d, #6fe06f, #3dc9ff, #7a6bff, #e05fd0, #ff5959);
-  filter: blur(1px) grayscale(1) contrast(0.92);
+  filter: blur(1px) saturate(1);
 }
 .hubCard[data-game="color"]:hover .art,
 .hubCard[data-game="color"]:focus-visible .art,
-.hubCard[data-game="color"]:active .art { filter: blur(1px) saturate(1.1); }
+.hubCard[data-game="color"]:active .art { filter: blur(1px) saturate(1.15); }
 
 .hubCard:hover, .hubCard:focus-visible, .hubCard:active {
   border-color: color-mix(in srgb, var(--accent) 62%, transparent);
@@ -1246,6 +1548,25 @@ input[type="range"]::-moz-range-thumb {
 
 .boardWrap { display: flex; flex-direction: column; gap: 14px; width: min(100%, 30rem); }
 .boardHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+
+/* The board wears the game it belongs to: its mark, in its accent. */
+.boardControls {
+  display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: 8px 14px;
+}
+.boardControls .modes { margin-bottom: 0; }
+.boardIdent { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.boardMark { flex: none; width: 84px; color: var(--accent, var(--bone)); }
+.boardMark svg { display: block; width: 100%; height: auto; }
+.boardWrap[data-game] .boardTitle { color: var(--accent); }
+.boardWrap[data-game] .boardRow.isMe {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  outline-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/* Both boards start below the fixed back link in the top-left corner. */
+.boardWrap, .boardPage { padding-top: clamp(10px, 2vh, 22px); }
+.boardPage .boardWrap { padding-top: 0; }
 .boardEyebrow {
   margin: 0 0 2px; font-size: .72rem; letter-spacing: .12em;
   text-transform: uppercase; color: var(--muted, #7e8290);
@@ -1259,16 +1580,33 @@ input[type="range"]::-moz-range-thumb {
 
 .boardRows {
   list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column;
-  gap: 2px; max-height: 46vh; overflow-y: auto;
+  gap: 4px; min-height: 232px; max-height: min(52vh, 520px); overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted, #7e8290) transparent;
+  transition: opacity 0.16s ease;
 }
+/* Refetching a board dims the old rows rather than replacing them. */
+.boardRows.isStale { opacity: 0.45; }
 .boardRow {
   display: grid; grid-template-columns: 2rem 1fr auto auto;
-  align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px;
+  align-items: center; gap: 10px; min-height: 42px; padding: 8px 10px; border-radius: 9px;
 }
 .boardRow:nth-child(odd) { background: rgb(255 255 255 / 3%); }
 /* Your own row has to be findable at a glance down a list of twenty. */
 .boardRow.isMe { background: rgb(255 255 255 / 10%); outline: 1px solid currentColor; }
-.boardRank { text-align: center; color: var(--muted, #7e8290); }
+.boardRank { display: grid; place-items: center; text-align: center; color: var(--muted, #7e8290); }
+.rankMark {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 50%;
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+}
+.rankMedal { border-color: transparent; font-size: 1.1rem; }
 .boardWho { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .boardMeta { color: var(--muted, #7e8290); font-size: .8rem; }
 .boardScore { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
@@ -1301,7 +1639,39 @@ input[type="range"]::-moz-range-thumb {
   width: min(100%, 30rem);
 }
 
-.boardGames { flex-wrap: wrap; justify-content: center; }
+/* The game picker echoes the hub: a mini tile per game, mark and name only. */
+.boardTiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.boardTile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 7px; padding: 10px 8px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: rgba(12, 13, 18, 0.6);
+  color: var(--muted, #7e8290);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.boardTileMark { display: block; width: 100%; max-width: 68px; color: var(--accent); }
+.boardTileMark svg { display: block; width: 100%; height: auto; }
+.boardTileName {
+  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-align: center; line-height: 1.25;
+}
+.boardTile:hover { color: var(--bone); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.boardTile[aria-pressed="true"] {
+  color: var(--bone);
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, rgba(12, 13, 18, 0.6));
+}
+.boardRows::-webkit-scrollbar { width: 3px; height: 3px; }
+.boardRows::-webkit-scrollbar-track { background: transparent; }
+.boardRows::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--muted, #7e8290);
+}
 .boardSoon { max-width: 34rem; font-size: .82rem; opacity: .8; }
 
 /* What the number on this board actually measures. Without it a score is
@@ -1311,3 +1681,40 @@ input[type="range"]::-moz-range-thumb {
   text-transform: uppercase; color: var(--muted, #7e8290);
 }
 .boardBlurb { max-width: 32rem; font-size: .82rem; opacity: .85; }
+
+@media (max-width: 640px) {
+  .boardPage { gap: 12px; }
+  .boardWrap { gap: 12px; }
+  .boardWrap, .boardPage { padding-top: 54px; }
+  .boardPage .boardWrap { padding-top: 0; }
+  .boardIdent { gap: 10px; }
+  .boardMark { width: 56px; }
+  .boardRows { width: 100%; max-height: 54vh; padding-right: 2px; }
+  .boardRow {
+    grid-template-columns: 2rem 1fr auto;
+    gap: 8px;
+    padding: 8px 9px;
+  }
+  .boardMeta { grid-column: 2; grid-row: 2; font-size: .72rem; }
+  .boardScore { grid-column: 3; grid-row: 1 / span 2; }
+  .boardTiles { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .boardTile { padding: 8px 6px; gap: 5px; }
+  .boardTileMark { max-width: 54px; }
+  .boardTileName { font-size: 9px; }
+  /* Difficulty and period share one row on a phone, so the pills shrink. */
+  .boardControls { flex-wrap: nowrap; gap: 6px; }
+  .boardControls .modes { flex-wrap: nowrap; gap: 4px; }
+  .boardControls .mode {
+    padding: 7px 9px; font-size: 10px; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .boardHead .ghost { flex: none; padding-inline: 16px; }
+  .boardMe { align-items: flex-start; }
+  .boardActs { flex-wrap: wrap; row-gap: 6px; }
+}
+
+/* Five pills still have to share one row on the narrowest phones. */
+@media (max-width: 360px) {
+  .boardControls { gap: 4px; }
+  .boardControls .modes { gap: 3px; }
+  .boardControls .mode { padding: 7px 7px; font-size: 9px; letter-spacing: 0; }
+}

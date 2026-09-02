@@ -270,7 +270,7 @@ export default function FeverGame() {
   if (phase === "results") {
     const best = getBest(scoreKey(SCORE, diff));
     return (
-      <main className={`stage ${styles.stage}`}>
+      <main className={`stage resScrim ${styles.stage}`}>
         <Pop className={styles.results}>
           <h1 className="resVerdict">{verdict(finalScore)}</h1>
           <div className={styles.score}>{finalScore.toFixed(1)}<small> / 80</small></div>

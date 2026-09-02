@@ -24,7 +24,8 @@ const MARKS: Record<GameKey, React.ReactNode> = {
   ),
   sound: (
     <path
-      d="M0 36 Q 12 4 25 36 T 50 36 T 75 36 T 100 36 T 125 36 T 150 36 T 175 36 T 200 36"
+      className="markWave"
+      d="M0 36 Q 12 4 25 36 T 50 36 T 75 36 T 100 36 T 125 36 T 150 36 T 175 36 T 200 36 T 225 36"
       fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
     />
   ),
@@ -32,15 +33,17 @@ const MARKS: Record<GameKey, React.ReactNode> = {
     <>
       <circle cx="100" cy="36" r="29" fill="none" stroke="rgba(239,240,244,.18)" strokeWidth="1" />
       <circle cx="100" cy="36" r="20" fill="none" stroke="rgba(239,240,244,.3)" strokeWidth="1" />
-      <path d="M100 7 A29 29 0 0 1 127 47" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="127" cy="47" r="4" fill="currentColor" />
+      <g className="markSweep">
+        <path d="M100 7 A29 29 0 0 1 127 47" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="127" cy="47" r="4" fill="currentColor" />
+      </g>
       <circle cx="100" cy="36" r="3" fill="#ffffff" opacity=".65" />
     </>
   ),
   tempo: (
     <>
       <line x1="0" y1="36" x2="200" y2="36" stroke="rgba(239,240,244,.2)" strokeWidth="2" />
-      <circle cx="40" cy="36" r="13" fill="none" stroke="currentColor" strokeWidth="3" />
+      <circle className="markBeat" cx="40" cy="36" r="13" fill="none" stroke="currentColor" strokeWidth="3" />
       <circle cx="96" cy="36" r="8" fill="#ffffff" />
       <circle cx="138" cy="36" r="8" fill="#ffffff" opacity=".55" />
       <circle cx="176" cy="36" r="8" fill="#ffffff" opacity=".3" />
@@ -52,6 +55,8 @@ const MARKS: Record<GameKey, React.ReactNode> = {
         const on = [[0, 1], [1, 2], [1, 4], [2, 3], [0, 5], [2, 6]].some(([rr, cc]) => rr === r && cc === c);
         return (
           <rect key={`${r}-${c}`} x={10 + c * 26} y={4 + r * 22} width={20} height={18} rx={4}
+            className={on ? "markBlink" : undefined}
+            style={on ? { animationDelay: `${((r * 7 + c) % 6) * 0.35}s` } : undefined}
             fill={on ? "currentColor" : "rgba(239,240,244,.12)"} />
         );
       }))}
@@ -61,6 +66,7 @@ const MARKS: Record<GameKey, React.ReactNode> = {
     <>
       {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
         <rect key={`w${i}`} x={i * 25 + 1} y={2} width={23} height={68} rx={3}
+          className={i === 4 ? "markKey" : undefined}
           fill={i === 4 ? "currentColor" : "#eff0f4"} />
       ))}
       {[0, 1, 3, 4, 5].map((i) => (
@@ -120,6 +126,7 @@ const MARKS: Record<GameKey, React.ReactNode> = {
         const off = i === 4 ? 9 : 0;
         return (
           <rect key={`s${i}`} x={10 + i * 24 + off} y={i === 4 ? 8 : 14} width={12} height={i === 4 ? 44 : 38} rx={3}
+            className={i === 4 ? "markLate" : undefined}
             fill={i === 4 ? "currentColor" : "rgba(239,240,244,.55)"} />
         );
       })}

@@ -328,7 +328,7 @@ export default function SoundGame() {
       )}
 
       {phase === "results" && (
-        <main className="stage resStage">
+        <main className="stage resStage soundRes">
           {record && <Celebrate />}
           <Pop className="resHead">
             <h2 className="resVerdict">{resVerdict(resTotal)}</h2>

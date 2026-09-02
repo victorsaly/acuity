@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Leaderboard from "@/components/Leaderboard";
+import GameMark, { type GameKey } from "@/components/GameMark";
 import { RANKED } from "@/lib/arcade";
 
 /**
@@ -21,21 +22,14 @@ export default function LeaderboardPage() {
   return (
     <main className="stage menuStage">
       <div className="boardPage">
-        <div className="modes boardGames" role="group" aria-label="Game">
+        <div className="boardTiles" role="group" aria-label="Game">
           {RANKED.map((g, i) => (
-            <button key={g.key} className="mode" aria-pressed={game === g.key}
+            <button key={g.key} className="boardTile" data-game={g.key}
+              aria-pressed={game === g.key}
               data-note={392 + i * 60}
               onClick={() => { setGame(g.key); setLevel(g.levels[0].key); }}>
-              {g.title}
-            </button>
-          ))}
-        </div>
-
-        <div className="modes" role="group" aria-label="Difficulty">
-          {current.levels.map((l, i) => (
-            <button key={l.key} className="mode" aria-pressed={level === l.key}
-              data-note={440 + i * 60} onClick={() => setLevel(l.key)}>
-              {l.label}
+              <span className="boardTileMark" aria-hidden><GameMark game={g.key as GameKey} /></span>
+              <span className="boardTileName">{g.title}</span>
             </button>
           ))}
         </div>
@@ -46,16 +40,23 @@ export default function LeaderboardPage() {
           metric={current.metric}
           unit={current.unit}
           blurb={current.blurb}
+          showBack={false}
+          controls={
+            <div className="modes" role="group" aria-label="Difficulty">
+              {current.levels.map((l, i) => (
+                <button key={l.key} className="mode" aria-pressed={level === l.key}
+                  data-note={440 + i * 60} onClick={() => setLevel(l.key)}>
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          }
           onClose={() => { window.location.href = "/"; }}
         />
 
-        <p className="boardNote">
-          Only the daily is ranked. <Link href={current.route} className="hubMetaLink">Play {current.title}</Link>
-        </p>
-
         <p className="boardNote boardSoon">
-          Every score here is rechecked on the server against the challenge its
-          seed dealt, so nothing on the board is taken on trust.
+          Only the daily is ranked, and every score is rechecked on the server.
+          {" "}<Link href={current.route} className="hubMetaLink">Play {current.title}</Link>
         </p>
       </div>
     </main>

@@ -1,11 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import GameMark, { type GameKey } from "@/components/GameMark";
 import {
   fetchBoard, forgetMe, readToken, rename, signIn, whoAmI,
   type BoardEntry,
 } from "@/lib/arcade";
 import { todayStamp, dayNumber } from "@/lib/store";
+
+const MARKED: GameKey[] = [
+  "color", "sound", "time", "tempo", "memory", "piano", "fever", "phantom", "offgrid",
+];
 
 /**
  * The shared board, as seen from inside a game.
@@ -17,12 +22,16 @@ import { todayStamp, dayNumber } from "@/lib/store";
  * with: the game is unaffected either way.
  */
 export default function Leaderboard({
-  mode, title, onClose, metric, unit, blurb,
+  mode, title, onClose, metric, unit, blurb, showBack = true, controls,
 }: {
   /** `<game>-<difficulty>`, e.g. "color-hard". */
   mode: string;
   title: string;
   onClose: () => void;
+  /** The board page has the chrome's own back link; games do not. */
+  showBack?: boolean;
+  /** Difficulty picker, shown under the title next to the period toggle. */
+  controls?: React.ReactNode;
   /** What the number measures, e.g. "Pitch accuracy". */
   metric?: string;
   /** The scale it is out of, e.g. "/ 50". */
@@ -84,31 +93,46 @@ export default function Leaderboard({
     void load();
   };
 
-  const medal = (rank: number) => (rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : String(rank));
+  const rankMark = (rank: number) => (
+    <span className={`rankMark${rank <= 3 ? " rankMedal" : ""}`} aria-label={`Rank ${rank}`}>
+      {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : rank}
+    </span>
+  );
+
+  // "memory-easy" -> "memory": the key carries both the mark and the accent.
+  const game = MARKED.find((k) => k === mode.split("-")[0]);
 
   return (
-    <div className="boardWrap">
+    <div className="boardWrap" data-game={game}>
       <div className="boardHead">
-        <div>
-          <p className="boardEyebrow">
-            {period === "today" ? `Daily #${dayNumber()}` : "All time · every daily so far"}
-          </p>
-          <h2 className="boardTitle">{title}</h2>
-          {metric && (
-            <p className="boardMetric">{metric}{unit && unit !== "levels" ? ` ${unit}` : ""}</p>
-          )}
+        <div className="boardIdent">
+          {game && <span className="boardMark" aria-hidden><GameMark game={game} /></span>}
+          <div>
+            <p className="boardEyebrow">
+              {period === "today" ? `Daily #${dayNumber()}` : "All time · every daily so far"}
+            </p>
+            <h2 className="boardTitle">{title}</h2>
+            {metric && (
+              <p className="boardMetric">{metric}{unit && unit !== "levels" ? ` ${unit}` : ""}</p>
+            )}
+          </div>
         </div>
-        <button className="ghost" data-note={349} onClick={onClose}>Back</button>
+        {showBack && <button className="ghost" data-note={349} onClick={onClose}>Back</button>}
       </div>
 
-      <div className="modes" role="group" aria-label="Period">
-        <button className="mode" aria-pressed={period === "today"} data-note={523}
-          onClick={() => setPeriod("today")}>Today</button>
-        <button className="mode" aria-pressed={period === "alltime"} data-note={587}
-          onClick={() => setPeriod("alltime")}>All time</button>
+      <div className="boardControls">
+        {controls}
+        <div className="modes" role="group" aria-label="Period">
+          <button className="mode" aria-pressed={period === "today"} data-note={523}
+            onClick={() => setPeriod("today")}>Today</button>
+          <button className="mode" aria-pressed={period === "alltime"} data-note={587}
+            onClick={() => setPeriod("alltime")}>All time</button>
+        </div>
       </div>
 
-      {loading ? (
+      {/* The old rows stay put while the next board loads; swapping them for a
+          spinner collapses the list and makes every switch flicker. */}
+      {!board && loading ? (
         <p className="boardNote">Loading…</p>
       ) : !board ? (
         <p className="boardNote">The leaderboard is unavailable right now. Your scores are unaffected.</p>
@@ -119,11 +143,11 @@ export default function Leaderboard({
             : "No dailies have been finished here yet."}
         </p>
       ) : (
-        <ol className="boardRows">
+        <ol className={`boardRows${loading ? " isStale" : ""}`}>
           {board.entries.map((e) => (
             <li key={`${e.rank}-${e.name}`}
               className={`boardRow${me && e.name === me.name ? " isMe" : ""}`}>
-              <span className="boardRank">{medal(e.rank)}</span>
+              <span className="boardRank">{rankMark(e.rank)}</span>
               <span className="boardWho">{e.name}</span>
               <span className="boardMeta">
                 {period === "alltime"

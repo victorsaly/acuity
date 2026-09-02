@@ -308,7 +308,7 @@ export default function PhantomGame() {
     const total = results.reduce((sum, result) => sum + result.score, 0);
     const best = getBest(scoreKey(SCORE, diff));
     return (
-      <main className={`stage ${styles.stage}`}>
+      <main className={`stage resScrim ${styles.stage}`}>
         <Pop className={styles.feedback}>
           <h1 className="resVerdict">{verdict(total)}</h1>
           <div className={styles.score}>{total.toFixed(1)}<small> / 30</small></div>

@@ -32,8 +32,13 @@ export default function AboutPage() {
     <main className={`stage menuStage ${styles.stage}`}>
       <article className={styles.page}>
         <header className={styles.header}>
+          <svg className={styles.logo} viewBox="0 0 36 24" aria-hidden>
+            <rect className="navCell1" x="1" y="7" width="9" height="9" rx="2.5" fill="#eff0f4" />
+            <rect className="navCell2" x="13" y="7" width="9" height="9" rx="2.5" fill="#eff0f4" opacity="0.3" />
+            <rect className="navCell3" x="27" y="11" width="9" height="9" rx="2.5" fill="#ffb02e" />
+          </svg>
           <p className={styles.eyebrow}>What this is</p>
-          <h1 className={styles.title}>Delulu Beats</h1>
+          <h1 className={styles.title}>Delul<i className="navOffU">u</i> Beats</h1>
           <p className={styles.lede}>
             Nine small games about what you actually noticed. Was that color that red? Was that
             gap that long? Usually not. There is also Beat Lab, which isn&apos;t a game at all: it&apos;s a

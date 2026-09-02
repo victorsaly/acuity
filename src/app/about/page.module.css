@@ -16,6 +16,13 @@
   margin-bottom: 58px;
 }
 
+.logo {
+  display: block;
+  width: 54px;
+  height: auto;
+  margin-bottom: 24px;
+}
+
 .eyebrow {
   margin: 0 0 14px;
   color: var(--muted);
