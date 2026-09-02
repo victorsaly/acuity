@@ -1247,3 +1247,57 @@ input[type="range"]::-moz-range-thumb {
   color: var(--fg, #eff0f4);
   font-size: 1.05em;
 }
+
+/* ---------- the shared leaderboard ---------- */
+
+.boardWrap { display: flex; flex-direction: column; gap: 14px; width: min(100%, 30rem); }
+.boardHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.boardEyebrow {
+  margin: 0 0 2px; font-size: .72rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted, #7e8290);
+}
+.boardTitle { margin: 0; font-size: 1.35rem; line-height: 1.1; }
+
+.boardNote {
+  margin: 6px 0; text-align: center; line-height: 1.5;
+  color: var(--muted, #7e8290); font-size: .9rem;
+}
+
+.boardRows {
+  list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column;
+  gap: 2px; max-height: 46vh; overflow-y: auto;
+}
+.boardRow {
+  display: grid; grid-template-columns: 2rem 1fr auto auto;
+  align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px;
+}
+.boardRow:nth-child(odd) { background: rgb(255 255 255 / 3%); }
+/* Your own row has to be findable at a glance down a list of twenty. */
+.boardRow.isMe { background: rgb(255 255 255 / 10%); outline: 1px solid currentColor; }
+.boardRank { text-align: center; color: var(--muted, #7e8290); }
+.boardWho { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.boardMeta { color: var(--muted, #7e8290); font-size: .8rem; }
+.boardScore { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+
+.boardFoot {
+  border-top: 1px solid rgb(255 255 255 / 12%); padding-top: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.boardMe { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; font-size: .85rem; }
+.boardActs { display: flex; gap: 12px; }
+.linkish {
+  background: none; border: 0; padding: 0; font: inherit; font-size: .78rem;
+  color: var(--muted, #7e8290); text-decoration: underline;
+  text-underline-offset: 2px; cursor: pointer;
+}
+.linkish:hover { color: var(--fg, #eff0f4); }
+.boardRename { display: flex; gap: 6px; }
+.boardInput {
+  flex: 1; min-width: 0; padding: 7px 10px; border-radius: 9px;
+  border: 1px solid rgb(255 255 255 / 20%); background: rgb(0 0 0 / 25%);
+  color: inherit; font: inherit;
+}
+.srOnly {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

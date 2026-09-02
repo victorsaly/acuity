@@ -106,6 +106,22 @@ export async function whoAmI(token: string) {
   return ok ? data : null;
 }
 
+export async function rename(token: string, name: string) {
+  const { ok, data } = await call<{ ok: boolean; name: string; error?: string }>("/v1/me", {
+    method: "PATCH", token, body: { name },
+  });
+  return ok && data
+    ? { ok: true as const, name: data.name }
+    : { ok: false as const, error: data?.error ?? "Could not save that name." };
+}
+
+/** Erase the account and every score behind it. Immediate, and final. */
+export async function forgetMe(token: string) {
+  const { ok } = await call<{ ok: boolean }>("/v1/me", { method: "DELETE", token });
+  if (ok) writeToken(null);
+  return ok;
+}
+
 export async function fetchBoard(mode: string, period: string, limit = 20) {
   const query = new URLSearchParams({ game: GAME, mode, period, limit: String(limit) });
   const { ok, data } = await call<{ board: string; entries: BoardEntry[] }>(`/v1/board?${query}`);

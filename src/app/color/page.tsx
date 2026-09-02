@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import Leaderboard from "@/components/Leaderboard";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
@@ -11,7 +12,7 @@ import { slotEmoji } from "@/lib/share";
 import { uiBlip } from "@/lib/audio";
 
 type HSL = { h: number; s: number; l: number };
-type Phase = "menu" | "reveal" | "recall" | "results";
+type Phase = "menu" | "reveal" | "recall" | "results" | "board";
 
 const SLOTS = 5;
 const DIFFS: DiffDef[] = [
@@ -206,6 +207,18 @@ export default function ColorGame() {
   });
 
   /* ---------- render ---------- */
+  if (phase === "board") {
+    return (
+      <main className="stage menuStage">
+        <Leaderboard
+          mode={`color-${diff}`}
+          title="Afterimage"
+          onClose={() => setPhase(guesses.length === SLOTS ? "results" : "menu")}
+        />
+      </main>
+    );
+  }
+
   if (phase === "menu") {
     return (
       <main className="stage menuStage">
@@ -236,6 +249,9 @@ export default function ColorGame() {
                   "Lock it in. Five colors, then a score out of 50.",
                 ],
               }} />
+            <button className="ghost" data-note={392} onClick={() => setPhase("board")}>
+              Leaderboard
+            </button>
           </Item>
         </Stagger>
       </main>
@@ -343,7 +359,8 @@ export default function ColorGame() {
             it there. Only ever for the daily, which is the only ranked run. */}
         {rank !== null ? (
           <p className="rankLine">
-            <b>#{rank}</b> on today&rsquo;s Afterimage board
+            <b>#{rank}</b> on today&rsquo;s Afterimage board{" "}
+            <button className="linkish" onClick={() => setPhase("board")}>See the board</button>
           </p>
         ) : seedRef.current !== null && !signedIn ? (
           <button className="ghost" data-note={523} onClick={() => signIn()}>
