@@ -1306,3 +1306,6 @@ input[type="range"]::-moz-range-thumb {
   display: flex; flex-direction: column; align-items: center; gap: 14px;
   width: min(100%, 30rem);
 }
+
+.boardGames { flex-wrap: wrap; justify-content: center; }
+.boardSoon { max-width: 34rem; font-size: .82rem; opacity: .8; }

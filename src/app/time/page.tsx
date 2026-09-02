@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import Leaderboard from "@/components/Leaderboard";
 import ShareScore from "@/components/ShareScore";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import GameMark from "@/components/GameMark";
 import { audio, click, uiBlip } from "@/lib/audio";
-import { getBest, recordPlay, runRng, scoreKey, setBest, todayStamp, usePref } from "@/lib/store";
+import { getBest, recordPlay, runRng, scoreKey, setBest, todayStamp, usePref, seededRng, dailySeed, dayNumber } from "@/lib/store";
+import { readToken, signIn, submitScore } from "@/lib/arcade";
 import { slotEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
-type Phase = "menu" | "reveal" | "ready" | "timing" | "feedback" | "results";
+type Phase = "menu" | "reveal" | "ready" | "timing" | "feedback" | "results" | "board";
 
 const SLOTS = 5;
 const TAP_MS = 500;
@@ -50,11 +52,20 @@ export default function TimeGame() {
   const [elapsed, setElapsed] = useState(0);
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
+  /* Whether this run is today's shared challenge, and its seed. Only a seeded
+     run can be rebuilt server-side, so only a seeded run can be ranked. */
+  const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
+  const seedRef = useRef<number | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => { setSignedIn(Boolean(readToken())); }, [phase]);
   const startedAt = useRef(0);
   const feedbackAt = useRef(0);
 
   const start = () => {
-    const rng = runRng();
+    const seed = daily === "on" ? dailySeed(`time-${diff}`) : null;
+    seedRef.current = seed;
+    const rng = seed === null ? runRng() : seededRng(seed);
     const [min, max] = RANGES[diff];
     const next = Array.from({ length: SLOTS }, () => Math.round((min + rng() * (max - min)) / 10) * 10);
     setTargets(next);
@@ -133,6 +144,25 @@ export default function TimeGame() {
       if (isRecord) setBest(key, rounded);
       setRecord(isRecord);
       recordPlay("time");
+
+      /* Put it on the shared board, if this was the daily and there is
+         somewhere to put it. Failure is silent: the score is already safe
+         locally, and a leaderboard is never worth interrupting a game for. */
+      {
+        const seed = seedRef.current;
+        const token = readToken();
+        if (seed !== null && token) {
+          submitScore(token, {
+            mode: `time-${diff}`,
+            period: todayStamp(),
+            seed,
+            score: Math.round(total * 10),
+            proof: { guesses: next },
+          })
+            .then((posted) => setRank(posted?.rank ?? null))
+            .catch(() => {});
+        }
+      }
       setRunStamp((value) => value + 1);
     }
   };
@@ -172,6 +202,15 @@ export default function TimeGame() {
     };
   });
 
+  if (phase === "board") {
+    return (
+      <main className="stage menuStage">
+        <Leaderboard mode={`time-${diff}`} title="Second Sense"
+          onClose={() => setPhase("menu")} />
+      </main>
+    );
+  }
+
   if (phase === "menu") {
     return (
       <main className="stage menuStage">
@@ -180,7 +219,10 @@ export default function TimeGame() {
         <Item><GameMark game="time" className="gameMark" /></Item>
           <Item><p className="tagline">Something lasts a while. Then you make it last exactly that long again, holding a button, with nothing to count against.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="time" diffs={DIFFS} diff={diff}
+            <GameSetup game="time"
+              daily={daily === "on"}
+              onDaily={(on) => setDaily(on ? "on" : "off")}
+              dayNumber={dayNumber()} diffs={DIFFS} diff={diff}
               onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Second Sense",

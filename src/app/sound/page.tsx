@@ -2,16 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import Leaderboard from "@/components/Leaderboard";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import GameMark from "@/components/GameMark";
 import { audio, toneOn, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
-import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, usePref, recordPlay, seededRng, dailySeed, dayNumber, todayStamp } from "@/lib/store";
+import { readToken, signIn, submitScore } from "@/lib/arcade";
 import { readAccent, shade, useAccent, type Hsl } from "@/lib/accent";
 import { slotEmoji } from "@/lib/share";
 
-type Phase = "menu" | "reveal" | "recall" | "results";
+type Phase = "menu" | "reveal" | "recall" | "results" | "board";
 
 const SLOTS = 5;
 const F_LO = 110, OCTAVES = 3; // 110–880 Hz
@@ -63,6 +65,13 @@ export default function SoundGame() {
   const [revealOn, setRevealOn] = useState(false);
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
+  /* Whether this run is today's shared challenge, and its seed. Only a seeded
+     run can be rebuilt server-side, so only a seeded run can be ranked. */
+  const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
+  const seedRef = useRef<number | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => { setSignedIn(Boolean(readToken())); }, [phase]);
 
   const timers = useRef<number[]>([]);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
@@ -145,7 +154,9 @@ export default function SoundGame() {
     clear();
     audio();
     setToneVoice(voice);   // remembered preference may not have touched the engine yet
-    const rng = runRng();
+    const seed = daily === "on" ? dailySeed("sound") : null;
+    seedRef.current = seed;
+    const rng = seed === null ? runRng() : seededRng(seed);
     const tones = Array.from({ length: SLOTS }, () => posToFreq(40 + rng() * 920));
     setTargets(tones);
     setGuesses([]);
@@ -175,6 +186,25 @@ export default function SoundGame() {
       if (isRecord) setBest(key, rounded);
       setRecord(isRecord);
       recordPlay("sound");
+
+      /* Put it on the shared board, if this was the daily and there is
+         somewhere to put it. Failure is silent: the score is already safe
+         locally, and a leaderboard is never worth interrupting a game for. */
+      {
+        const seed = seedRef.current;
+        const token = readToken();
+        if (seed !== null && token) {
+          submitScore(token, {
+            mode: `sound-${diff}`,
+            period: todayStamp(),
+            seed,
+            score: Math.round(total * 10),
+            proof: { guesses: next },
+          })
+            .then((posted) => setRank(posted?.rank ?? null))
+            .catch(() => {});
+        }
+      }
       setRunStamp(Date.now());
       setPhase("results");
     }
@@ -238,7 +268,10 @@ export default function SoundGame() {
             <Item><GameMark game="sound" className="gameMark" /></Item>
             <Item><p className="tagline">Five tones, one play each, then silence. Your job is to find them again on a slider.</p></Item>
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-              <GameSetup game="sound" diffs={DIFFS} diff={diff}
+              <GameSetup game="sound"
+              daily={daily === "on"}
+              onDaily={(on) => setDaily(on ? "on" : "off")}
+              dayNumber={dayNumber()} diffs={DIFFS} diff={diff}
                 onDiff={setDiff} onStart={start} refreshToken={runStamp}
                 formats={FLOWS} format={flow} onFormat={setFlow}
                 sounds={VOICES} sound={voice}

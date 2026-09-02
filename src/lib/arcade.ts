@@ -25,19 +25,28 @@ const GAME = "beats";
  * game it cannot verify would put unverifiable entries on a public board. The
  * list grows as checkers are written.
  */
+const LEVELS = [
+  { key: "easy", label: "Easy" },
+  { key: "hard", label: "Hard" },
+  { key: "brutal", label: "Brutal" },
+] as const;
+
 export const RANKED = [
-  {
-    key: "color",
-    title: "Afterimage",
-    route: "/color",
-    /* A one-second glance and a five-second one are not the same challenge,
-       so each difficulty keeps its own board. The colours are shared. */
-    levels: [
-      { key: "easy", label: "Easy" },
-      { key: "hard", label: "Hard" },
-      { key: "brutal", label: "Brutal" },
-    ],
-  },
+  /* Each difficulty keeps its own board: a one-second glance and a
+     five-second one are not the same challenge, even when the targets are. */
+  { key: "color", title: "Afterimage", route: "/color", levels: LEVELS },
+  { key: "sound", title: "Sine Language", route: "/sound", levels: LEVELS },
+  { key: "time", title: "Second Sense", route: "/time", levels: LEVELS },
+] as const;
+
+/** Games that exist but cannot be ranked yet, so the board can say so. */
+export const NOT_YET_RANKED = [
+  { title: "Downbeat", route: "/tempo" },
+  { title: "Echo", route: "/memory" },
+  { title: "Refrain", route: "/piano" },
+  { title: "Fever Dream", route: "/fever" },
+  { title: "Phantom Drop", route: "/phantom" },
+  { title: "Off-Grid", route: "/offgrid" },
 ] as const;
 
 export type BoardEntry = {

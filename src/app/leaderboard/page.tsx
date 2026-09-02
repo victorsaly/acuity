@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Leaderboard from "@/components/Leaderboard";
-import { RANKED } from "@/lib/arcade";
+import { RANKED, NOT_YET_RANKED } from "@/lib/arcade";
 
 /**
  * The board, from the hub.
@@ -21,17 +21,15 @@ export default function LeaderboardPage() {
   return (
     <main className="stage menuStage">
       <div className="boardPage">
-        {RANKED.length > 1 && (
-          <div className="modes" role="group" aria-label="Game">
-            {RANKED.map((g, i) => (
-              <button key={g.key} className="mode" aria-pressed={game === g.key}
-                data-note={392 + i * 60}
-                onClick={() => { setGame(g.key); setLevel(g.levels[0].key); }}>
-                {g.title}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="modes boardGames" role="group" aria-label="Game">
+          {RANKED.map((g, i) => (
+            <button key={g.key} className="mode" aria-pressed={game === g.key}
+              data-note={392 + i * 60}
+              onClick={() => { setGame(g.key); setLevel(g.levels[0].key); }}>
+              {g.title}
+            </button>
+          ))}
+        </div>
 
         <div className="modes" role="group" aria-label="Difficulty">
           {current.levels.map((l, i) => (
@@ -49,8 +47,21 @@ export default function LeaderboardPage() {
         />
 
         <p className="boardNote">
-          Only the daily is ranked, and only games whose scores can be checked
-          appear here. <Link href={current.route} className="hubMetaLink">Play {current.title}</Link>
+          Only the daily is ranked. <Link href={current.route} className="hubMetaLink">Play {current.title}</Link>
+        </p>
+
+        {/* The rest of the games exist and are not here yet. Saying so is
+            better than an absence nobody can explain. */}
+        <p className="boardNote boardSoon">
+          Not ranked yet:{" "}
+          {NOT_YET_RANKED.map((g, i) => (
+            <span key={g.route}>
+              {i > 0 && ", "}
+              <Link href={g.route} className="hubMetaLink">{g.title}</Link>
+            </span>
+          ))}
+          . Each needs its score checked server-side before it can join, so that
+          nothing on the board is taken on trust.
         </p>
       </div>
     </main>
