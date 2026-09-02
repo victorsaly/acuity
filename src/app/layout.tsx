@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Unbounded, Spline_Sans_Mono } from "next/font/google";
 import Chrome from "@/components/Chrome";
 import Aurora from "@/components/Aurora";
+import ArcadeSession from "@/components/ArcadeSession";
 import SoundGate from "@/components/SoundGate";
 import {
   OPEN_GRAPH_IMAGE,
@@ -110,6 +111,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
+        <ArcadeSession />
         <Aurora />
         <SoundGate />
         <Chrome />

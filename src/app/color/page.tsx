@@ -7,7 +7,7 @@ import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { getBest, setBest, scoreKey, runRng, seededRng, dailySeed, dayNumber, todayStamp, usePref, recordPlay } from "@/lib/store";
-import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
+import { postRun, signIn, useSignedIn } from "@/lib/arcade";
 import { slotEmoji } from "@/lib/share";
 import { uiBlip } from "@/lib/audio";
 
@@ -156,13 +156,13 @@ export default function ColorGame() {
       setRunStamp(Date.now());
       setPhase("results");
 
-      /* Put it on the shared board, if this was the daily and there is
-         somewhere to put it. Failure is silent: the score is already safe
-         locally, and a leaderboard is never worth interrupting a game for. */
+      /* Put it on the shared board, if this was the daily. Not signed in
+         holds the run for the sign-in rather than dropping it. Failure is
+         silent either way: the score is already safe locally, and a
+         leaderboard is never worth interrupting a game for. */
       const seed = seedRef.current;
-      const token = readToken();
-      if (seed !== null && token) {
-        submitScore(token, {
+      if (seed !== null) {
+        postRun({
           mode: `color-${diff}`,
           period: todayStamp(),
           seed,

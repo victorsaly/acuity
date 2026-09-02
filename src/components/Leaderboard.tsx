@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import GameMark, { type GameKey } from "@/components/GameMark";
 import {
-  fetchBoard, forgetMe, readToken, rename, signIn, whoAmI,
+  fetchBoard, forgetMe, readToken, rename, signIn, useSignedIn, whoAmI,
   type BoardEntry,
 } from "@/lib/arcade";
 import { todayStamp, dayNumber } from "@/lib/store";
@@ -52,33 +52,44 @@ export default function Leaderboard({
   const [period, setPeriod] = useState<"today" | "alltime">("today");
   const [board, setBoard] = useState<{ entries: BoardEntry[] } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState<{ name: string } | null>(null);
+  const [who, setWho] = useState<{ name: string } | null>(null);
   const [draft, setDraft] = useState("");
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
 
   const today = todayStamp();
+  const signedIn = useSignedIn();
+  /* Derived, not stored: signing out has to empty this footer, and clearing
+     state in an effect to do that is a render the board does not need. */
+  const me = signedIn ? who : null;
 
+  /* `signedIn` is not read in here. It is in the list so that signing in
+     reloads the board: a fresh session can change which row is yours, and
+     posting a held-back score is the usual reason to be signing in at all. */
   const load = useCallback(async () => {
+    void signedIn;
     setLoading(true);
     setBoard(await fetchBoard(mode, period === "alltime" ? "alltime" : today));
     setLoading(false);
-  }, [mode, period, today]);
+  }, [mode, period, today, signedIn]);
 
   useEffect(() => { void load(); }, [load]);
 
+  /* Keyed on the session rather than run once on mount: signing in returns to
+     whatever page it was started from, which can be this board with the
+     footer already rendered. */
   useEffect(() => {
-    const token = readToken();
+    const token = signedIn ? readToken() : null;
     if (!token) return;
-    void whoAmI(token).then((who) => who && setMe({ name: who.name }));
-  }, []);
+    void whoAmI(token).then((found) => found && setWho({ name: found.name }));
+  }, [signedIn]);
 
   const save = async () => {
     const token = readToken();
     if (!token) return;
     const result = await rename(token, draft);
     if (!result.ok) { setError(result.error); return; }
-    setMe({ name: result.name });
+    setWho({ name: result.name });
     setEditing(false);
     setError("");
     void load();
@@ -89,7 +100,8 @@ export default function Leaderboard({
     if (!token) return;
     if (!window.confirm("Delete your name and every score you have posted? This cannot be undone.")) return;
     await forgetMe(token);
-    setMe(null);
+    setWho(null);
+    setEditing(false);
     void load();
   };
 

@@ -7,7 +7,7 @@ import { Item, Pop, Stagger } from "@/components/Fx";
 import { audio, buzz, clap, hat, heardNow, kick, uiBlip } from "@/lib/audio";
 import ShareScore from "@/components/ShareScore";
 import { getBest, recordPlay, runRng, scoreKey, setBest, usePref, seededRng, dailySeed, dayNumber, todayStamp } from "@/lib/store";
-import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
+import { postRun, signIn, useSignedIn } from "@/lib/arcade";
 import { barEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
@@ -188,14 +188,14 @@ export default function OffGridGame() {
     const isRecord = total > getBest(key) && total > 0;
     if (isRecord) setBest(key, total);
     recordPlay("offgrid");
-      /* Put it on the shared board, if this was the daily and there is
-         somewhere to put it. Failure is silent: the score is already safe
-         locally, and a leaderboard is never worth interrupting a game for. */
+      /* Put it on the shared board, if this was the daily. Not signed in
+         holds the run for the sign-in rather than dropping it. Failure is
+         silent either way: the score is already safe locally, and a
+         leaderboard is never worth interrupting a game for. */
       {
         const seed = seedRef.current;
-        const token = readToken();
-        if (seed !== null && token) {
-          submitScore(token, {
+        if (seed !== null) {
+          postRun({
             mode: `offgrid-${diff}`,
             period: todayStamp(),
             seed,
