@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import Leaderboard from "@/components/Leaderboard";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, usePref, recordPlay, seededRng, dailySeed, dayNumber, todayStamp } from "@/lib/store";
+import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
 import { barEmoji } from "@/lib/share";
 import { uiBlip, pluck, buzz } from "@/lib/audio";
 
@@ -14,7 +16,7 @@ import { uiBlip, pluck, buzz } from "@/lib/audio";
  * in order before the clock runs out. Every level adds a tile.
  */
 
-type Phase = "menu" | "show" | "recall" | "results";
+type Phase = "menu" | "show" | "recall" | "results" | "board";
 type Fmt = "flash" | "trail";
 type Mark = "" | "lit" | "hit" | "miss" | "reveal";
 
@@ -71,6 +73,18 @@ export default function MemoryGame() {
   const fmt = fmtStr as Fmt;
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
+  /* Whether this run is today's shared challenge, and its seed. Only a seeded
+     run can be rebuilt server-side, so only a seeded run can be ranked. */
+  const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
+  const seedRef = useRef<number | null>(null);
+  /* Taps of the level in progress, and every level's taps in order. */
+  const thisLevel = useRef<number[]>([]);
+  const runTaps = useRef<number[][]>([]);
+  const [rank, setRank] = useState<number | null>(null);
+  /* Whether the finished run was the daily. State, not the ref: this is read
+     while rendering the results, and a ref does not re-render. */
+  const [rankedRun, setRankedRun] = useState(false);
+  const signedIn = useSignedIn(phase);
   const [view, setView] = useState<View>(EMPTY);   // render-side snapshot; logic mutates the ref
 
   const n = GRID[diff];
@@ -135,7 +149,13 @@ export default function MemoryGame() {
 
   const start = () => {
     clear();
-    R.current = { rng: runRng(), ...EMPTY };
+    const seed = daily === "on" ? dailySeed(`memory-${diff}`) : null;
+    seedRef.current = seed;
+    setRankedRun(seedRef.current !== null);
+    setRank(null);
+    runTaps.current = [];
+    thisLevel.current = [];
+    R.current = { rng: seed === null ? runRng() : seededRng(seed), ...EMPTY };
     runLevel();
   };
 
@@ -146,6 +166,24 @@ export default function MemoryGame() {
     if (isRecord) setBest(key, g.cleared);
     setRecord(isRecord);
     recordPlay("memory");
+      /* Put it on the shared board, if this was the daily and there is
+         somewhere to put it. Failure is silent: the score is already safe
+         locally, and a leaderboard is never worth interrupting a game for. */
+      {
+        const seed = seedRef.current;
+        const token = readToken();
+        if (seed !== null && token) {
+          submitScore(token, {
+            mode: `memory-${diff}`,
+            period: todayStamp(),
+            seed,
+            score: g.cleared * 10,
+            proof: { taps: runTaps.current },
+          })
+            .then((posted) => setRank(posted?.rank ?? null))
+            .catch(() => {});
+        }
+      }
     setRunStamp((s) => s + 1);
     setPhase("results");
   };
@@ -153,6 +191,8 @@ export default function MemoryGame() {
   /** A miss (wrong tile, or the clock): reveal the order, burn a life. */
   const fail = (wrongCell: number | null, head: string) => {
     const g = R.current;
+    runTaps.current.push(thisLevel.current);
+    thisLevel.current = [];
     g.lives--;
     const m = [...g.marks];
     if (wrongCell !== null) m[wrongCell] = "miss";
@@ -167,6 +207,8 @@ export default function MemoryGame() {
     const g = R.current;
     if (phase !== "recall" || g.marks[i] === "hit") return;
     g.taps++;
+    // Every tap of every level, so the leaderboard can replay the run.
+    thisLevel.current.push(i);
     if (g.pattern[g.picked] !== i) { fail(i, "Wrong order"); return; }
 
     g.picked++;
@@ -177,6 +219,8 @@ export default function MemoryGame() {
     if (g.picked < g.pattern.length) { setMarks(m); return; }
 
     /* level cleared */
+    runTaps.current.push(thisLevel.current);
+    thisLevel.current = [];
     g.cleared++;
     g.level++;
     g.flip = true;
@@ -219,6 +263,16 @@ export default function MemoryGame() {
   });
 
   /* ---------- render ---------- */
+  if (phase === "board") {
+    return (
+      <main className="stage menuStage">
+        <Leaderboard mode={`memory-${diff}`} title="Echo"
+          metric="Levels cleared" unit="levels"
+          onClose={() => setPhase("menu")} />
+      </main>
+    );
+  }
+
   if (phase === "menu") {
     return (
       <main className="stage">
@@ -234,7 +288,10 @@ export default function MemoryGame() {
           </Item>
           <Item><p className="tagline">Numbered tiles light up, then the board goes dark. Tap them back in order, quickly. Every level adds a tile. Three mistakes and you&apos;re out.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="memory" diffs={DIFFS} diff={diff}
+            <GameSetup game="memory"
+              daily={daily === "on"}
+              onDaily={(on) => setDaily(on ? "on" : "off")}
+              dayNumber={dayNumber()} diffs={DIFFS} diff={diff}
               onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `level ${b}`}
               formats={FORMATS} format={fmt} onFormat={setFmt}
               helpContent={{
@@ -337,6 +394,18 @@ export default function MemoryGame() {
           line={`Level ${g.cleared} ${barEmoji(g.cleared * 5)}`}
           level={diff}
         />
+        {/* Where this run landed, or the offer to put it there. Only ever for
+            the daily, which is the only ranked run. */}
+        {rank !== null ? (
+          <p className="rankLine">
+            <b>#{rank}</b> on today&rsquo;s Echo board{" "}
+            <button className="linkish" onClick={() => setPhase("board")}>See the board</button>
+          </p>
+        ) : rankedRun && !signedIn ? (
+          <button className="ghost" data-note={523} onClick={() => signIn()}>
+            Put this score on the daily board
+          </button>
+        ) : null}
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
       </div>
     </main>

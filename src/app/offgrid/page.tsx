@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import Leaderboard from "@/components/Leaderboard";
 import { Item, Pop, Stagger } from "@/components/Fx";
 import { audio, buzz, clap, hat, heardNow, kick, uiBlip } from "@/lib/audio";
 import ShareScore from "@/components/ShareScore";
-import { getBest, recordPlay, runRng, scoreKey, setBest, usePref } from "@/lib/store";
+import { getBest, recordPlay, runRng, scoreKey, setBest, usePref, seededRng, dailySeed, dayNumber, todayStamp } from "@/lib/store";
+import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
 import { barEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
-type Phase = "menu" | "listen" | "pick" | "feedback" | "results";
+type Phase = "menu" | "listen" | "pick" | "feedback" | "results" | "board";
 /** Something to do at a point on the audio clock. */
 type Cue = { at: number; run: () => void };
 type Result = { culprit: number; picked: number | null; offset: number; score: number };
@@ -45,6 +47,15 @@ export default function OffGridGame() {
   const [results, setResults] = useState<Result[]>([]);
   const [current, setCurrent] = useState<Result | null>(null);
   const [record, setRecord] = useState(false);
+  /* Whether this run is today's shared challenge, and its seed. Only a seeded
+     run can be rebuilt server-side, so only a seeded run can be ranked. */
+  const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
+  const seedRef = useRef<number | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  /* Whether the finished run was the daily. State, not the ref: this is read
+     while rendering the results, and a ref does not re-render. */
+  const [rankedRun, setRankedRun] = useState(false);
+  const signedIn = useSignedIn(phase);
   const [runStamp, setRunStamp] = useState(0);
   const cues = useRef<Cue[]>([]);
   const frame = useRef(0);
@@ -155,7 +166,11 @@ export default function OffGridGame() {
   };
 
   const start = () => {
-    rng.current = runRng();
+    const seed = daily === "on" ? dailySeed("offgrid") : null;
+    seedRef.current = seed;
+    setRankedRun(seedRef.current !== null);
+    setRank(null);
+    rng.current = seed === null ? runRng() : seededRng(seed);
     setResults([]);
     setRecord(false);
     beginRound(0);
@@ -173,6 +188,24 @@ export default function OffGridGame() {
     const isRecord = total > getBest(key) && total > 0;
     if (isRecord) setBest(key, total);
     recordPlay("offgrid");
+      /* Put it on the shared board, if this was the daily and there is
+         somewhere to put it. Failure is silent: the score is already safe
+         locally, and a leaderboard is never worth interrupting a game for. */
+      {
+        const seed = seedRef.current;
+        const token = readToken();
+        if (seed !== null && token) {
+          submitScore(token, {
+            mode: `offgrid-${diff}`,
+            period: todayStamp(),
+            seed,
+            score: Math.round(total * 10),
+            proof: { picks: results.map((r) => r.picked) },
+          })
+            .then((posted) => setRank(posted?.rank ?? null))
+            .catch(() => {});
+        }
+      }
     setRecord(isRecord);
     setRunStamp((value) => value + 1);
     setPhase("results");
@@ -195,6 +228,16 @@ export default function OffGridGame() {
     return () => document.removeEventListener("keydown", onKey);
   });
 
+  if (phase === "board") {
+    return (
+      <main className="stage menuStage">
+        <Leaderboard mode={`offgrid-${diff}`} title="Off-Grid"
+          metric="Microtiming" unit="/ 50"
+          onClose={() => setPhase("menu")} />
+      </main>
+    );
+  }
+
   if (phase === "menu") {
     return (
       <main className={`stage menuStage ${styles.stage}`}>
@@ -209,7 +252,10 @@ export default function OffGridGame() {
           <Item><h1 className="wordmark">Off-Grid</h1></Item>
           <Item><p className="tagline">Eight hits and exactly one of them drags. Round one is easy. By round five the delay is a few milliseconds and you start doubting yourself.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="offgrid" diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `${b} / 50`}
+            <GameSetup game="offgrid"
+              daily={daily === "on"}
+              onDaily={(on) => setDaily(on ? "on" : "off")}
+              dayNumber={dayNumber()} diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `${b} / 50`}
               helpContent={{
                 title: "Off-Grid",
                 description: "An eight-step drum loop with one hit sitting slightly behind the grid. Which one?",
@@ -245,6 +291,18 @@ export default function OffGridGame() {
               line={`${total} / 50 ${barEmoji(total * 2)} · ${results.filter((r) => r.score === 10).length}/${ROUNDS} nailed`}
               level={diff}
             />
+        {/* Where this run landed, or the offer to put it there. Only ever for
+            the daily, which is the only ranked run. */}
+        {rank !== null ? (
+          <p className="rankLine">
+            <b>#{rank}</b> on today&rsquo;s Off-Grid board{" "}
+            <button className="linkish" onClick={() => setPhase("board")}>See the board</button>
+          </p>
+        ) : rankedRun && !signedIn ? (
+          <button className="ghost" data-note={523} onClick={() => signIn()}>
+            Put this score on the daily board
+          </button>
+        ) : null}
             <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Menu</button>
           </div>
         </Pop>

@@ -8,7 +8,7 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import GameMark from "@/components/GameMark";
 import { audio, click, uiBlip } from "@/lib/audio";
 import { getBest, recordPlay, runRng, scoreKey, setBest, todayStamp, usePref, seededRng, dailySeed, dayNumber } from "@/lib/store";
-import { readToken, signIn, submitScore } from "@/lib/arcade";
+import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
 import { slotEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
@@ -57,8 +57,7 @@ export default function TimeGame() {
   const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
   const seedRef = useRef<number | null>(null);
   const [rank, setRank] = useState<number | null>(null);
-  const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => { setSignedIn(Boolean(readToken())); }, [phase]);
+  const signedIn = useSignedIn(phase);
   const startedAt = useRef(0);
   const feedbackAt = useRef(0);
 

@@ -9,7 +9,7 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import GameMark from "@/components/GameMark";
 import { audio, toneOn, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay, seededRng, dailySeed, dayNumber, todayStamp } from "@/lib/store";
-import { readToken, signIn, submitScore } from "@/lib/arcade";
+import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
 import { readAccent, shade, useAccent, type Hsl } from "@/lib/accent";
 import { slotEmoji } from "@/lib/share";
 
@@ -70,8 +70,7 @@ export default function SoundGame() {
   const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
   const seedRef = useRef<number | null>(null);
   const [rank, setRank] = useState<number | null>(null);
-  const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => { setSignedIn(Boolean(readToken())); }, [phase]);
+  const signedIn = useSignedIn(phase);
 
   const timers = useRef<number[]>([]);
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));

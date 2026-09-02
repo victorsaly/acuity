@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import Leaderboard from "@/components/Leaderboard";
 import { Item, Pop, Stagger } from "@/components/Fx";
 import { audio, bass, clap, click, hat, heardNow, kick } from "@/lib/audio";
 import ShareScore from "@/components/ShareScore";
-import { getBest, recordPlay, scoreKey, setBest, usePref } from "@/lib/store";
+import { getBest, recordPlay, scoreKey, setBest, usePref, dailySeed, dayNumber, todayStamp } from "@/lib/store";
+import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
 import { barEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
-type Phase = "menu" | "groove" | "silence" | "feedback" | "results";
+type Phase = "menu" | "groove" | "silence" | "feedback" | "results" | "board";
 type Result = { error: number | null; score: number };
 type BarStyle = CSSProperties & { "--height": string; "--delay": string };
 
@@ -58,6 +60,15 @@ export default function PhantomGame() {
   const [results, setResults] = useState<Result[]>([]);
   const [current, setCurrent] = useState<Result | null>(null);
   const [record, setRecord] = useState(false);
+  /* Whether this run is today's shared challenge, and its seed. Only a seeded
+     run can be rebuilt server-side, so only a seeded run can be ranked. */
+  const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
+  const seedRef = useRef<number | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  /* Whether the finished run was the daily. State, not the ref: this is read
+     while rendering the results, and a ref does not re-render. */
+  const [rankedRun, setRankedRun] = useState(false);
+  const signedIn = useSignedIn(phase);
   const [runStamp, setRunStamp] = useState(0);
   const frame = useRef(0);
   const lastBeat = useRef(-1);
@@ -169,6 +180,11 @@ export default function PhantomGame() {
   };
 
   const start = () => {
+    /* The drops are a fixed tempo, so there is nothing to seed — the seed is
+       recorded only to mark this run as the day's challenge. */
+    seedRef.current = daily === "on" ? dailySeed("phantom") : null;
+    setRankedRun(seedRef.current !== null);
+    setRank(null);
     setResults([]);
     setRecord(false);
     beginRound(0);
@@ -190,6 +206,26 @@ export default function PhantomGame() {
     const isRecord = rounded > getBest(key) && rounded > 0;
     if (isRecord) setBest(key, rounded);
     recordPlay("phantom");
+      /* Put it on the shared board, if this was the daily and there is
+         somewhere to put it. Failure is silent: the score is already safe
+         locally, and a leaderboard is never worth interrupting a game for. */
+      {
+        const seed = seedRef.current;
+        const token = readToken();
+        if (seed !== null && token) {
+          submitScore(token, {
+            mode: `phantom-${diff}`,
+            period: todayStamp(),
+            seed,
+            score: Math.round(total * 10),
+            /* `error` is already milliseconds — multiplying again produced
+               figures in the millions, which the server rightly refused. */
+            proof: { errors: results.map((r) => (r.error === null ? null : Math.abs(r.error))) },
+          })
+            .then((posted) => setRank(posted?.rank ?? null))
+            .catch(() => {});
+        }
+      }
     setRecord(isRecord);
     setRunStamp((value) => value + 1);
     goPhase("results");
@@ -213,6 +249,16 @@ export default function PhantomGame() {
     return () => document.removeEventListener("keydown", onKey);
   });
 
+  if (phase === "board") {
+    return (
+      <main className="stage menuStage">
+        <Leaderboard mode={`phantom-${diff}`} title="Phantom Drop"
+          metric="Internal timing" unit="/ 30"
+          onClose={() => setPhase("menu")} />
+      </main>
+    );
+  }
+
   if (phase === "menu") {
     return (
       <main className={`stage menuStage ${styles.stage}`}>
@@ -221,7 +267,10 @@ export default function PhantomGame() {
           <Item><h1 className="wordmark">Phantom Drop</h1></Item>
           <Item><p className="tagline">Listen, hands off. The beat cuts out and never comes back. Keep counting anyway, then tap once where the next 1 belongs.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game={SCORE} diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
+            <GameSetup game={SCORE} diffs={DIFFS} diff={diff}
+              daily={daily === "on"}
+              onDaily={(on) => setDaily(on ? "on" : "off")}
+              dayNumber={dayNumber()} onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Phantom Drop",
                 description: "You hear the groove, the groove disappears, and you have to keep counting anyway.",
@@ -274,6 +323,18 @@ export default function PhantomGame() {
               line={`${total.toFixed(1)} / 30 ${barEmoji((total / 30) * 100)} · ${results.filter((r) => r.score >= 9).length}/${ROUNDS} landed`}
               level={diff}
             />
+        {/* Where this run landed, or the offer to put it there. Only ever for
+            the daily, which is the only ranked run. */}
+        {rank !== null ? (
+          <p className="rankLine">
+            <b>#{rank}</b> on today&rsquo;s Phantom Drop board{" "}
+            <button className="linkish" onClick={() => setPhase("board")}>See the board</button>
+          </p>
+        ) : rankedRun && !signedIn ? (
+          <button className="ghost" data-note={523} onClick={() => signIn()}>
+            Put this score on the daily board
+          </button>
+        ) : null}
             <button className="ghost" data-note={349} onClick={() => goPhase("menu")}>Menu</button>
           </div>
         </Pop>

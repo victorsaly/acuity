@@ -7,7 +7,7 @@ import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import { getBest, setBest, scoreKey, runRng, seededRng, dailySeed, dayNumber, todayStamp, usePref, recordPlay } from "@/lib/store";
-import { readToken, signIn, submitScore } from "@/lib/arcade";
+import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
 import { slotEmoji } from "@/lib/share";
 import { uiBlip } from "@/lib/audio";
 
@@ -80,8 +80,10 @@ export default function ColorGame() {
   const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
   const seedRef = useRef<number | null>(null);
   const [rank, setRank] = useState<number | null>(null);
-  const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => { setSignedIn(Boolean(readToken())); }, [phase]);
+  /* Whether the finished run was the daily. State, not the ref: this is read
+     while rendering the results, and a ref does not re-render. */
+  const [rankedRun, setRankedRun] = useState(false);
+  const signedIn = useSignedIn(phase);
 
   const timers = useRef<number[]>([]);
   const ringRef = useRef<SVGCircleElement>(null);
@@ -123,6 +125,7 @@ export default function ColorGame() {
        something next to each other. */
     const seed = daily === "on" ? dailySeed("color") : null;
     seedRef.current = seed;
+    setRankedRun(seedRef.current !== null);
     const rng = seed === null ? runRng() : seededRng(seed);
     const cols: HSL[] = Array.from({ length: SLOTS }, () => ({
       h: Math.floor(rng() * 360),
@@ -362,7 +365,7 @@ export default function ColorGame() {
             <b>#{rank}</b> on today&rsquo;s Afterimage board{" "}
             <button className="linkish" onClick={() => setPhase("board")}>See the board</button>
           </p>
-        ) : seedRef.current !== null && !signedIn ? (
+        ) : rankedRun && !signedIn ? (
           <button className="ghost" data-note={523} onClick={() => signIn()}>
             Put this score on the daily board
           </button>

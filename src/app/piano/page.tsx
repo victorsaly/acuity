@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import Leaderboard from "@/components/Leaderboard";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
-import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, usePref, recordPlay, seededRng, dailySeed, dayNumber, todayStamp } from "@/lib/store";
+import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
 import { barEmoji } from "@/lib/share";
 import { uiBlip, pianoKey, buzz } from "@/lib/audio";
 
@@ -14,7 +16,7 @@ import { uiBlip, pianoKey, buzz } from "@/lib/audio";
  * notes back in order before the clock runs out; three slips end it.
  */
 
-type Phase = "menu" | "show" | "recall" | "results";
+type Phase = "menu" | "show" | "recall" | "results" | "board";
 type Fmt = "watch" | "ear";
 type Mark = "" | "lit" | "hit" | "miss" | "reveal";
 type PhrasePreset = "auto" | "west" | "snap";
@@ -128,6 +130,18 @@ export default function PianoGame() {
   const phrase = phraseStr as PhrasePreset;
   const [runStamp, setRunStamp] = useState(0);
   const [record, setRecord] = useState(false);
+  /* Whether this run is today's shared challenge, and its seed. Only a seeded
+     run can be rebuilt server-side, so only a seeded run can be ranked. */
+  const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
+  const seedRef = useRef<number | null>(null);
+  /* Presses of the level in progress, and every level's presses in order. */
+  const thisLevel = useRef<number[]>([]);
+  const runTaps = useRef<number[][]>([]);
+  const [rank, setRank] = useState<number | null>(null);
+  /* Whether the finished run was the daily. State, not the ref: this is read
+     while rendering the results, and a ref does not re-render. */
+  const [rankedRun, setRankedRun] = useState(false);
+  const signedIn = useSignedIn(phase);
   const [view, setView] = useState<View>(EMPTY);   // render-side snapshot; logic mutates the ref
 
   const keys = useMemo(() => buildKeys(SPAN[diff], WHITES_ONLY[diff]), [diff]);
@@ -200,9 +214,18 @@ export default function PianoGame() {
 
   const start = () => {
     clear();
-    const rng = runRng();
-    const phraseBank = phrase === "auto" ? [] : buildInspiredPhrase(phrase, keys.length);
-    R.current = { rng, ...EMPTY, melody: [], marks: [], phrase, phraseBank };
+    /* The daily locks the phrase to "auto": a chosen preset is a fixed tune
+       and uses no randomness, so it would not be the same challenge at all. */
+    const seed = daily === "on" ? dailySeed(`piano-${diff}`) : null;
+    seedRef.current = seed;
+    setRankedRun(seedRef.current !== null);
+    setRank(null);
+    const rng = seed === null ? runRng() : seededRng(seed);
+    const runPhrase = seed === null ? phrase : "auto";
+    const phraseBank = runPhrase === "auto" ? [] : buildInspiredPhrase(runPhrase, keys.length);
+    runTaps.current = [];
+    thisLevel.current = [];
+    R.current = { rng, ...EMPTY, melody: [], marks: [], phrase: runPhrase, phraseBank };
     extend();
     playLevel();
   };
@@ -214,6 +237,24 @@ export default function PianoGame() {
     if (isRecord) setBest(key, g.cleared);
     setRecord(isRecord);
     recordPlay("piano");
+      /* Put it on the shared board, if this was the daily and there is
+         somewhere to put it. Failure is silent: the score is already safe
+         locally, and a leaderboard is never worth interrupting a game for. */
+      {
+        const seed = seedRef.current;
+        const token = readToken();
+        if (seed !== null && token) {
+          submitScore(token, {
+            mode: `piano-${diff}`,
+            period: todayStamp(),
+            seed,
+            score: g.cleared * 10,
+            proof: { taps: runTaps.current },
+          })
+            .then((posted) => setRank(posted?.rank ?? null))
+            .catch(() => {});
+        }
+      }
     setRunStamp((s) => s + 1);
     setPhase("results");
   };
@@ -221,6 +262,8 @@ export default function PianoGame() {
   /** A slip (wrong key, or the clock): show the note that should have come, burn a life. */
   const fail = (wrongKey: number | null, head: string) => {
     const g = R.current;
+    runTaps.current.push(thisLevel.current);
+    thisLevel.current = [];
     g.lives--;
     const m = blank();
     if (wrongKey !== null) m[wrongKey] = "miss";
@@ -246,6 +289,8 @@ export default function PianoGame() {
 
   const press = (i: number) => {
     const g = R.current;
+    // Every press of every level, so the leaderboard can replay the run.
+    thisLevel.current.push(i);
     if (phase !== "recall") return;
     g.taps++;
     pianoKey(keys[i].freq, 0.14);
@@ -258,6 +303,8 @@ export default function PianoGame() {
     if (g.picked < g.melody.length) return;
 
     /* level cleared — same melody next time, one note longer */
+    runTaps.current.push(thisLevel.current);
+    thisLevel.current = [];
     g.cleared++;
     g.level++;
     setPhase("show");
@@ -310,6 +357,16 @@ export default function PianoGame() {
   }, [phase, keys]);
 
   /* ---------- render ---------- */
+  if (phase === "board") {
+    return (
+      <main className="stage menuStage">
+        <Leaderboard mode={`piano-${diff}`} title="Refrain"
+          metric="Levels cleared" unit="levels"
+          onClose={() => setPhase("menu")} />
+      </main>
+    );
+  }
+
   if (phase === "menu") {
     return (
       <main className="stage">
@@ -331,7 +388,10 @@ export default function PianoGame() {
           </Item>
           <Item><p className="tagline">A piano phrase plays, then it&apos;s yours. Same notes, same order. Every level adds one more to the end. Three wrong notes and it&apos;s over.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game="piano" diffs={DIFFS} diff={diff}
+            <GameSetup game="piano"
+              daily={daily === "on"}
+              onDaily={(on) => setDaily(on ? "on" : "off")}
+              dayNumber={dayNumber()} diffs={DIFFS} diff={diff}
               onDiff={setDiff} onStart={start} refreshToken={runStamp} formatBest={(b) => `level ${b}`}
               formats={FORMATS} format={fmtStr} onFormat={setFmt}
               beats={PHRASES} beat={phraseStr} onBeat={setPhrase}
@@ -434,6 +494,18 @@ export default function PianoGame() {
           line={`Level ${g.cleared} ${barEmoji(g.cleared * 5)}`}
           level={diff}
         />
+        {/* Where this run landed, or the offer to put it there. Only ever for
+            the daily, which is the only ranked run. */}
+        {rank !== null ? (
+          <p className="rankLine">
+            <b>#{rank}</b> on today&rsquo;s Refrain board{" "}
+            <button className="linkish" onClick={() => setPhase("board")}>See the board</button>
+          </p>
+        ) : rankedRun && !signedIn ? (
+          <button className="ghost" data-note={523} onClick={() => signIn()}>
+            Put this score on the daily board
+          </button>
+        ) : null}
         <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
       </div>
     </main>

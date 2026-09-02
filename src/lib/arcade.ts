@@ -14,6 +14,8 @@
  * and an unverifiable entry on a public board is worth less than no entry.
  */
 
+import { useSyncExternalStore } from "react";
+
 const BASE = process.env.NEXT_PUBLIC_ARCADE_API ?? "https://api.victorsaly.com";
 const TOKEN_KEY = "beats-session";
 const GAME = "beats";
@@ -84,6 +86,23 @@ export type BoardEntry = {
   shut?: number;
 };
 
+/**
+ * Whether there is a session, read during render rather than in an effect.
+ *
+ * Matches how the rest of the app reads local storage: SSR-safe, and it does
+ * not set state on mount just to learn something already on disk.
+ */
+export function useSignedIn(refresh?: unknown): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => {
+      void refresh;
+      return readToken() !== null;
+    },
+    () => false,
+  );
+}
+
 export const readToken = (): string | null => {
   try {
     return localStorage.getItem(TOKEN_KEY);
@@ -136,7 +155,9 @@ async function call<T>(
 /** Send the browser to Google. It returns to this page with `?auth=`. */
 export const signIn = () => {
   const back = `${window.location.origin}${window.location.pathname}`;
-  window.location.assign(`${BASE}/v1/auth/start?redirect=${encodeURIComponent(back)}`);
+  /* An absolute URL to another origin — Next's router cannot and should not
+     handle it, so this is a real navigation on purpose. */
+  window.location.href = `${BASE}/v1/auth/start?redirect=${encodeURIComponent(back)}`;
 };
 
 /**

@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import Leaderboard from "@/components/Leaderboard";
 import { Pop, Stagger, Item } from "@/components/Fx";
 import { audio, click, hat, heardNow, kick, snare } from "@/lib/audio";
 import ShareScore from "@/components/ShareScore";
-import { getBest, recordPlay, scoreKey, setBest, usePref } from "@/lib/store";
+import { getBest, recordPlay, scoreKey, setBest, usePref, dailySeed, dayNumber, todayStamp } from "@/lib/store";
+import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
 import { barEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
-type Phase = "menu" | "watch" | "alarm" | "play" | "results";
-type Judgement = { slot: number; score: number; label: string };
+type Phase = "menu" | "watch" | "alarm" | "play" | "results" | "board";
+type Judgement = { slot: number; score: number; label: string; error: number };
 
 /** Two bars of groove, the alarm on the beat after them, then you, alone. */
 const COUNT_BEATS = 8;
@@ -48,6 +50,15 @@ export default function FeverGame() {
   const [feedback, setFeedback] = useState("");
   const [finalScore, setFinalScore] = useState(0);
   const [record, setRecord] = useState(false);
+  /* Whether this run is today's shared challenge, and its seed. Only a seeded
+     run can be rebuilt server-side, so only a seeded run can be ranked. */
+  const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
+  const seedRef = useRef<number | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  /* Whether the finished run was the daily. State, not the ref: this is read
+     while rendering the results, and a ref does not re-render. */
+  const [rankedRun, setRankedRun] = useState(false);
+  const signedIn = useSignedIn(phase);
   const [runStamp, setRunStamp] = useState(0);
   const frame = useRef(0);
   const fadeTimer = useRef(0);
@@ -80,13 +91,31 @@ export default function FeverGame() {
     done.current = true;
     stop();
     const complete = Array.from({ length: PLAY_BEATS }, (_, slot) =>
-      hits.current.get(slot) ?? { slot, score: 0, label: "Miss" });
+      hits.current.get(slot) ?? { slot, score: 0, label: "Miss", error: Infinity });
     const total = complete.reduce((sum, hit) => sum + hit.score, 0);
     const rounded = Math.round(total * 10) / 10;
     const key = scoreKey(SCORE, diff);
     const isRecord = rounded > getBest(key) && rounded > 0;
     if (isRecord) setBest(key, rounded);
     recordPlay("fever");
+      /* Put it on the shared board, if this was the daily and there is
+         somewhere to put it. Failure is silent: the score is already safe
+         locally, and a leaderboard is never worth interrupting a game for. */
+      {
+        const seed = seedRef.current;
+        const token = readToken();
+        if (seed !== null && token) {
+          submitScore(token, {
+            mode: `fever-${diff}`,
+            period: todayStamp(),
+            seed,
+            score: Math.round(total * 10),
+            proof: { errors: complete.map((h) => (Number.isFinite(h.error) ? h.error : null)) },
+          })
+            .then((posted) => setRank(posted?.rank ?? null))
+            .catch(() => {});
+        }
+      }
     setJudgements(complete);
     setFinalScore(rounded);
     setRecord(isRecord);
@@ -95,6 +124,11 @@ export default function FeverGame() {
   };
 
   const start = () => {
+    /* A plain click at a fixed tempo: nothing to seed, and the seed is
+       recorded only to mark this run as the day's challenge. */
+    seedRef.current = daily === "on" ? dailySeed("fever") : null;
+    setRankedRun(seedRef.current !== null);
+    setRank(null);
     stop();
     const { bpm, window: timingWindow } = CONFIG[diff];
     const beat = 60 / bpm;
@@ -163,7 +197,8 @@ export default function FeverGame() {
     const error = Math.abs(t - target) * 1000;
     const score = Math.max(0, 10 * (1 - error / p.window));
     const label = score >= 8 ? "Delicious" : score >= 4 ? "Edible" : "Burnt";
-    hits.current.set(slot, { slot, score, label });
+    // The error is kept so the leaderboard can rescore the run itself.
+    hits.current.set(slot, { slot, score, label, error });
     setJudgements(Array.from(hits.current.values()));
     setFeedback(label);
     /* Your tap is the only sound in the room now — it plays the beat back at
@@ -194,6 +229,16 @@ export default function FeverGame() {
     return () => document.removeEventListener("keydown", onKey);
   });
 
+  if (phase === "board") {
+    return (
+      <main className="stage menuStage">
+        <Leaderboard mode={`fever-${diff}`} title="Fever Dream"
+          metric="Timing" unit="/ 80"
+          onClose={() => setPhase("menu")} />
+      </main>
+    );
+  }
+
   if (phase === "menu") {
     return (
       <main className={`stage menuStage ${styles.stage}`}>
@@ -202,7 +247,10 @@ export default function FeverGame() {
           <Item><h1 className="wordmark">Fever Dream</h1></Item>
           <Item><p className="tagline">The microwave keeps time for two bars, then quits on you. Breakfast still wants out, so you hold the pulse alone. No lane, no arrows, no click track.</p></Item>
           <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <GameSetup game={SCORE} diffs={DIFFS} diff={diff} onDiff={setDiff} onStart={start} refreshToken={runStamp}
+            <GameSetup game={SCORE} diffs={DIFFS} diff={diff}
+              daily={daily === "on"}
+              onDaily={(on) => setDaily(on ? "on" : "off")}
+              dayNumber={dayNumber()} onDiff={setDiff} onStart={start} refreshToken={runStamp}
               helpContent={{
                 title: "Fever Dream",
                 description: "The microwave counts you in like a drummer. Then it stops dead and you carry the pulse on your own.",
@@ -242,6 +290,18 @@ export default function FeverGame() {
               line={`${finalScore.toFixed(1)} / 80 ${barEmoji(finalScore / 0.8)} · ${judgements.filter((hit) => hit.score > 0).length}/${PLAY_BEATS} fed`}
               level={diff}
             />
+        {/* Where this run landed, or the offer to put it there. Only ever for
+            the daily, which is the only ranked run. */}
+        {rank !== null ? (
+          <p className="rankLine">
+            <b>#{rank}</b> on today&rsquo;s Fever Dream board{" "}
+            <button className="linkish" onClick={() => setPhase("board")}>See the board</button>
+          </p>
+        ) : rankedRun && !signedIn ? (
+          <button className="ghost" data-note={523} onClick={() => signIn()}>
+            Put this score on the daily board
+          </button>
+        ) : null}
             <button className="ghost" data-note={349} onClick={() => goPhase("menu")}>Wake up</button>
           </div>
         </Pop>

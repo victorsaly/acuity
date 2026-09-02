@@ -2,16 +2,18 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import GameSetup, { type DiffDef } from "@/components/GameSetup";
+import Leaderboard from "@/components/Leaderboard";
 import ShareScore from "@/components/ShareScore";
 import Celebrate from "@/components/Celebrate";
 import { Stagger, Item, Pop } from "@/components/Fx";
 import GameMark from "@/components/GameMark";
 import { audio, kick, snare, hat, click, uiBlip, setDrumKit, loadKitSamples, type DrumKitName } from "@/lib/audio";
-import { getBest, setBest, scoreKey, runRng, usePref, recordPlay } from "@/lib/store";
+import { getBest, setBest, scoreKey, runRng, usePref, recordPlay, seededRng, dailySeed, dayNumber, todayStamp } from "@/lib/store";
+import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
 import { readAccent, shade } from "@/lib/accent";
 import { barEmoji } from "@/lib/share";
 
-type Phase = "menu" | "play" | "results";
+type Phase = "menu" | "play" | "results" | "board";
 
 const DIFFS: DiffDef[] = [
   { key: "easy", label: "Easy", sub: "1 track", note: 523 },
@@ -266,6 +268,15 @@ export default function TempoGame() {
   const [judge, setJudge] = useState<{ text: string; id: number; color: string } | null>(null);
   const [final, setFinal] = useState<Run | null>(null);
   const [record, setRecord] = useState(false);
+  /* Whether this run is today's shared challenge, and its seed. Only a seeded
+     run can be rebuilt server-side, so only a seeded run can be ranked. */
+  const [daily, setDaily] = usePref("beats-daily", "off", ["off", "on"]);
+  const seedRef = useRef<number | null>(null);
+  const [rank, setRank] = useState<number | null>(null);
+  /* Whether the finished run was the daily. State, not the ref: this is read
+     while rendering the results, and a ref does not re-render. */
+  const [rankedRun, setRankedRun] = useState(false);
+  const signedIn = useSignedIn(phase);
 
   const run = useRef<Run | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -276,7 +287,12 @@ export default function TempoGame() {
   const start = () => {
     const c = audio();
     setDrumKit(kit);   // remembered preference may not have touched the engine yet
-    const rng = runRng();
+    /* Only the tempo comes from the seed; the notes are the pattern's own. */
+    const seed = daily === "on" ? dailySeed(`tempo-${diff}`) : null;
+    seedRef.current = seed;
+    setRankedRun(seedRef.current !== null);
+    setRank(null);
+    const rng = seed === null ? runRng() : seededRng(seed);
     const baseCfg = DIFF_CFG[diff];
     const cfg = trackPick === "auto" ? baseCfg : {
       ...baseCfg,
@@ -627,6 +643,24 @@ export default function TempoGame() {
         if (isRecord) setBest(key, rounded);
         setRecord(isRecord);
         recordPlay("tempo");
+          /* Put it on the shared board, if this was the daily and there is
+             somewhere to put it. Failure is silent: the score is already safe
+             locally, and a leaderboard is never worth interrupting a game for. */
+          {
+            const seed = seedRef.current;
+            const token = readToken();
+            if (seed !== null && token) {
+              submitScore(token, {
+                mode: `tempo-${diff}`,
+                period: todayStamp(),
+                seed,
+                score: Math.round(total * 10),
+                proof: { counts: { perfect: r.counts.perfect, good: r.counts.good, ok: r.counts.ok, strays: r.strays } },
+              })
+                .then((posted) => setRank(posted?.rank ?? null))
+                .catch(() => {});
+            }
+          }
         setRunStamp(Date.now());
         setFinal({ ...r });
         setPhase("results");
@@ -678,6 +712,10 @@ export default function TempoGame() {
     <>
       <canvas ref={canvasRef} className="fullCanvas" aria-hidden />
 
+      {phase === "board" && (
+        <Leaderboard mode={`tempo-${diff}`} title="Downbeat"
+          metric="Accuracy" unit="%" onClose={() => setPhase("menu")} />
+      )}
       {phase === "menu" && (
         <main className="stage menuStage">
           <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
@@ -692,6 +730,9 @@ export default function TempoGame() {
             </Item>
             <Item style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
               <GameSetup game="tempo" diffs={DIFFS} diff={diff}
+              daily={daily === "on"}
+              onDaily={(on) => setDaily(on ? "on" : "off")}
+              dayNumber={dayNumber()}
                 onDiff={setDiff} onStart={start} refreshToken={runStamp}
                 beats={TRACKS_UI} beat={trackPick} onBeat={setTrackPick}
                 formats={LANES_UI} format={lane} formatsPrimary formatsLabel="Game type"
@@ -773,6 +814,18 @@ export default function TempoGame() {
                 line={`${total.toFixed(1)} / 100 ${barEmoji(total)} · ${final.maxCombo} combo`}
                 level={diff}
               />
+        {/* Where this run landed, or the offer to put it there. Only ever for
+            the daily, which is the only ranked run. */}
+        {rank !== null ? (
+          <p className="rankLine">
+            <b>#{rank}</b> on today&rsquo;s Downbeat board{" "}
+            <button className="linkish" onClick={() => setPhase("board")}>See the board</button>
+          </p>
+        ) : rankedRun && !signedIn ? (
+          <button className="ghost" data-note={523} onClick={() => signIn()}>
+            Put this score on the daily board
+          </button>
+        ) : null}
               <button className="ghost" data-note={349} onClick={() => setPhase("menu")}>Options</button>
             </div>
           </main>
