@@ -21,28 +21,36 @@ function CardStats({ game }: { game: string }) {
 export default function Hub() {
   return (
     <main className="stage menuStage">
+      <nav className="hubNav" aria-label="Site">
+        <Link href="/" className="hubNavBrand" data-note={392} aria-label="Delulu Beats home">
+          <svg className="hubNavMark" viewBox="0 0 36 24" aria-hidden>
+            <rect x="1" y="7" width="9" height="9" rx="2.5" fill="#eff0f4" />
+            <rect x="13" y="7" width="9" height="9" rx="2.5" fill="#eff0f4" opacity="0.3" />
+            <rect x="27" y="11" width="9" height="9" rx="2.5" fill="#ffb02e" />
+          </svg>
+          <span className="hubNavName">Delul<i className="navOffU">u</i> Beats</span>
+        </Link>
+        <div className="hubNavLinks">
+          <a href="#games" data-note={440}>Games</a>
+          <Link href="/studio" data-note={494}>Beat Lab</Link>
+          <Link href="/leaderboard" data-note={523}>Leaderboard</Link>
+          <Link href="/about" data-note={587}>About</Link>
+        </div>
+      </nav>
       <Stagger style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <Item>
-          <div className="brandLockup">
-            <svg className="brandMark" viewBox="0 0 64 64" aria-hidden>
-              <circle cx="32" cy="32" r="17" fill="none" stroke="#f0f0f4" strokeWidth="4" />
-              <circle className="brandBeat" cx="32" cy="32" r="7" fill="none" stroke="#f0f0f4" strokeWidth="1.5" />
-              <circle className="brandCore" cx="32" cy="32" r="5" fill="#f0f0f4" />
-              <g className="brandSatellite">
-                <circle cx="32" cy="9" r="2.5" fill="#f0f0f4" />
-              </g>
-            </svg>
-            <h1 className="wordmark brandName">
-              <span>Delulu</span>{" "}<span>Beats</span>
-            </h1>
-          </div>
+          <h1 className="hubHead">
+            Everything here is <em className="offWords">slightly off</em>.
+            <br />Your job is to notice.
+          </h1>
         </Item>
         <Item>
-          <p className="tagline">
-            Nine games about noticing things. You will be worse at them than you
-            expect. That&apos;s most of the fun.
+          <p className="tagline hubSub">
+            Nine tiny games about hearing, timing, and being confidently wrong —
+            plus a beat lab for when you&apos;d rather just make noise.
           </p>
         </Item>
+        <span id="games" aria-hidden />
         <Stagger className="hubCards" delay={0.12}>
           <Item style={cardWrap}>
             <Tilt style={{ display: "flex", width: "100%" }}>
