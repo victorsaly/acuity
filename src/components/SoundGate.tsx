@@ -91,8 +91,18 @@ export default function SoundGate() {
         <div className="soundGateMark" aria-hidden>
           <span /><span /><span /><span /><span />
         </div>
-        <h1 id="soundGateTitle" className="soundGateTitle">
-          {returning ? "Welcome back" : "Sound on"}
+        {/* Same shape as the wordmark: last letter of the first word slips off the grid.
+            The split would otherwise be read out as "Soun d on". */}
+        <h1
+          id="soundGateTitle"
+          className="soundGateTitle"
+          aria-label={returning ? "Welcome back" : "Sound on"}
+        >
+          {returning ? (
+            <><span>Welcom<i className="offLetter">e</i></span> <span>back</span></>
+          ) : (
+            <><span>Soun<i className="offLetter">d</i></span> <span>on</span></>
+          )}
         </h1>
         <p className="soundGateCopy">
           {returning
