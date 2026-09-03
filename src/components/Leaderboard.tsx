@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import GameMark, { type GameKey } from "@/components/GameMark";
 import {
-  fetchBoard, forgetMe, readToken, rename, signIn, useSignedIn, whoAmI,
+  fetchBoard, forgetMe, rename, signIn, useSessionToken, whoAmI,
   type BoardEntry,
 } from "@/lib/arcade";
 import { todayStamp, dayNumber } from "@/lib/store";
@@ -52,26 +52,40 @@ export default function Leaderboard({
   const [period, setPeriod] = useState<"today" | "alltime">("today");
   const [board, setBoard] = useState<{ entries: BoardEntry[] } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [who, setWho] = useState<{ name: string } | null>(null);
+  /* Stamped with the session it was fetched under — see `me` below. */
+  const [who, setWho] = useState<{ token: string; name: string } | null>(null);
   const [draft, setDraft] = useState("");
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
 
   const today = todayStamp();
-  const signedIn = useSignedIn();
-  /* Derived, not stored: signing out has to empty this footer, and clearing
-     state in an effect to do that is a render the board does not need. */
-  const me = signedIn ? who : null;
+  const token = useSessionToken();
 
-  /* `signedIn` is not read in here. It is in the list so that signing in
-     reloads the board: a fresh session can change which row is yours, and
-     posting a held-back score is the usual reason to be signing in at all. */
+  /* Derived, and tied to the session it was fetched for. Signing out has to
+     empty this footer, and signing in as somebody else must not leave the
+     previous name on it for the moment before `whoAmI` answers. */
+  const me = who && who.token === token ? who : null;
+
+  /* The rename form belongs to one account too. Adjusted during render rather
+     than cleared in an effect: that is React's own answer to state that has to
+     follow a value, and it costs one render fewer than fixing it afterwards. */
+  const [formSession, setFormSession] = useState(token);
+  if (formSession !== token) {
+    setFormSession(token);
+    setEditing(false);
+    setDraft("");
+    setError("");
+  }
+
+  /* `token` is not read in here. It is in the list so that signing in reloads
+     the board: a fresh session can change which row is yours, and posting a
+     held-back score is the usual reason to be signing in at all. */
   const load = useCallback(async () => {
-    void signedIn;
+    void token;
     setLoading(true);
     setBoard(await fetchBoard(mode, period === "alltime" ? "alltime" : today));
     setLoading(false);
-  }, [mode, period, today, signedIn]);
+  }, [mode, period, today, token]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -79,29 +93,25 @@ export default function Leaderboard({
      whatever page it was started from, which can be this board with the
      footer already rendered. */
   useEffect(() => {
-    const token = signedIn ? readToken() : null;
     if (!token) return;
-    void whoAmI(token).then((found) => found && setWho({ name: found.name }));
-  }, [signedIn]);
+    void whoAmI(token).then((found) => found && setWho({ token, name: found.name }));
+  }, [token]);
 
   const save = async () => {
-    const token = readToken();
     if (!token) return;
     const result = await rename(token, draft);
     if (!result.ok) { setError(result.error); return; }
-    setWho({ name: result.name });
+    setWho({ token, name: result.name });
     setEditing(false);
     setError("");
     void load();
   };
 
   const wipe = async () => {
-    const token = readToken();
     if (!token) return;
     if (!window.confirm("Delete your name and every score you have posted? This cannot be undone.")) return;
     await forgetMe(token);
     setWho(null);
-    setEditing(false);
     void load();
   };
 

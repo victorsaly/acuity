@@ -235,11 +235,19 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
+    /* Keyed on the path alone. The export answers every query with the same
+       HTML, so one entry per route matches what was warmed, rather than a
+       fresh copy per visit carrying a query — and the sign-in return trip
+       arrives as `?auth=<one-time code>`, which has no business being written
+       into a cache key or looked for in one. Keying on the request itself
+       both stored that code and then missed the warmed page it should have
+       fallen back to. */
+    const key = new Request(url.origin + url.pathname);
     event.respondWith((async () => {
       try {
-        return await networkFirst(request, PAGES);
+        return await cachePut(PAGES, key, await fetch(request));
       } catch {
-        return (await caches.match(OFFLINE)) ?? Response.error();
+        return (await fromCache(key)) ?? (await caches.match(OFFLINE)) ?? Response.error();
       }
     })());
     return;

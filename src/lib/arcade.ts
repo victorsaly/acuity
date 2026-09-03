@@ -124,23 +124,46 @@ export function useSignedIn(refresh?: unknown): boolean {
   );
 }
 
+/**
+ * The session token itself, for state that belongs to one account.
+ *
+ * `useSignedIn` answers whether there is a session, which is not enough to
+ * notice that it is now a *different* one — a name fetched for the last
+ * account would otherwise sit there until the next `whoAmI` answered.
+ */
+export function useSessionToken(): string | null {
+  return useSyncExternalStore(subscribeSession, readToken, () => null);
+}
+
+/**
+ * Where the session lives when storage will not keep it.
+ *
+ * Safari in private mode, and any browser set to block site data, throw on
+ * write. The comment here used to say such a session still worked for the
+ * visit; it did not. `readToken` asked local storage and nothing else, so
+ * signing in on those browsers succeeded and then appeared to do nothing at
+ * all — the same symptom this whole change set out to fix.
+ */
+let memoryToken: string | null = null;
+
 export const readToken = (): string | null => {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(TOKEN_KEY) ?? memoryToken;
   } catch {
-    return null;
+    return memoryToken;
   }
 };
 
 export const writeToken = (token: string | null) => {
+  /* Set first, and unconditionally: this is the copy that makes the claim in
+     the comment above true. */
+  memoryToken = token;
   try {
     if (token) localStorage.setItem(TOKEN_KEY, token);
     else localStorage.removeItem(TOKEN_KEY);
   } catch {
-    /* a session that cannot be remembered still works for this visit */
+    /* Not remembered past this page load — but this visit is signed in. */
   } finally {
-    /* Announce it either way: the session is live for this visit even when it
-       could not be written down, and the board should say so. */
     window.dispatchEvent(new Event(SESSION_EVENT));
   }
 };
