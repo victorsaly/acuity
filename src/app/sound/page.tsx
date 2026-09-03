@@ -9,7 +9,7 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import GameMark from "@/components/GameMark";
 import { audio, toneOn, toneOff, playTone, setToneVoice, type ToneVoice } from "@/lib/audio";
 import { getBest, setBest, scoreKey, runRng, usePref, recordPlay, seededRng, dailySeed, dayNumber, todayStamp } from "@/lib/store";
-import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
+import { postRun, signIn, useSignedIn } from "@/lib/arcade";
 import { readAccent, shade, useAccent, type Hsl } from "@/lib/accent";
 import { slotEmoji } from "@/lib/share";
 
@@ -186,14 +186,14 @@ export default function SoundGame() {
       setRecord(isRecord);
       recordPlay("sound");
 
-      /* Put it on the shared board, if this was the daily and there is
-         somewhere to put it. Failure is silent: the score is already safe
-         locally, and a leaderboard is never worth interrupting a game for. */
+      /* Put it on the shared board, if this was the daily. Not signed in
+         holds the run for the sign-in rather than dropping it. Failure is
+         silent either way: the score is already safe locally, and a
+         leaderboard is never worth interrupting a game for. */
       {
         const seed = seedRef.current;
-        const token = readToken();
-        if (seed !== null && token) {
-          submitScore(token, {
+        if (seed !== null) {
+          postRun({
             mode: `sound-${diff}`,
             period: todayStamp(),
             seed,

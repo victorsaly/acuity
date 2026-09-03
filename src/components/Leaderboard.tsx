@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import GameMark, { type GameKey } from "@/components/GameMark";
 import {
-  fetchBoard, forgetMe, readToken, rename, signIn, whoAmI,
+  fetchBoard, forgetMe, rename, signIn, useSessionToken, whoAmI,
   type BoardEntry,
 } from "@/lib/arcade";
 import { todayStamp, dayNumber } from "@/lib/store";
@@ -52,44 +52,66 @@ export default function Leaderboard({
   const [period, setPeriod] = useState<"today" | "alltime">("today");
   const [board, setBoard] = useState<{ entries: BoardEntry[] } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState<{ name: string } | null>(null);
+  /* Stamped with the session it was fetched under — see `me` below. */
+  const [who, setWho] = useState<{ token: string; name: string } | null>(null);
   const [draft, setDraft] = useState("");
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
 
   const today = todayStamp();
+  const token = useSessionToken();
 
+  /* Derived, and tied to the session it was fetched for. Signing out has to
+     empty this footer, and signing in as somebody else must not leave the
+     previous name on it for the moment before `whoAmI` answers. */
+  const me = who && who.token === token ? who : null;
+
+  /* The rename form belongs to one account too. Adjusted during render rather
+     than cleared in an effect: that is React's own answer to state that has to
+     follow a value, and it costs one render fewer than fixing it afterwards. */
+  const [formSession, setFormSession] = useState(token);
+  if (formSession !== token) {
+    setFormSession(token);
+    setEditing(false);
+    setDraft("");
+    setError("");
+  }
+
+  /* `token` is not read in here. It is in the list so that signing in reloads
+     the board: a fresh session can change which row is yours, and posting a
+     held-back score is the usual reason to be signing in at all. */
   const load = useCallback(async () => {
+    void token;
     setLoading(true);
     setBoard(await fetchBoard(mode, period === "alltime" ? "alltime" : today));
     setLoading(false);
-  }, [mode, period, today]);
+  }, [mode, period, today, token]);
 
   useEffect(() => { void load(); }, [load]);
 
+  /* Keyed on the session rather than run once on mount: signing in returns to
+     whatever page it was started from, which can be this board with the
+     footer already rendered. */
   useEffect(() => {
-    const token = readToken();
     if (!token) return;
-    void whoAmI(token).then((who) => who && setMe({ name: who.name }));
-  }, []);
+    void whoAmI(token).then((found) => found && setWho({ token, name: found.name }));
+  }, [token]);
 
   const save = async () => {
-    const token = readToken();
     if (!token) return;
     const result = await rename(token, draft);
     if (!result.ok) { setError(result.error); return; }
-    setMe({ name: result.name });
+    setWho({ token, name: result.name });
     setEditing(false);
     setError("");
     void load();
   };
 
   const wipe = async () => {
-    const token = readToken();
     if (!token) return;
     if (!window.confirm("Delete your name and every score you have posted? This cannot be undone.")) return;
     await forgetMe(token);
-    setMe(null);
+    setWho(null);
     void load();
   };
 

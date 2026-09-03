@@ -7,7 +7,7 @@ import { Pop, Stagger, Item } from "@/components/Fx";
 import { audio, click, hat, heardNow, kick, snare } from "@/lib/audio";
 import ShareScore from "@/components/ShareScore";
 import { getBest, recordPlay, scoreKey, setBest, usePref, dailySeed, dayNumber, todayStamp } from "@/lib/store";
-import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
+import { postRun, signIn, useSignedIn } from "@/lib/arcade";
 import { barEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
@@ -98,14 +98,14 @@ export default function FeverGame() {
     const isRecord = rounded > getBest(key) && rounded > 0;
     if (isRecord) setBest(key, rounded);
     recordPlay("fever");
-      /* Put it on the shared board, if this was the daily and there is
-         somewhere to put it. Failure is silent: the score is already safe
-         locally, and a leaderboard is never worth interrupting a game for. */
+      /* Put it on the shared board, if this was the daily. Not signed in
+         holds the run for the sign-in rather than dropping it. Failure is
+         silent either way: the score is already safe locally, and a
+         leaderboard is never worth interrupting a game for. */
       {
         const seed = seedRef.current;
-        const token = readToken();
-        if (seed !== null && token) {
-          submitScore(token, {
+        if (seed !== null) {
+          postRun({
             mode: `fever-${diff}`,
             period: todayStamp(),
             seed,

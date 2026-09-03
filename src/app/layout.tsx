@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Unbounded, Spline_Sans_Mono } from "next/font/google";
 import Chrome from "@/components/Chrome";
 import Aurora from "@/components/Aurora";
+import ArcadeSession from "@/components/ArcadeSession";
+import InstallApp from "@/components/InstallApp";
 import SoundGate from "@/components/SoundGate";
 import {
   OPEN_GRAPH_IMAGE,
@@ -49,6 +51,25 @@ export const metadata: Metadata = {
   category: "games",
   alternates: { canonical: "/" },
   manifest: "/manifest.webmanifest",
+  /* iOS installs from these rather than from the manifest: it wants an opaque
+     icon of its own, and it is the only way to get the standalone window. */
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    /* The app is dark everywhere, so the status bar should be too. */
+    statusBarStyle: "black-translucent",
+  },
+  /* Next emits only the current `mobile-web-app-capable`. iOS before 16.4 —
+     still a lot of phones — reads the Apple-prefixed one and nothing else,
+     and without it the app opens in a Safari tab with a URL bar. */
+  other: { "apple-mobile-web-app-capable": "yes" },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
@@ -75,6 +96,20 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
+};
+
+/* Installed, the app draws into the whole window, notch included, and the
+   games position against the viewport rather than the safe area. */
+export const viewport: Viewport = {
+  themeColor: "#0c0d12",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  /* A rhythm game is a lot of fast repeated taps, and every one of them is a
+     candidate for a double-tap zoom the player did not ask for. */
+  maximumScale: 1,
+  userScalable: false,
 };
 
 const structuredData = {
@@ -110,6 +145,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
+        <ArcadeSession />
+        <InstallApp />
         <Aurora />
         <SoundGate />
         <Chrome />

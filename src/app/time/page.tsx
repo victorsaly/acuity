@@ -8,7 +8,7 @@ import { Stagger, Item, Pop } from "@/components/Fx";
 import GameMark from "@/components/GameMark";
 import { audio, click, uiBlip } from "@/lib/audio";
 import { getBest, recordPlay, runRng, scoreKey, setBest, todayStamp, usePref, seededRng, dailySeed, dayNumber } from "@/lib/store";
-import { readToken, signIn, submitScore, useSignedIn } from "@/lib/arcade";
+import { postRun, signIn, useSignedIn } from "@/lib/arcade";
 import { slotEmoji } from "@/lib/share";
 import styles from "./page.module.css";
 
@@ -144,14 +144,14 @@ export default function TimeGame() {
       setRecord(isRecord);
       recordPlay("time");
 
-      /* Put it on the shared board, if this was the daily and there is
-         somewhere to put it. Failure is silent: the score is already safe
-         locally, and a leaderboard is never worth interrupting a game for. */
+      /* Put it on the shared board, if this was the daily. Not signed in
+         holds the run for the sign-in rather than dropping it. Failure is
+         silent either way: the score is already safe locally, and a
+         leaderboard is never worth interrupting a game for. */
       {
         const seed = seedRef.current;
-        const token = readToken();
-        if (seed !== null && token) {
-          submitScore(token, {
+        if (seed !== null) {
+          postRun({
             mode: `time-${diff}`,
             period: todayStamp(),
             seed,
